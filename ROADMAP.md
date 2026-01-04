@@ -1,10 +1,10 @@
-# 🗺️ ROADMAP - Library Creator Backend
+# ROADMAP - Library Creator Backend
 
 Este documento contiene el plan de desarrollo y las tareas pendientes del proyecto.
 
 ---
 
-## ✅ Completado
+## Completado
 
 - [x] Estructura base del servidor HTTP con Sockets
 - [x] Modelo de Usuario
@@ -15,7 +15,7 @@ Este documento contiene el plan de desarrollo y las tareas pendientes del proyec
 
 ---
 
-## 🔨 En Progreso
+## En Progreso
 
 ### Fase 1: Refactorización del Servidor
 
@@ -26,7 +26,7 @@ Este documento contiene el plan de desarrollo y las tareas pendientes del proyec
 
 ---
 
-## 📋 Pendiente
+## Pendiente
 
 ### Fase 2: Controladores y Servicios
 
@@ -72,44 +72,44 @@ Este documento contiene el plan de desarrollo y las tareas pendientes del proyec
 
 ---
 
-## 🌐 API Endpoints Planificados
+## API Endpoints Planificados
 
 ### Usuarios
 
 | Método | Ruta             | Descripción       |
 | ------ | ---------------- | ----------------- |
-| `POST` | `/usuarios`      | Registrar usuario |
-| `POST` | `/login`         | Iniciar sesión    |
-| `GET`  | `/usuarios/{id}` | Obtener perfil    |
+| POST   | /usuarios        | Registrar usuario |
+| POST   | /login           | Iniciar sesión    |
+| GET    | /usuarios/{id}   | Obtener perfil    |
 
 ### Libros
 
-| Método   | Ruta           | Descripción               |
-| -------- | -------------- | ------------------------- |
-| `POST`   | `/libros`      | Crear libro               |
-| `GET`    | `/libros`      | Listar libros del usuario |
-| `GET`    | `/libros/{id}` | Obtener libro             |
-| `PUT`    | `/libros/{id}` | Actualizar libro          |
-| `DELETE` | `/libros/{id}` | Eliminar libro            |
+| Método | Ruta           | Descripción               |
+| ------ | -------------- | ------------------------- |
+| POST   | /libros        | Crear libro               |
+| GET    | /libros        | Listar libros del usuario |
+| GET    | /libros/{id}   | Obtener libro             |
+| PUT    | /libros/{id}   | Actualizar libro          |
+| DELETE | /libros/{id}   | Eliminar libro            |
 
 ### Estanterías
 
 | Método | Ruta                       | Descripción               |
 | ------ | -------------------------- | ------------------------- |
-| `POST` | `/estanterias`             | Crear estantería          |
-| `GET`  | `/estanterias`             | Listar estanterías        |
-| `POST` | `/estanterias/{id}/libros` | Añadir libro a estantería |
+| POST   | /estanterias               | Crear estantería          |
+| GET    | /estanterias               | Listar estanterías        |
+| POST   | /estanterias/{id}/libros   | Añadir libro a estantería |
 
 ### Chat IA (Poly)
 
-| Método | Ruta              | Descripción           |
-| ------ | ----------------- | --------------------- |
-| `POST` | `/chat`           | Enviar mensaje a Poly |
-| `GET`  | `/chat/historial` | Obtener historial     |
+| Método | Ruta            | Descripción           |
+| ------ | --------------- | --------------------- |
+| POST   | /chat           | Enviar mensaje a Poly |
+| GET    | /chat/historial | Obtener historial     |
 
 ---
 
-## 📝 Notas
+## Notas
 
-- El servidor está construido sin frameworks (Sockets puros) con propósito educativo
-- La prioridad actual es refactorizar el servidor antes de agregar más funcionalidades
+- El servidor está construido sin frameworks (Sockets puros) con propósito educativo.
+- La prioridad actual es refactorizar el servidor antes de agregar más funcionalidades.
