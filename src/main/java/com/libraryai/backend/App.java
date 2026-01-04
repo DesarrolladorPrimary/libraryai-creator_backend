@@ -1,7 +1,7 @@
 package com.libraryai.backend;
 
 import com.libraryai.backend.config.ConexionDB;
-import com.libraryai.backend.config.ServerMain;
+import com.libraryai.backend.server.ServerMain;
 
 /**
  * Clase Principal (Entry Point)

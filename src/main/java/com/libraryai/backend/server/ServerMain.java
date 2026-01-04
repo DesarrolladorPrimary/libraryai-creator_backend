@@ -1,4 +1,4 @@
-package com.libraryai.backend.config;
+package com.libraryai.backend.server;
 
 import java.io.IOException;
 import java.io.InputStream;
