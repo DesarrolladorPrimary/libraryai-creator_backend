@@ -6,7 +6,7 @@ import com.google.gson.JsonObject;
 import com.libraryai.backend.dao.UsuariosDao;
 import com.libraryai.backend.models.Usuario;
 
-public class registUser {
+public class UserService {
 
     /**
      * Valida los datos del usuario y coordina la creación si todo es correcto.

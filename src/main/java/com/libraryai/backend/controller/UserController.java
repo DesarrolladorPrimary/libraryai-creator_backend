@@ -11,7 +11,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.dao.UsuariosDao;
 import com.libraryai.backend.server.ServerMain;
-import com.libraryai.backend.service.registUser;
+import com.libraryai.backend.service.UserService;
 import com.sun.net.httpserver.HttpExchange;
 
 public class UserController {
@@ -154,7 +154,7 @@ public class UserController {
                 + ",\ncontraseña: " + contraseña);
 
         // Llamamos al servicio 'registUser' para que valide y guarde
-        response = registUser.verificarDatosUsuario(nombre, correo, contraseña);
+        response = UserService.verificarDatosUsuario(nombre, correo, contraseña);
 
         // Por defecto asumimos que se creó (201)
         int statusCode = 201;
