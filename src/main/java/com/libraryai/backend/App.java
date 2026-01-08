@@ -1,6 +1,7 @@
 package com.libraryai.backend;
 
 import com.libraryai.backend.config.ConexionDB;
+import com.libraryai.backend.dao.UsuariosDao;
 import com.libraryai.backend.server.ServerMain;
 
 /**
@@ -9,12 +10,11 @@ import com.libraryai.backend.server.ServerMain;
  * Web.
  */
 public class App {
-    public static void main(String[] args) throws Exception {
-        // 1. Inicializar Base de Datos
-        ConexionDB.getConexion();
-        
-        // 2. Iniciar Servidor (Bloqueante)
+    public static void main(String[] args) throws Exception {        
+        // 1. Iniciar Servidor (Bloqueante)
         ServerMain.ServerExect();
+
+
 
     
     }
