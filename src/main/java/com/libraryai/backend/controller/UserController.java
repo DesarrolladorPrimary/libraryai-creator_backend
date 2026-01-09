@@ -29,14 +29,22 @@ public class UserController {
 
             String response = "";
 
-            if (path.equals(ruta.getPath())) {
+            if (path.equals(ruta.getPath()) || ruta.getPath().startsWith(path)) {
                 switch (metodo) {
                     case "GET":
-                        listarUsuarios(exchange);
+                        if (ruta.toString().contains("id")) {
+                            obtenerUsuarioId(exchange);
+                        } else {
+                            listarUsuarios(exchange);
+                        }
                         break;
 
                     case "POST":
                         crearUsuario(exchange);
+                        break;
+
+                    case "DELETE":
+                        eliminarUsuario(exchange);
                         break;
 
                     default:
@@ -59,14 +67,47 @@ public class UserController {
 
     }
 
+    private static void obtenerUsuarioId(HttpExchange exchange) throws IOException {
+
+        JsonObject response = new JsonObject();
+        System.out.println("Peticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
+
+        String parametrosId = exchange.getRequestURI().getQuery();
+
+        String[] parts = parametrosId.split("=");
+
+        int id = Integer.parseInt(parts[parts.length - 1]);
+        response = UsuariosDao.buscarPorId(id);
+
+        int statusCode = 200;
+        if (response.has("status")) {
+            statusCode = response.get("status").getAsInt();
+            response.remove("status");
+        }
+
+        byte[] responseByte = response.toString().getBytes();
+
+        exchange.getResponseHeaders().add("Content-Type", "Application/json; charset=utf-8");
+        exchange.sendResponseHeaders(statusCode, responseByte.length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(responseByte);
+            System.out.println("Conexion cerrada con el cliente\n\n");
+            os.close();
+        }
+
+    }
+
     /**
      * Maneja la petición GET para listar usuarios.
      * Obtiene la lista desde el DAO y extrae el código de estado del primer
      * elemento.
      */
     private static void listarUsuarios(HttpExchange exchange) throws IOException {
+
+        System.out.println("Peticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
+
         // Llamamos al DAO para que nos de la lista de usuarios (o el error)
-        JsonArray response = UsuariosDao.ObtenerUsuarios();
+        JsonArray response = UsuariosDao.listarTodos();
 
         // Código de respuesta por defecto: 200 OK
         int statusCode = 200;
@@ -177,6 +218,46 @@ public class UserController {
             System.out.println("Conexion cerrada con el cliente\n\n");
             os.close();
         }
+    }
+
+    private static void eliminarUsuario(HttpExchange exchange) throws IOException {
+
+        System.out.println("\n\nPeticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
+
+        int id = 0;
+        URI rutaDinamica = exchange.getRequestURI();
+
+        String rutaParametros = rutaDinamica.toString();
+        System.out.println("Ruta recibida:" + rutaParametros);
+
+        String[] partsRuta = rutaParametros.split("/");
+
+        String[] parametroRuta = partsRuta[partsRuta.length - 1].split("\\?");
+
+        String[] idParametro = parametroRuta[parametroRuta.length - 1].split("=");
+
+        id = Integer.parseInt(idParametro[idParametro.length - 1]);
+
+        JsonObject responseJson = UsuariosDao.eliminarPorId(id);
+
+        int statusCode = 200;
+        if (responseJson.has("status")) {
+            statusCode = responseJson.get("status").getAsInt();
+
+            responseJson.remove("status");
+        }
+
+        String responseString = responseJson.toString();
+        byte[] responseByte = responseString.getBytes();
+
+        exchange.getResponseHeaders().add("Content-Type", "Application/json; charset=utf-8");
+        exchange.sendResponseHeaders(statusCode, responseByte.length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(responseByte);
+            System.out.println("Conexion cerrada con el cliente\n\n");
+            os.close();
+        }
+
     }
 
     private static void notFoundMetodo(HttpExchange exchange) throws IOException {
