@@ -15,6 +15,7 @@ public class UsuariosDao {
     private final static String SQL_INSERT = """
             INSERT INTO usuario(Nombre, Correo, PasswordHash, FechaRegistro, Activo) values (?,?,?,?,?)
             """;
+
     // language=sql
     private final static String SQL_SELECT_WHERE = """
             SELECT Correo FROM usuario WHERE Correo = ?;
@@ -22,7 +23,17 @@ public class UsuariosDao {
 
     // language=sql
     private final static String SQL_SELECT = """
-            SELECT Nombre, Correo, PasswordHash FROM usuario;
+            SELECT PK_UsuarioID, Nombre, Correo, PasswordHash FROM usuario;
+            """;
+
+    // language=sql
+    private final static String SQL_SELECT_WHEREID = """
+            SELECT PK_UsuarioID, Nombre, Correo, PasswordHash FROM usuario WHERE PK_UsuarioID=?;
+            """;
+
+    // language=sql
+    private final static String SQL_DELETE = """
+            DELETE FROM usuario WHERE `PK_UsuarioID` = ?;
             """;
 
     /**
@@ -31,7 +42,7 @@ public class UsuariosDao {
      * 
      * @param usuario Objeto Usuario con los datos a insertar.
      */
-    public static void registrarUsuario(Usuario usuario) {
+    public static void guardar(Usuario usuario) {
 
         try (
                 // Obtenemos la conexión a la base de datos desde la clase de configuración
@@ -65,13 +76,56 @@ public class UsuariosDao {
         }
     }
 
+    public static JsonObject buscarPorId(int id) {
+        JsonObject user = new JsonObject();
+        try (
+                Connection conn = ConexionDB.getConexion();
+                PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT_WHEREID);) {
+
+            pstmt.setInt(1, id);
+            ResultSet rs = pstmt.executeQuery();
+
+
+            if (!rs.next()) {
+                System.out.println("El usuario no existe");
+                user.addProperty("status" , 404);
+                user.addProperty("Mensaje", "No esxiste el usuario");
+
+            } else {
+
+                // Extraemos los datos de las columnas
+                int usuario_id = rs.getInt("PK_UsuarioID");
+                String nombre = rs.getString("Nombre");
+                String correo = rs.getString("Correo");
+                int contraseña = rs.getInt("PasswordHash");
+
+                // Rellenamos el objeto JSON con los datos obtenidos
+                user.addProperty("PK_UsuarioID", usuario_id);
+                user.addProperty("Nombre", nombre);
+                user.addProperty("Correo", correo);
+                user.addProperty("Contraseña", contraseña);
+                // Agregamos status 200 (OK) al usuario
+                user.addProperty("status", 200);
+
+                do {
+
+                } while (rs.next());
+            }
+
+        } catch (SQLException e) {
+            System.err.println();
+            e.printStackTrace();
+        }
+        return user;
+    }
+
     /**
      * Recupera todos los usuarios de la base de datos.
      * 
      * @return JsonArray con los usuarios encontrados o un mensaje de error si no
      *         hay datos.
      */
-    public static JsonArray ObtenerUsuarios() {
+    public static JsonArray listarTodos() {
 
         // Creamos la lista JSON donde guardaremos los usuarios
         JsonArray listarUsuarios = new JsonArray();
@@ -103,11 +157,13 @@ public class UsuariosDao {
                     JsonObject user = new JsonObject();
 
                     // Extraemos los datos de las columnas
+                    int usuario_id = rs.getInt("PK_UsuarioID");
                     String nombre = rs.getString("Nombre");
                     String correo = rs.getString("Correo");
                     int contraseña = rs.getInt("PasswordHash");
 
                     // Rellenamos el objeto JSON con los datos obtenidos
+                    user.addProperty("PK_UsuarioID", usuario_id);
                     user.addProperty("Nombre", nombre);
                     user.addProperty("Correo", correo);
                     user.addProperty("Contraseña", contraseña);
@@ -134,7 +190,7 @@ public class UsuariosDao {
      * @param correo Correo del usuario a verificar.
      * @return true si el usuario existe, false en caso contrario.
      */
-    public static boolean usuarioExistente(String correo) {
+    public static boolean existePorCorreo(String correo) {
 
         // Variable bandera, por defecto asumimos que NO existe
         boolean correroExist = false;
@@ -142,11 +198,11 @@ public class UsuariosDao {
                 // Conectamos
                 Connection conn = ConexionDB.getConexion();
                 // Preparamos el SQL de búsqueda con filtro WHERE
-                PreparedStatement sfmt = conn.prepareStatement(SQL_SELECT_WHERE);) {
+                PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT_WHERE);) {
             // Asignamos el correo que recibimos al parámetro (?)
-            sfmt.setString(1, correo);
+            pstmt.setString(1, correo);
             // Ejecutamos la consulta
-            ResultSet rs = sfmt.executeQuery();
+            ResultSet rs = pstmt.executeQuery();
 
             // Si rs.next() es true, significa que encontró al menos un registro
             if (rs.next()) {
@@ -161,6 +217,39 @@ public class UsuariosDao {
         }
         // Devolvemos el resultado booleano
         return correroExist;
+    }
+
+    public static JsonObject eliminarPorId(int id) {
+
+        JsonObject response = new JsonObject();
+
+        try (
+                Connection conn = ConexionDB.getConexion();
+                PreparedStatement pstmt = conn.prepareStatement(SQL_DELETE);) {
+
+            pstmt.setInt(1, id);
+            int filasAfectadas = pstmt.executeUpdate();
+            boolean exist = false;
+
+            if (filasAfectadas > 0) {
+                System.out.println("Usuario eliminado");
+                exist = true;
+                response.addProperty("Mensaje", "Usuario eliminado correctamente");
+                response.addProperty("status", 200);
+
+            } else {
+                System.out.println("El usuario no existe con ese id");
+                exist = false;
+                response.addProperty("Mensaje", "El usuario no existe con ese id");
+                response.addProperty("status", 404);
+
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return response;
     }
 
 }
