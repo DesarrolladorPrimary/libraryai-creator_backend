@@ -21,40 +21,48 @@ public class UserService {
         // Objeto JSON para devolver la respuesta
         JsonObject rJsonObject = new JsonObject();
         // Llamamos al DAO para ver si el correo ya existe en DB
-        boolean correoDB = UsuariosDao.usuarioExistente(correo);
+        boolean correoDB = UsuariosDao.existePorCorreo(correo);
 
         // Validamos que los datos básicos no sean null y la contraseña sea positiva
         if (!(nombre == null) && !(correo == null) && !(contraseña < 0)) {
-            // Si el correo NO existe en la base de datos...
-            if (correoDB == false) {
 
-                // Validación simple de formato de correo (debe tener @)
-                if (correo.contains("@")) {
+            if (nombre.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+") && nombre.length() > 2 && !(nombre.matches("@-$"))) {
+                // Si el correo NO existe en la base de datos...
+                if (correoDB == false) {
 
-                    // Convertimos la contraseña int a String (para guardarla, idealmente se
-                    // hashearia)
-                    String contraseñaHash = Integer.toString(contraseña);
+                    // Validación simple de formato de correo (debe tener @)
+                    if (correo.contains("@")) {
 
-                    // Creamos el objeto Modelo 'Usuario' con todos los datos
-                    Usuario user = new Usuario(0, nombre, correo, contraseñaHash, LocalDate.now(), true);
+                        // Convertimos la contraseña int a String (para guardarla, idealmente se
+                        // hashearia)
+                        String contraseñaHash = Integer.toString(contraseña);
 
-                    // Le decimos al DAO que lo guarde en la BD
-                    UsuariosDao.registrarUsuario(user);
+                        // Creamos el objeto Modelo 'Usuario' con todos los datos
+                        Usuario user = new Usuario(0, nombre, correo, contraseñaHash, LocalDate.now(), true);
 
-                    // Preparamos respuesta de éxito
-                    rJsonObject.addProperty("Mensaje", "Usuario creado correctamente");
-                    rJsonObject.addProperty("status", 201); // Created
+                        // Le decimos al DAO que lo guarde en la BD
+                        UsuariosDao.guardar(user);
+
+                        // Preparamos respuesta de éxito
+                        rJsonObject.addProperty("Mensaje", "Usuario creado correctamente");
+                        rJsonObject.addProperty("status", 201); // Created
+                    } else {
+                        // Error: correo sin @
+                        rJsonObject.addProperty("Mensaje", "Correo no valido");
+                        rJsonObject.addProperty("status", 400); // Bad Request
+
+                    }
                 } else {
-                    // Error: correo sin @
-                    rJsonObject.addProperty("Mensaje", "Correo no valido");
-                    rJsonObject.addProperty("status", 400); // Bad Request
-
+                    // Error: El usuario ya existe
+                    rJsonObject.addProperty("Mensaje", "Usuario ya existente con ese correo");
+                    rJsonObject.addProperty("status", 409); // Conflict
                 }
             } else {
-                // Error: El usuario ya existe
-                rJsonObject.addProperty("Mensaje", "Usuario ya existente con ese correo");
-                rJsonObject.addProperty("status", 409); // Conflict
+                // Error: Algún dato venía nulo o incorrecto
+                rJsonObject.addProperty("Mensaje", "Nombre de usuario incorrecto");
+                rJsonObject.addProperty("status", 400); // Bad Request
             }
+
         } else {
             // Error: Algún dato venía nulo o incorrecto
             rJsonObject.addProperty("Mensaje", "Datos vacios");
