@@ -36,6 +36,11 @@ public class UsuariosDao {
             DELETE FROM usuario WHERE `PK_UsuarioID` = ?;
             """;
 
+    // language=sql
+    private final static String SQL_UPDATE = """
+            UPDATE usuario SET Nombre = ?, Correo = ?, Contraseña = ? WHERE  PK_UsuarioID=?;
+            """;
+
     /**
      * Metodo encargado de crear la conexion, recibir los datos del modelo y
      * realizar la insercion para crear un usuario en la base de datos.
@@ -218,6 +223,21 @@ public class UsuariosDao {
         // Devolvemos el resultado booleano
         return correroExist;
     }
+
+    public static JsonObject actualizarUsuario(){
+        try (
+            Connection conn = ConexionDB.getConexion();
+            PreparedStatement pstmt = conn.prepareStatement(SQL_UPDATE);
+        ) {
+            
+
+        } catch (SQLException e) {
+            
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 
     public static JsonObject eliminarPorId(int id) {
 
