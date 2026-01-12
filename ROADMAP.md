@@ -1,115 +1,102 @@
-# ROADMAP - Library Creator Backend
+# 🗺️ Mapa de Aventura: Library AI Backend
 
-Este documento contiene el plan de desarrollo y las tareas pendientes del proyecto.
-
----
-
-## Completado
-
-- [x] Estructura base del servidor HTTP con Sockets
-- [x] Modelo de Usuario
-- [x] DAO de Usuarios (registro en DB)
-- [x] Conexión a base de datos MySQL
-- [x] Integración básica con Gemini API
-- [x] Organización modular del proyecto
+Este es tu plan de batalla. Olvida las listas aburridas; esta es la secuencia lógica para construir un backend robusto sin perderte en el intento.
 
 ---
 
-## En Progreso
+## ✅ Logros Desbloqueados (Completado)
 
-### Fase 1: Refactorización del Servidor
+> _Lo que ya funciona. ¡Buen trabajo!_
 
-- [ ] Crear clase `HttpRequest` para parsear peticiones
-- [ ] Crear clase `HttpResponse` para construir respuestas
-- [ ] Crear clase `Router` para mapear rutas a controladores
-- [ ] Separar lógica de `ServerMain` en componentes
-
----
-
-## Pendiente
-
-### Fase 2: Controladores y Servicios
-
-- [ ] `UsuarioController` - Endpoints de usuarios
-- [ ] `UsuarioService` - Lógica de negocio de usuarios
-- [ ] `LibroController` - Endpoints de libros
-- [ ] `LibroService` - Lógica de negocio de libros
-- [ ] `ChatController` - Endpoints de interacción con Poly
-
-### Fase 3: Modelos y DAOs
-
-- [ ] Modelo `Libro`
-- [ ] Modelo `Estanteria`
-- [ ] Modelo `Suscripcion`
-- [ ] `LibroDao` - CRUD de libros
-- [ ] `EstanteriaDao` - CRUD de estanterías
-
-### Fase 4: Funcionalidades Core
-
-- [ ] Sistema de autenticación (login/registro)
-- [ ] Gestión de sesiones
-- [ ] CRUD completo de libros
-- [ ] Gestión de estanterías virtuales
-- [ ] Versionamiento de textos
-
-### Fase 5: Integración IA (Poly)
-
-- [ ] Servicio de chat con Gemini
-- [ ] Parametrización del asistente
-- [ ] Historial de conversaciones
-- [ ] Generación de narrativas guiadas
-
-### Fase 6: Exportación
-
-- [ ] Exportar a PDF
-- [ ] Exportar a Word
-
-### Fase 7: Suscripciones
-
-- [ ] Modelo de planes de suscripción
-- [ ] Límites de almacenamiento por plan
-- [ ] Límites de uso de IA por plan
+- [x] **El Motor:** Servidor HTTP nativo (`com.sun.net.httpserver`) funcionando.
+- [x] **La Base:** Conexión a MySQL establecida.
+- [x] **Identidad:** Registro de usuarios funcional (`UsuarioDao`, `Service`, `Controller`).
+- [x] **El Oráculo:** Conexión inicial probada con Gemini API.
 
 ---
 
-## API Endpoints Planificados
+## 🚀 Nivel 1: Arquitectura de Elite (URGENTE)
 
-### Usuarios
+_Objetivo: Limpiar el código actual para que programar lo demás sea fácil y rápido._
 
-| Método | Ruta             | Descripción       |
-| ------ | ---------------- | ----------------- |
-| POST   | /usuarios        | Registrar usuario |
-| POST   | /login           | Iniciar sesión    |
-| GET    | /usuarios/{id}   | Obtener perfil    |
+> _Actualmente `ServerMain` hace demasiado. Vamos a delegar._
 
-### Libros
+1. **[ ] El Mensajero (`ApiRequest`)**
 
-| Método | Ruta           | Descripción               |
-| ------ | -------------- | ------------------------- |
-| POST   | /libros        | Crear libro               |
-| GET    | /libros        | Listar libros del usuario |
-| GET    | /libros/{id}   | Obtener libro             |
-| PUT    | /libros/{id}   | Actualizar libro          |
-| DELETE | /libros/{id}   | Eliminar libro            |
+   - Crear una clase que envuelva `HttpExchange`.
+   - **Misión:** Poder hacer `request.getBody()` y obtener un JSON limpio sin lidiar con `InputStream` manualmente.
 
-### Estanterías
+2. **[ ] El Diplomático (`ApiResponse`)**
 
-| Método | Ruta                       | Descripción               |
-| ------ | -------------------------- | ------------------------- |
-| POST   | /estanterias               | Crear estantería          |
-| GET    | /estanterias               | Listar estanterías        |
-| POST   | /estanterias/{id}/libros   | Añadir libro a estantería |
+   - Crear utilidades para responder.
+   - **Misión:** Responder con `ApiResponse.success(datos)` o `ApiResponse.error(code, "mensaje")` en una sola línea.
 
-### Chat IA (Poly)
-
-| Método | Ruta            | Descripción           |
-| ------ | --------------- | --------------------- |
-| POST   | /chat           | Enviar mensaje a Poly |
-| GET    | /chat/historial | Obtener historial     |
+3. **[ ] La Torre de Control (`Router`)**
+   - Crear un sistema para definir rutas tipo `router.get("/libros", controlador::listar)`.
+   - **Misión:** Limpiar `ServerMain` para que solo tenga 3 líneas de configuración.
 
 ---
 
-## Notas
+## 📚 Nivel 2: La Gran Biblioteca (Libros)
 
-- El servidor está construido sin frameworks (Sockets puros) con propósito educativo.
-- La prioridad actual es refactorizar el servidor antes de agregar más funcionalidades.
+_Objetivo: Darle vida a la funcionalidad principal._
+
+1. **[ ] El Manuscrito (Modelo `Libro`)**
+
+   - Definir la clase POJO: `id`, `titulo`, `sinopsis`, `genero`, `estado` (borrador/terminado).
+
+2. **[ ] Los Archivos (DAO de Libros)**
+
+   - Implementar `insert`, `findAllByUsuario`, `findById`, `update`, `delete`.
+   - **Reto:** Asegurar que un usuario solo vea _sus_ libros.
+
+3. **[ ] La Ventanilla (`LibroController`)**
+   - Conectar el Router con el DAO.
+   - Endpoints: `POST /libros`, `GET /libros`.
+
+---
+
+## 🤖 Nivel 3: Despertando a Poly (IA)
+
+_Objetivo: Hacer que la IA sea útil de verdad._
+
+1. **[ ] El Canal de Comunicación (`ChatController`)**
+
+   - Crear endpoint `POST /api/chat`.
+   - Recibir mensaje del usuario -> Enviar a Gemini -> Devolver respuesta.
+
+2. **[ ] Memoria de Pez (Contexto Básico)**
+
+   - Hacer que Poly recuerde los últimos 3 mensajes para mantener una conversación fluida.
+
+3. **[ ] El Asistente Creativo**
+   - Crear un "System Prompt" especial para que Poly actúe como un experto escritor, no como un bot genérico.
+
+---
+
+## 📦 Nivel 4: Ordenando el Caos (Estanterías)
+
+_Objetivo: Organización avanzada._
+
+1. **[ ] El Estante (Modelo y Tabla)**
+   - Crear tabla `estanterias` y modelo `Estanteria`.
+2. **[ ] La Asociación**
+   - Tabla intermedia `libro_estanteria` (relación muchos a muchos).
+   - Poder añadir un libro a una estantería.
+
+---
+
+## 🛡️ Nivel 5: La Fortaleza (Seguridad)
+
+_Objetivo: Proteger tu creación._
+
+1. **[ ] El Guardián (Middleware de Auth)**
+   - Crear una anotación o filtro que verifique si existe un usuario logueado antes de dejar pasar a `/libros`.
+   - (Por ahora podemos usar un ID de usuario simulado en los headers).
+
+---
+
+## 📝 Notas del Desarrollador
+
+- **Regla de Oro:** No pases al Nivel 2 sin terminar el Nivel 1. Una buena arquitectura te ahorrará horas de sufrimiento después.
+- **Diversión:** Si te aburres del CRUD (Nivel 2), salta un rato al Nivel 3 (IA) para ver cosas mágicas, y luego vuelve.

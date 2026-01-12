@@ -2,3 +2,6 @@
 target/
 prueba.sql
 HTTP_STATUS_CODES.md
+task/
+ROADMAP.md
+01_nivel_arquitectura.md
