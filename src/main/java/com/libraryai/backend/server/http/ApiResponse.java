@@ -66,8 +66,14 @@ public class ApiResponse {
         // Código 200 = OK (operación exitosa)
         int statusCode = 200;
 
+        JsonObject json = new JsonObject();
+
+        json.addProperty("Mensaje", body);
+
+        String bodyJson = json.toString();
+
         // Delegamos al método send()
-        send(exchange, body, statusCode);
+        send(exchange, bodyJson, statusCode);
     }
 
     public static void created(HttpExchange exchange, int code) throws IOException{

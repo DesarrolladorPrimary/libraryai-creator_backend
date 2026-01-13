@@ -2,8 +2,6 @@ package com.libraryai.backend.controller;
 
 // InputStream para leer el body de las peticiones POST
 import java.io.InputStream;
-// OutputStream para enviar respuestas al cliente
-import java.io.OutputStream;
 // URI para manejar rutas dinámicas con parámetros
 import java.net.URI;
 // StandardCharsets para codificación UTF-8
@@ -211,7 +209,7 @@ public class UserController {
             String body = request.readBody();
 
             if (body.isEmpty()) {
-                ApiResponse.error(exchange, 400, "Datos vacios");
+                ApiResponse.error(exchange, 400, "No hay cuerpo");
             }
 
             URI path = exchange.getRequestURI();
@@ -220,7 +218,7 @@ public class UserController {
             if (parametroId.isEmpty() || parametroId == null) {
                 ApiResponse.error(exchange, 400, "Parametros en la url faltantes");
             }
-            
+
             String[] parts = parametroId.split("=");
 
             int id = Integer.parseInt(parts[parts.length - 1]);
@@ -230,13 +228,35 @@ public class UserController {
                 return;
             }
 
+            Gson gson = new Gson();
+            JsonObject json = gson.fromJson(body, JsonObject.class);
 
-
-            ApiResponse.success(exchange, null);
-
-
+            String nombre = "";
+            String correo = "";
+            int contraseña = 0;
 
             
+            if (json.has("nombre")) {
+                nombre = json.get("nombre").getAsString();
+            }
+            
+            if (json.has("correo")) {
+                correo = json.get("correo").getAsString();
+            }
+            
+            if (json.has("contraseña")) {
+                contraseña = json.get("contraseña").getAsInt();
+            }
+            
+            JsonObject response = UserService.verificarDatosActualizar(nombre, correo, contraseña, id);
+
+            int code = response.get("status").getAsInt();
+
+            response.remove("status");
+
+            String responseJson = response.toString();
+            ApiResponse.send(exchange, responseJson, code);
+
         };
     }
 

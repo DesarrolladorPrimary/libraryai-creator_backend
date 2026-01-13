@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import com.libraryai.backend.config.ConexionDB;
 import com.libraryai.backend.models.Usuario;
 
+
 //**Clase encargada de servir de puente entre el modelo y la DB
 public class UsuariosDao {
     // **Consultas SQL
@@ -38,7 +39,7 @@ public class UsuariosDao {
 
     // language=sql
     private final static String SQL_UPDATE = """
-            UPDATE usuario SET Nombre = ?, Correo = ?, Contraseña = ? WHERE  PK_UsuarioID=?;
+            UPDATE usuario SET Nombre = ?, Correo = ?, PasswordHash = ? WHERE  PK_UsuarioID=?;
             """;
 
     /**
@@ -224,18 +225,34 @@ public class UsuariosDao {
         return correroExist;
     }
 
-    public static JsonObject actualizarUsuario(){
+    public static JsonObject actualizarUsuario(String nombre, String correo, int contraseña, int id){
+        JsonObject json = new JsonObject();
+        
         try (
             Connection conn = ConexionDB.getConexion();
             PreparedStatement pstmt = conn.prepareStatement(SQL_UPDATE);
         ) {
-            
+
+            pstmt.setString(1, nombre);
+            pstmt.setString(2, correo);
+            pstmt.setInt(3, contraseña);
+            pstmt.setInt(4, id);
+
+            int filasAfectadas = pstmt.executeUpdate();
+
+            if (filasAfectadas > 0) {
+                json.addProperty("Mensaje", "El usuario fue actualizado correctamente");
+            }
+            else {
+                json.addProperty("Mensaje", "No se realizaron cambios");
+            }
+        
 
         } catch (SQLException e) {
             
             e.printStackTrace();
         }
-        return null;
+        return json;
     }
 
 

@@ -1,5 +1,6 @@
 package com.libraryai.backend.service;
 
+import java.io.IOException;
 import java.time.LocalDate;
 
 import com.google.gson.JsonObject;
@@ -73,4 +74,50 @@ public class UserService {
         // Retornamos el JSON con el resultado
         return rJsonObject;
     }
+
+    public static JsonObject verificarDatosActualizar(String nombre, String correo, int contraseña, int id) throws IOException {
+
+        JsonObject datos = UsuariosDao.buscarPorId(id);
+
+        JsonObject response = new JsonObject();
+
+        int estado = datos.get("status").getAsInt();
+
+        if (estado == 404) {
+            response.addProperty("status", 404);
+            response.addProperty("Mensaje", "Usuario no encontrado");
+            return response;
+
+        } else {
+
+            String nombreDB = datos.get("Nombre").getAsString();
+            String correoDB = datos.get("Correo").getAsString();
+            int contraseñaDB = datos.get("Contraseña").getAsInt();
+
+            if (nombre.isEmpty()) {
+                nombre = nombreDB;
+            }
+
+            if (correo.isEmpty()) {
+                correo = correoDB;
+            }
+
+            if (contraseña == 0) {
+                contraseña = contraseñaDB;
+            }
+
+            if (correo.matches("[a-zA-Z]+@[a-zA-Z]+\\.[a-zA-Z]{2,6}")) {
+                response = UsuariosDao.actualizarUsuario(nombre, correo, contraseña, id);
+                response.addProperty("status", 200);
+            }
+
+            else {
+                response.addProperty("Mensaje", "Correo no valido");
+                response.addProperty("status", 400);
+            }
+        }
+
+        return response;
+    }
+
 }
