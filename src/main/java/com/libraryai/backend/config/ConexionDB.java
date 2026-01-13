@@ -2,10 +2,12 @@ package com.libraryai.backend.config;
 
 import java.sql.*;
 
+import io.github.cdimascio.dotenv.Dotenv;
+
 public class ConexionDB {
-    private static final String URL = System.getenv("DB_URL");
-    private static final String USER = System.getenv("DB_USER");
-    private static final String PASSWD_DB = System.getenv("DB_PASSWD");
+    private static final String URL = Dotenv.load().get("DB_URL");
+    private static final String USER = Dotenv.load().get("DB_USER");
+    private static final String PASSWD_DB = Dotenv.load().get("DB_PASSWD");
 
     /**
      * Intenta establecer una conexión con la base de datos utilizando las

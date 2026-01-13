@@ -2,6 +2,7 @@ package com.libraryai.backend.router;
 
 // Importamos el controlador que tiene los handlers de usuarios
 import com.libraryai.backend.controller.UserController;
+import com.libraryai.backend.controller.auth.LoginController;
 // Importamos nuestro Router personalizado
 import com.libraryai.backend.server.Router;
 // HttpHandler es la interfaz que retornaremos
@@ -48,6 +49,7 @@ public class Rutas {
 
         router.delete("/api/v1/usuarios/id", UserController.eliminarUsuario());
 
+        router.post("/api/v1/login", LoginController.loginUsuario());
 
         // ========== AQUÍ PUEDES AGREGAR MÁS RUTAS ==========
         // Ejemplo para futuros controllers:

@@ -1,0 +1,44 @@
+package com.libraryai.backend.controller.auth;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.libraryai.backend.server.http.ApiRequest;
+import com.libraryai.backend.server.http.ApiResponse;
+import com.libraryai.backend.service.auth.LoginService;
+import com.sun.net.httpserver.HttpHandler;
+
+public class LoginController {
+    
+    public static HttpHandler loginUsuario(){
+        return exchange -> {
+            ApiRequest request = new ApiRequest(exchange);
+            String body = request.readBody();
+
+            System.out.println("\n\nPeticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
+
+
+            Gson gson = new Gson();
+            JsonObject user = gson.fromJson(body, JsonObject.class);
+
+            String correo = "";
+            int contraseña = 0;
+
+            if (user.has("correo")) {
+                correo = user.get("correo").getAsString();
+            }
+
+            if (user.has("contraseña")) {
+                contraseña = user.get("contraseña").getAsInt();
+            }
+
+            JsonObject response = LoginService.verificarDatosLogin(correo, contraseña);
+            int code = response.get("status").getAsInt();
+            response.remove("status");
+
+            String responseJson = response.toString();
+
+
+            ApiResponse.send(exchange, responseJson, code);
+        };
+    }
+}
