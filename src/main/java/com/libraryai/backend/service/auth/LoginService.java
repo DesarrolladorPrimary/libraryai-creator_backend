@@ -3,10 +3,11 @@ package com.libraryai.backend.service.auth;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.dao.auth.LoginDao;
 import com.libraryai.backend.util.JwtUtil;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class LoginService {
 
-    public static JsonObject verificarDatosLogin(String correo, int contraseña) {
+    public static JsonObject verificarDatosLogin(String correo, String contraseña) {
 
         JsonObject response = new JsonObject();
 
@@ -24,9 +25,12 @@ public class LoginService {
                 return response;
             }
 
-            int contraseñaDB = user.get("contraseña").getAsInt();
+            String contraseñaDB = user.get("contraseña").getAsString();
 
-            if (contraseñaDB != contraseña) {
+
+
+            
+            if (!BCrypt.checkpw(contraseña, contraseñaDB)) {
                 response.addProperty("Mensaje", "La contraseña no coincide con la registrada");
                 response.addProperty("status", 400);
                 return response;

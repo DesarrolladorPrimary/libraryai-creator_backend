@@ -103,7 +103,7 @@ public class UsuariosDao {
                 int usuario_id = rs.getInt("PK_UsuarioID");
                 String nombre = rs.getString("Nombre");
                 String correo = rs.getString("Correo");
-                int contraseña = rs.getInt("PasswordHash");
+                String contraseña = rs.getString("PasswordHash");
 
                 // Rellenamos el objeto JSON con los datos obtenidos
                 user.addProperty("PK_UsuarioID", usuario_id);
@@ -166,7 +166,7 @@ public class UsuariosDao {
                     int usuario_id = rs.getInt("PK_UsuarioID");
                     String nombre = rs.getString("Nombre");
                     String correo = rs.getString("Correo");
-                    int contraseña = rs.getInt("PasswordHash");
+                    String contraseña = rs.getString("PasswordHash");
 
                     // Rellenamos el objeto JSON con los datos obtenidos
                     user.addProperty("PK_UsuarioID", usuario_id);
@@ -225,7 +225,7 @@ public class UsuariosDao {
         return correroExist;
     }
 
-    public static JsonObject actualizarUsuario(String nombre, String correo, int contraseña, int id){
+    public static JsonObject actualizarUsuario(String nombre, String correo, String contraseña, int id){
         JsonObject json = new JsonObject();
         
         try (
@@ -235,22 +235,27 @@ public class UsuariosDao {
 
             pstmt.setString(1, nombre);
             pstmt.setString(2, correo);
-            pstmt.setInt(3, contraseña);
+            pstmt.setString(3, contraseña);
             pstmt.setInt(4, id);
 
             int filasAfectadas = pstmt.executeUpdate();
 
             if (filasAfectadas > 0) {
                 json.addProperty("Mensaje", "El usuario fue actualizado correctamente");
+                json.addProperty("status", 200);
+
             }
             else {
                 json.addProperty("Mensaje", "No se realizaron cambios");
+                json.addProperty("status", 404);
+
             }
         
 
         } catch (SQLException e) {
             
             e.printStackTrace();
+            json.addProperty("status", 500);
         }
         return json;
     }

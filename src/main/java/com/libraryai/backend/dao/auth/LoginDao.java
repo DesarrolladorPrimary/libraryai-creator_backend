@@ -12,7 +12,7 @@ public class LoginDao {
 
     // language=sql
     final static String SQL_SELECT_WHERE = """
-            SELECT Correo, PasswordHash FROM usuario WHERE Correo = ?;
+            SELECT Correo, Passwordhash FROM usuario WHERE Correo = ?;
             """;
 
     public static JsonObject validarUsuario(String correo) {
@@ -32,7 +32,7 @@ public class LoginDao {
             }
             else{
                 do {
-                    int contraseñaDB = rs.getInt("Passwordhash");
+                    String contraseñaDB = rs.getString("Passwordhash");
                     user.addProperty("status", 200);
                     user.addProperty("contraseña", contraseñaDB);
                 } while (rs.next());

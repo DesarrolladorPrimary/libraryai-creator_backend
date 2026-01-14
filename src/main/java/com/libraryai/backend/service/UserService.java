@@ -3,6 +3,8 @@ package com.libraryai.backend.service;
 import java.io.IOException;
 import java.time.LocalDate;
 
+import org.mindrot.jbcrypt.BCrypt;
+
 import com.google.gson.JsonObject;
 import com.libraryai.backend.dao.UsuariosDao;
 import com.libraryai.backend.models.Usuario;
@@ -17,7 +19,7 @@ public class UserService {
      * @param contraseña Contraseña (numérica en este ejemplo).
      * @return JsonObject con el resultado de la operación y el código de estado.
      */
-    public static JsonObject verificarDatosUsuario(String nombre, String correo, int contraseña) {
+    public static JsonObject verificarDatosUsuario(String nombre, String correo, String contraseña) {
 
         // Objeto JSON para devolver la respuesta
         JsonObject rJsonObject = new JsonObject();
@@ -25,7 +27,7 @@ public class UserService {
         boolean correoDB = UsuariosDao.existePorCorreo(correo);
 
         // Validamos que los datos básicos no sean null y la contraseña sea positiva
-        if (!(nombre == null) && !(correo == null) && !(contraseña < 0)) {
+        if (!(nombre == null) && !(correo == null) && !(contraseña.isBlank())) {
 
             if (nombre.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+") && nombre.length() > 2 && !(nombre.matches("@-$"))) {
                 // Si el correo NO existe en la base de datos...
@@ -34,9 +36,9 @@ public class UserService {
                     // Validación simple de formato de correo (debe tener @)
                     if (correo.contains("@")) {
 
-                        // Convertimos la contraseña int a String (para guardarla, idealmente se
-                        // hashearia)
-                        String contraseñaHash = Integer.toString(contraseña);
+
+                        // Hasheamos la contraseña 
+                        String contraseñaHash = BCrypt.hashpw(contraseña, BCrypt.gensalt());
 
                         // Creamos el objeto Modelo 'Usuario' con todos los datos
                         Usuario user = new Usuario(0, nombre, correo, contraseñaHash, LocalDate.now(), true);
@@ -75,7 +77,7 @@ public class UserService {
         return rJsonObject;
     }
 
-    public static JsonObject verificarDatosActualizar(String nombre, String correo, int contraseña, int id) throws IOException {
+    public static JsonObject verificarDatosActualizar(String nombre, String correo, String contraseña, int id) throws IOException {
 
         JsonObject datos = UsuariosDao.buscarPorId(id);
 
@@ -92,7 +94,7 @@ public class UserService {
 
             String nombreDB = datos.get("Nombre").getAsString();
             String correoDB = datos.get("Correo").getAsString();
-            int contraseñaDB = datos.get("Contraseña").getAsInt();
+            String contraseñaDB = datos.get("Contraseña").getAsString();
 
             if (nombre.isEmpty()) {
                 nombre = nombreDB;
@@ -102,13 +104,18 @@ public class UserService {
                 correo = correoDB;
             }
 
-            if (contraseña == 0) {
+            if (contraseña.isBlank()) {
                 contraseña = contraseñaDB;
+
             }
+            else {
+                contraseña = BCrypt.hashpw(contraseña, BCrypt.gensalt());
+            }
+            
 
             if (correo.matches("[a-zA-Z]+@[a-zA-Z]+\\.[a-zA-Z]{2,6}")) {
+
                 response = UsuariosDao.actualizarUsuario(nombre, correo, contraseña, id);
-                response.addProperty("status", 200);
             }
 
             else {

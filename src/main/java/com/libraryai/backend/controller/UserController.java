@@ -174,7 +174,7 @@ public class UserController {
             // Extraemos cada campo del JSON recibido
             String nombre = json.get("nombre").getAsString();
             String correo = json.get("correo").getAsString();
-            int contraseña = json.get("contraseña").getAsInt();
+            String contraseña = json.get("contraseña").getAsString();
 
             System.out.println("Datos recibidos correctamente. \nnombre: " + nombre + ",\ncorreo: " + correo
                     + ",\ncontraseña: " + contraseña);
@@ -233,7 +233,7 @@ public class UserController {
 
             String nombre = "";
             String correo = "";
-            int contraseña = 0;
+            String contraseña = "";
 
             
             if (json.has("nombre")) {
@@ -245,7 +245,7 @@ public class UserController {
             }
             
             if (json.has("contraseña")) {
-                contraseña = json.get("contraseña").getAsInt();
+                contraseña = json.get("contraseña").getAsString();
             }
             
             JsonObject response = UserService.verificarDatosActualizar(nombre, correo, contraseña, id);

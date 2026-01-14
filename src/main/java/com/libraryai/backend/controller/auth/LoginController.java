@@ -21,14 +21,14 @@ public class LoginController {
             JsonObject user = gson.fromJson(body, JsonObject.class);
 
             String correo = "";
-            int contraseña = 0;
+            String contraseña = "";
 
             if (user.has("correo")) {
                 correo = user.get("correo").getAsString();
             }
 
             if (user.has("contraseña")) {
-                contraseña = user.get("contraseña").getAsInt();
+                contraseña = user.get("contraseña").getAsString();
             }
 
             JsonObject response = LoginService.verificarDatosLogin(correo, contraseña);
