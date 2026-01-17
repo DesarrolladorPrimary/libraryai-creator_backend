@@ -1,102 +1,189 @@
-# 🗺️ Mapa de Aventura: Library AI Backend
+# Roadmap Backend – Library Creator (modo novato, sin perderse)
 
-Este es tu plan de batalla. Olvida las listas aburridas; esta es la secuencia lógica para construir un backend robusto sin perderte en el intento.
-
----
-
-## ✅ Logros Desbloqueados (Completado)
-
-> _Lo que ya funciona. ¡Buen trabajo!_
-
-- [x] **El Motor:** Servidor HTTP nativo (`com.sun.net.httpserver`) funcionando.
-- [x] **La Base:** Conexión a MySQL establecida.
-- [x] **Identidad:** Registro de usuarios funcional (`UsuarioDao`, `Service`, `Controller`).
-- [x] **El Oráculo:** Conexión inicial probada con Gemini API.
+## REGLA GENERAL
+No avanzamos al siguiente punto hasta que el actual:
+- funcione
+- esté probado (Postman / curl)
+- lo entiendas
 
 ---
 
-## 🚀 Nivel 1: Arquitectura de Elite (URGENTE)
+## FASE 0 – Preparación (una sola vez)
+Objetivo: que la BD tenga lo mínimo para que el backend no falle.
 
-_Objetivo: Limpiar el código actual para que programar lo demás sea fácil y rápido._
+- [ ] Insertar roles:
+  - ADMIN
+  - GRATUITO
+  - PREMIUM
 
-> _Actualmente `ServerMain` hace demasiado. Vamos a delegar._
+- [ ] Insertar modelos IA:
+  - Modelo "low" (para gratuito)
+  - Modelo "full" (para premium)
 
-1. **[ ] El Mensajero (`ApiRequest`)**
+- [ ] Crear usuario ADMIN inicial
+  - correo
+  - contraseña hasheada
+  - rol ADMIN
 
-   - Crear una clase que envuelva `HttpExchange`.
-   - **Misión:** Poder hacer `request.getBody()` y obtener un JSON limpio sin lidiar con `InputStream` manualmente.
-
-2. **[ ] El Diplomático (`ApiResponse`)**
-
-   - Crear utilidades para responder.
-   - **Misión:** Responder con `ApiResponse.success(datos)` o `ApiResponse.error(code, "mensaje")` en una sola línea.
-
-3. **[ ] La Torre de Control (`Router`)**
-   - Crear un sistema para definir rutas tipo `router.get("/libros", controlador::listar)`.
-   - **Misión:** Limpiar `ServerMain` para que solo tenga 3 líneas de configuración.
-
----
-
-## 📚 Nivel 2: La Gran Biblioteca (Libros)
-
-_Objetivo: Darle vida a la funcionalidad principal._
-
-1. **[ ] El Manuscrito (Modelo `Libro`)**
-
-   - Definir la clase POJO: `id`, `titulo`, `sinopsis`, `genero`, `estado` (borrador/terminado).
-
-2. **[ ] Los Archivos (DAO de Libros)**
-
-   - Implementar `insert`, `findAllByUsuario`, `findById`, `update`, `delete`.
-   - **Reto:** Asegurar que un usuario solo vea _sus_ libros.
-
-3. **[ ] La Ventanilla (`LibroController`)**
-   - Conectar el Router con el DAO.
-   - Endpoints: `POST /libros`, `GET /libros`.
+Resultado:
+✔ La base deja de estar “muerta”
+✔ Puedes loguearte como admin
 
 ---
 
-## 🤖 Nivel 3: Despertando a Poly (IA)
+## FASE A – AUTENTICACIÓN (EMPEZAMOS AQUÍ)
 
-_Objetivo: Hacer que la IA sea útil de verdad._
+### A1. Registro
+Objetivo: crear usuarios correctamente.
 
-1. **[ ] El Canal de Comunicación (`ChatController`)**
+- Endpoint: POST /auth/register
+- Hace:
+  - valida correo y contraseña
+  - hashea contraseña
+  - crea usuario con rol GRATUITO
+- Respuestas:
+  - 201 si ok
+  - 409 si correo existe
+  - 400 si input inválido
 
-   - Crear endpoint `POST /api/chat`.
-   - Recibir mensaje del usuario -> Enviar a Gemini -> Devolver respuesta.
-
-2. **[ ] Memoria de Pez (Contexto Básico)**
-
-   - Hacer que Poly recuerde los últimos 3 mensajes para mantener una conversación fluida.
-
-3. **[ ] El Asistente Creativo**
-   - Crear un "System Prompt" especial para que Poly actúe como un experto escritor, no como un bot genérico.
-
----
-
-## 📦 Nivel 4: Ordenando el Caos (Estanterías)
-
-_Objetivo: Organización avanzada._
-
-1. **[ ] El Estante (Modelo y Tabla)**
-   - Crear tabla `estanterias` y modelo `Estanteria`.
-2. **[ ] La Asociación**
-   - Tabla intermedia `libro_estanteria` (relación muchos a muchos).
-   - Poder añadir un libro a una estantería.
+✔ Usuario creado en BD
 
 ---
 
-## 🛡️ Nivel 5: La Fortaleza (Seguridad)
+### A2. Login
+Objetivo: obtener JWT válido.
 
-_Objetivo: Proteger tu creación._
+- Endpoint: POST /auth/login
+- Hace:
+  - busca usuario
+  - verifica contraseña
+  - obtiene rol real desde BD
+  - genera JWT con:
+    - userId
+    - correo
+    - rol
+    - expiración
 
-1. **[ ] El Guardián (Middleware de Auth)**
-   - Crear una anotación o filtro que verifique si existe un usuario logueado antes de dejar pasar a `/libros`.
-   - (Por ahora podemos usar un ID de usuario simulado en los headers).
+- Respuestas:
+  - 200 + token
+  - 401 si credenciales malas
+
+✔ Token válido con rol dentro
 
 ---
 
-## 📝 Notas del Desarrollador
+### A3. Middleware de autenticación
+Objetivo: proteger el backend.
 
-- **Regla de Oro:** No pases al Nivel 2 sin terminar el Nivel 1. Una buena arquitectura te ahorrará horas de sufrimiento después.
-- **Diversión:** Si te aburres del CRUD (Nivel 2), salta un rato al Nivel 3 (IA) para ver cosas mágicas, y luego vuelve.
+- Rutas públicas:
+  - /auth/login
+  - /auth/register
+
+- Todas las demás:
+  - requieren Authorization: Bearer <token>
+
+- Si:
+  - no hay token → 401
+  - token inválido → 401
+  - token válido → se inyecta UserContext
+
+✔ Backend ya no está abierto
+
+---
+
+### A4. Permisos
+Objetivo: control real de acceso.
+
+- Rol ADMIN:
+  - endpoints admin
+
+- Rol GRATUITO / PREMIUM:
+  - endpoints normales
+
+- Si no autorizado:
+  - 403
+
+✔ Seguridad básica completa
+
+---
+
+## FASE B – CONFIGURACIÓN IA (GLOBAL)
+
+### B1. Defaults al registrar
+Objetivo: que ningún usuario tenga valores null.
+
+Al registrar usuario, crear:
+- tono: neutral
+- creatividad: medio
+- longitud: corta
+- estilo: narrativo
+- instrucciones IA: vacío
+
+✔ El frontend siempre recibe datos
+
+---
+
+### B2. Settings IA
+Objetivo: que funcione la pantalla de Configuración.
+
+- GET /ai/settings
+- PATCH /ai/settings
+
+Validar valores permitidos.
+
+✔ Configuración persistente de Poly
+
+---
+
+## FASE C – CHATS + POLY
+
+### C1. Chats
+- crear chat
+- listar chats
+- renombrar
+- eliminar
+
+✔ UI de chats funcional
+
+---
+
+### C2. Mensajes
+- enviar mensaje
+- validar contenido
+- calcular config efectiva
+- decidir modelo por plan
+- llamar IA
+- guardar historial
+- responder
+
+✔ Poly conversa de verdad
+
+---
+
+## FASE D – EXPORTAR + BIBLIOTECA
+(Después, no ahora)
+
+---
+
+## FASE E – JAVASCRIPT MÍNIMO
+(Después, no ahora)
+
+---
+
+## ORDEN REAL DE TRABAJO
+1. Seed (roles, modelos, admin)
+2. Registro
+3. Login
+4. Middleware JWT
+5. Permisos
+6. Settings IA
+7. Chats
+8. Mensajes
+9. Frontend JS
+
+---
+
+## NORMA FINAL
+❌ No saltar pasos  
+❌ No hacer frontend sin API  
+✔ Un endpoint bien hecho > diez a medias
