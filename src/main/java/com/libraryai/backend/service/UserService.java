@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import org.mindrot.jbcrypt.BCrypt;
 
 import com.google.gson.JsonObject;
+import com.libraryai.backend.dao.UsuarioRolDao;
 import com.libraryai.backend.dao.UsuariosDao;
 import com.libraryai.backend.models.Usuario;
 
@@ -44,7 +45,9 @@ public class UserService {
                         Usuario user = new Usuario(0, nombre, correo, contraseñaHash, LocalDate.now(), true);
 
                         // Le decimos al DAO que lo guarde en la BD
-                        UsuariosDao.guardar(user);
+                        int id = UsuariosDao.guardar(user);
+
+                        UsuarioRolDao.asignarRol(id);
 
                         // Preparamos respuesta de éxito
                         rJsonObject.addProperty("Mensaje", "Usuario creado correctamente");

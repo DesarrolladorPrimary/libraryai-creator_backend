@@ -1,5 +1,6 @@
 package com.libraryai.backend.dao;
 
+import java.lang.Thread.State;
 import java.sql.*;
 
 import com.google.gson.JsonArray;
@@ -24,12 +25,12 @@ public class UsuariosDao {
 
     // language=sql
     private final static String SQL_SELECT = """
-            SELECT PK_UsuarioID, Nombre, Correo, PasswordHash FROM usuario;
+            SELECT * FROM  V_RolesDeUsuario;
             """;
 
     // language=sql
     private final static String SQL_SELECT_WHEREID = """
-            SELECT PK_UsuarioID, Nombre, Correo, PasswordHash FROM usuario WHERE PK_UsuarioID=?;
+            SELECT * FROM V_RolesDeUsuario WHERE PK_UsuarioID=?;
             """;
 
     // language=sql
@@ -48,13 +49,15 @@ public class UsuariosDao {
      * 
      * @param usuario Objeto Usuario con los datos a insertar.
      */
-    public static void guardar(Usuario usuario) {
+    public static int guardar(Usuario usuario) {
 
         try (
                 // Obtenemos la conexión a la base de datos desde la clase de configuración
                 Connection conn = ConexionDB.getConexion();
                 // Preparamos la sentencia SQL usando la constante definida arriba
-                PreparedStatement sfmt = conn.prepareStatement(SQL_INSERT);) {
+                PreparedStatement sfmt = conn.prepareStatement(SQL_INSERT, Statement.RETURN_GENERATED_KEYS);
+            
+            ) {
 
             // Asignamos el nombre al primer parámetro (?) del SQL
             sfmt.setString(1, usuario.getNombre());
@@ -69,16 +72,24 @@ public class UsuariosDao {
 
             // Ejecutamos la actualización en la DB y guardamos cuántas filas se afectaron
             int filasAfectadas = sfmt.executeUpdate();
+            ResultSet rs = sfmt.getGeneratedKeys();
+            int id = 0;
 
             // Si se afectó al menos una fila, significa que se guardó correctamente
             if (filasAfectadas > 0) {
                 System.out.println("Usuario añadido a la DB");
-            }
 
+                if (rs.next()) {
+                    id = rs.getInt(1);
+                }
+            }
+            
+            return id;
         } catch (SQLException e) {
             // Si hay error SQL, lo imprimimos en la consola de errores
             System.err.println("Error al registrar el usuario: " + e.getMessage());
             e.printStackTrace();
+            return 0;
         }
     }
 
@@ -103,13 +114,13 @@ public class UsuariosDao {
                 int usuario_id = rs.getInt("PK_UsuarioID");
                 String nombre = rs.getString("Nombre");
                 String correo = rs.getString("Correo");
-                String contraseña = rs.getString("PasswordHash");
+                String rol = rs.getString("NombreRol");
 
                 // Rellenamos el objeto JSON con los datos obtenidos
                 user.addProperty("PK_UsuarioID", usuario_id);
                 user.addProperty("Nombre", nombre);
                 user.addProperty("Correo", correo);
-                user.addProperty("Contraseña", contraseña);
+                user.addProperty("Rol", rol);
                 // Agregamos status 200 (OK) al usuario
                 user.addProperty("status", 200);
 
@@ -166,14 +177,13 @@ public class UsuariosDao {
                     int usuario_id = rs.getInt("PK_UsuarioID");
                     String nombre = rs.getString("Nombre");
                     String correo = rs.getString("Correo");
-                    String contraseña = rs.getString("PasswordHash");
+                    String rol = rs.getString("NombreRol");
 
                     // Rellenamos el objeto JSON con los datos obtenidos
                     user.addProperty("PK_UsuarioID", usuario_id);
                     user.addProperty("Nombre", nombre);
                     user.addProperty("Correo", correo);
-                    user.addProperty("Contraseña", contraseña);
-                    user.remove("Contraseña");
+                    user.addProperty("Rol", rol);
                     // Agregamos status 200 (OK) a cada usuario
                     user.addProperty("status", 200);
 
