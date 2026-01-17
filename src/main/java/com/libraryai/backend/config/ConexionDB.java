@@ -19,10 +19,10 @@ public class ConexionDB {
      */
     public static Connection getConexion() throws SQLException {
         // Validación: Verifica si alguna de las variables vitales está vacía
-        if (URL == null || URL.isBlank() || USER == null || USER.isBlank() || PASSWD_DB == null
-                || PASSWD_DB.isBlank()) {
+        if (URL.isEmpty() && USER.isEmpty() && PASSWD_DB.isEmpty()) {
             System.err.println(
-                    "ERROR CRÍTICO: Faltan variables de entorno para la base de datos (DB_URL, DB_USER, DB_PASSWD).");
+                    "ERROR CRÍTICO: Faltan variables de entorno para la base de datos (DB_URL, DB_USER, DB_PASSWD)."
+                );
         }
 
         System.out.println("|-- Conexion DB --|");

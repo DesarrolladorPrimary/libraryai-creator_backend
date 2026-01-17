@@ -1,5 +1,6 @@
 package com.libraryai.backend;
 
+import com.libraryai.backend.config.ConexionDB;
 import com.libraryai.backend.server.ServerMain;
 
 /**
@@ -8,12 +9,15 @@ import com.libraryai.backend.server.ServerMain;
  * Web.
  */
 public class App {
-    public static void main(String[] args) throws Exception {        
-        // 1. Iniciar Servidor (Bloqueante)
-        ServerMain.ServerExect();
+    public static void main(String[] args) throws Exception {
+        try {
+            // 1. Iniciar Servidor (Bloqueante)
+            ServerMain.ServerExect();
+        }
 
+        catch (ExceptionInInitializerError e) {
+            System.err.println(e.getMessage());
+        }
 
-
-    
     }
 }

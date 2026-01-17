@@ -1,12 +1,7 @@
 package com.libraryai.backend.controller;
 
-// InputStream para leer el body de las peticiones POST
-import java.io.InputStream;
 // URI para manejar rutas dinámicas con parámetros
 import java.net.URI;
-// StandardCharsets para codificación UTF-8
-import java.nio.charset.StandardCharsets;
-
 // Gson es la librería de Google para manejar JSON
 import com.google.gson.Gson;
 // JsonArray para listas de objetos JSON (ej: lista de usuarios)
@@ -91,6 +86,8 @@ public class UserController {
                 response.remove("status");
             }
 
+            response.remove("Contraseña");
+
             String responsString = response.toString();
             ApiResponse.send(exchange, responsString, statusCode);
         };
@@ -150,21 +147,13 @@ public class UserController {
         return exchange -> {
             // Objeto para construir respuestas
             JsonObject response = new JsonObject();
+            ApiRequest request = new ApiRequest(exchange);
 
             System.out.println("Peticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
 
-            // ========== LECTURA DEL BODY ==========
+            
 
-            // Obtenemos el flujo de entrada (el body que envió el cliente)
-            InputStream bodyCrudo = exchange.getRequestBody();
-
-            // Leemos todos los bytes del body
-            byte[] bodyByte = bodyCrudo.readAllBytes();
-
-            // Convertimos los bytes a String usando UTF-8
-            String body = new String(bodyByte, StandardCharsets.UTF_8);
-
-            // ========== VALIDACIÓN ==========
+            String body = request.readBody();
 
             // Si el body está vacío, respondemos error 400 Bad Request
             if (body.isEmpty()) {

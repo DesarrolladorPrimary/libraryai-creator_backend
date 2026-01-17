@@ -173,6 +173,7 @@ public class UsuariosDao {
                     user.addProperty("Nombre", nombre);
                     user.addProperty("Correo", correo);
                     user.addProperty("Contraseña", contraseña);
+                    user.remove("Contraseña");
                     // Agregamos status 200 (OK) a cada usuario
                     user.addProperty("status", 200);
 
