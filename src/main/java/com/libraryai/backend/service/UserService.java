@@ -34,7 +34,7 @@ public class UserService {
                 if (correoDB == false) {
 
                     // Validación simple de formato de correo (debe tener @)
-                    if (correo.contains("@")) {
+                    if (correo.matches("[a-zA-Z]+\\d*@[a-zA-Z]+\\.[a-zA-Z]{2,6}")) {
 
 
                         // Hasheamos la contraseña 
