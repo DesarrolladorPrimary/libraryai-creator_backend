@@ -19,6 +19,7 @@ import com.libraryai.backend.server.http.ApiRequest;
 import com.libraryai.backend.server.http.ApiResponse;
 // Servicio para lógica de negocio de usuarios
 import com.libraryai.backend.service.UserService;
+import com.libraryai.backend.util.QueryParams;
 // HttpHandler es la interfaz que retornamos para el Router
 import com.sun.net.httpserver.HttpHandler;
 
@@ -60,13 +61,23 @@ public class UserController {
             // Ejemplo: "id=5" de "/api/v1/usuarios/id?id=5"
             String parametrosId = exchange.getRequestURI().getQuery();
 
-            // Separamos por "=" para obtener el valor
-            // ["id", "5"] -> tomamos el último elemento
-            String[] parts = parametrosId.split("=");
+            if (parametrosId == null || parametrosId.isEmpty()) {
+                ApiResponse.error(exchange, 404, "no existe el id");
+            }
 
-            // Convertimos el ID de String a int
-            int id = Integer.parseInt(parts[parts.length - 1]);
+            JsonObject idJson = QueryParams.parseId(parametrosId);
 
+            int id = 0;
+
+            int code = idJson.get("status").getAsInt();
+
+            if (code != 200) {
+                String mensaje = idJson.get("Mensaje").getAsString();
+                ApiResponse.error(exchange, code, mensaje );
+            }
+
+            idJson.remove("status");
+            id = idJson.get("id").getAsInt();
             // Llamamos al DAO para buscar el usuario en la base de datos
             response = UsuariosDao.buscarPorId(id);
 
@@ -215,18 +226,24 @@ public class UserController {
             URI path = exchange.getRequestURI();
             String parametroId = path.getQuery();
 
-            if (parametroId.isEmpty() || parametroId == null) {
-                ApiResponse.error(exchange, 400, "Parametros en la url faltantes");
+            if (parametroId == null || parametroId.isEmpty()) {
+                ApiResponse.error(exchange, 404, "no existe el id");
             }
 
-            String[] parts = parametroId.split("=");
+            JsonObject idJson = QueryParams.parseId(parametroId);
 
-            int id = Integer.parseInt(parts[parts.length - 1]);
+            int id = 0;
 
-            if (id < 1) {
-                ApiResponse.error(exchange, 400, "El id no es valido");
-                return;
+            int codeQuery = idJson.get("status").getAsInt();
+
+            if (codeQuery != 200) {
+                String mensaje = idJson.get("Mensaje").getAsString();
+                ApiResponse.error(exchange, codeQuery, mensaje );
             }
+
+            idJson.remove("status");
+            id = idJson.get("id").getAsInt();
+
 
             Gson gson = new Gson();
             JsonObject json = gson.fromJson(body, JsonObject.class);
@@ -273,9 +290,6 @@ public class UserController {
         return exchange -> {
             System.out.println("\n\nPeticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
 
-            // Variable para almacenar el ID a eliminar
-            int id = 0;
-
             // Obtenemos la URI completa de la petición
             URI rutaDinamica = exchange.getRequestURI();
 
@@ -283,22 +297,22 @@ public class UserController {
             String rutaParametros = rutaDinamica.toString();
             System.out.println("Ruta recibida:" + rutaParametros);
 
-            // ========== EXTRACCIÓN DEL ID ==========
-            // Proceso: "/api/v1/usuarios?id=5"
+            String parametrosId = rutaDinamica.getQuery();
 
-            // Separamos por "/" -> ["", "api", "v1", "usuarios?id=5"]
-            String[] partsRuta = rutaParametros.split("/");
 
-            // Tomamos el último elemento y separamos por "?"
-            // "usuarios?id=5" -> ["usuarios", "id=5"]
-            String[] parametroRuta = partsRuta[partsRuta.length - 1].split("\\?");
+            JsonObject idJson = QueryParams.parseId(parametrosId);
 
-            // Tomamos el último y separamos por "="
-            // "id=5" -> ["id", "5"]
-            String[] idParametro = parametroRuta[parametroRuta.length - 1].split("=");
+            int id = 0;
 
-            // Tomamos el valor del ID y lo convertimos a int
-            id = Integer.parseInt(idParametro[idParametro.length - 1]);
+            int code = idJson.get("status").getAsInt();
+
+            if (code != 200) {
+                String mensaje = idJson.get("Mensaje").getAsString();
+                ApiResponse.error(exchange, code, mensaje );
+            }
+
+            idJson.remove("status");
+            id = idJson.get("id").getAsInt();
 
             // ========== ELIMINACIÓN EN BD ==========
 
