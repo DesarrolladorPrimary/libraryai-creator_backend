@@ -22,12 +22,15 @@
 - [x] `UserController` - Endpoints REST
 - [x] `UserService` - Lógica de negocio
 
-### 🔐 Autenticación
+### 🔐 Autenticación y Autorización (En progreso)
 
-- [x] `LoginController` + `LoginService` + `LoginDao`
+- [x] `LoginController` + `LoginService` + `LoginDao` (Base)
 - [x] Generación de tokens JWT (`JwtUtil.tokenUsuario`)
 - [x] Validación de tokens (`JwtUtil.validarToken`)
 - [x] Hash de contraseñas con BCrypt
+- [ ] **Integración de Roles en JWT:**
+  - [ ] Modificar `LoginDao` para recuperar el nombre del rol mediante JOIN.
+  - [ ] Actualizar `LoginService` para incluir el rol en la creación del Token.
 
 ### 🤖 Integración con IA (Poly)
 
@@ -152,11 +155,11 @@
 | DAO        | `RolDao.java`, `PermisoDao.java` | Gestión de roles           |
 | Service    | `AutorizacionService.java`       | Verificar permisos por rol |
 
-#### 5.2 Middleware de Autenticación
+#### 5.2 Middleware de Autenticación y Autorización
 
-| Componente | Archivo               | Descripción                                      |
-| ---------- | --------------------- | ------------------------------------------------ |
-| Middleware | `AuthMiddleware.java` | Interceptor para validar JWT en rutas protegidas |
+| Componente | Archivo               | Descripción                                               |
+| ---------- | --------------------- | --------------------------------------------------------- |
+| Middleware | `AuthMiddleware.java` | Interceptor para validar JWT y verificar permisos del rol |
 
 #### 5.3 Verificación de Correo
 
