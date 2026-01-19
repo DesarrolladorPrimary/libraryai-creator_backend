@@ -26,6 +26,7 @@ public class LoginService {
             }
 
             String contraseñaDB = user.get("contraseña").getAsString();
+            String rol = user.get("rol").getAsString();
 
 
 
@@ -36,7 +37,7 @@ public class LoginService {
                 return response;
             }   
 
-            String token = JwtUtil.tokenUsuario(correo , "");
+            String token = JwtUtil.tokenUsuario(correo , rol);
             response.addProperty("Mensaje", "Usuario logueado correctamente");
             response.addProperty("Token", token);
             response.addProperty("status", 200);
