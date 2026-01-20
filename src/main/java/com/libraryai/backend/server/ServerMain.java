@@ -12,7 +12,7 @@ import com.sun.net.httpserver.*;
 
 /**
  * SERVERMAIN - El punto de inicio del servidor HTTP
- * 
+ *
  * Esta clase se encarga de:
  * 1. Crear el servidor HTTP en un puerto específico
  * 2. Conectar el Router para manejar las peticiones
@@ -29,7 +29,7 @@ public class ServerMain {
 
     /**
      * MÉTODO PRINCIPAL QUE INICIA EL SERVIDOR
-     * 
+     *
      * Flujo:
      * 1. Crea el servidor en el puerto 8080
      * 2. Inicia el servidor

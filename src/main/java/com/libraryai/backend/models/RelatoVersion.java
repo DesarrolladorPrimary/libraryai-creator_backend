@@ -3,6 +3,9 @@ package com.libraryai.backend.models;
 import java.time.LocalDateTime;
 
 //*Clase modelo de la tabla RelatoVersion
+/**
+ * Modelo de dominio para version de relato.
+ */
 public class RelatoVersion {
 
     // **atributos de la tabla privados

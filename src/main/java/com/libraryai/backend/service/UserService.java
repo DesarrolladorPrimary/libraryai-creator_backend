@@ -10,11 +10,14 @@ import com.libraryai.backend.dao.UsuarioRolDao;
 import com.libraryai.backend.dao.UsuariosDao;
 import com.libraryai.backend.models.Usuario;
 
+/**
+ * Servicio de negocio para usuarios.
+ */
 public class UserService {
 
     /**
      * Valida los datos del usuario y coordina la creación si todo es correcto.
-     * 
+     *
      * @param nombre     Nombre del usuario.
      * @param correo     Correo electrónico.
      * @param contraseña Contraseña (numérica en este ejemplo).
@@ -80,8 +83,13 @@ public class UserService {
         return rJsonObject;
     }
 
+    /**
+     * Valida datos de actualizacion y delega al DAO.
+     * Completa campos vacios con valores actuales de la DB.
+     */
     public static JsonObject verificarDatosActualizar(String nombre, String correo, String contraseña, int id) throws IOException {
 
+        // Obtiene el usuario actual para completar valores faltantes.
         JsonObject datos = UsuariosDao.buscarPorId(id);
 
         JsonObject response = new JsonObject();
@@ -95,10 +103,12 @@ public class UserService {
 
         } else {
 
+            // Valores actuales en DB.
             String nombreDB = datos.get("Nombre").getAsString();
             String correoDB = datos.get("Correo").getAsString();
             String contraseñaDB = datos.get("Contraseña").getAsString();
 
+            // Si el cliente no envia un campo, se conserva el actual.
             if (nombre.isEmpty()) {
                 nombre = nombreDB;
             }

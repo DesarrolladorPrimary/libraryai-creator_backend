@@ -10,6 +10,9 @@ import com.libraryai.backend.models.Usuario;
 
 
 //**Clase encargada de servir de puente entre el modelo y la DB
+/**
+ * DAO para operaciones de usuario.
+ */
 public class UsuariosDao {
     // **Consultas SQL
 
@@ -46,7 +49,7 @@ public class UsuariosDao {
     /**
      * Metodo encargado de crear la conexion, recibir los datos del modelo y
      * realizar la insercion para crear un usuario en la base de datos.
-     * 
+     *
      * @param usuario Objeto Usuario con los datos a insertar.
      */
     public static int guardar(Usuario usuario) {
@@ -93,6 +96,10 @@ public class UsuariosDao {
         }
     }
 
+    /**
+     * Busca un usuario por id en la vista V_RolesDeUsuario.
+     * Devuelve un JSON con campos de usuario y status (200/404).
+     */
     public static JsonObject buscarPorId(int id) {
         JsonObject user = new JsonObject();
         try (
@@ -138,9 +145,9 @@ public class UsuariosDao {
 
     /**
      * Recupera todos los usuarios de la base de datos.
-     * 
+     *
      * @return JsonArray con los usuarios encontrados o un mensaje de error si no
-     *         hay datos.
+     * hay datos.
      */
     public static JsonArray listarTodos() {
 
@@ -203,7 +210,7 @@ public class UsuariosDao {
 
     /**
      * Verifica si un usuario existe en la base de datos dado su correo.
-     * 
+     *
      * @param correo Correo del usuario a verificar.
      * @return true si el usuario existe, false en caso contrario.
      */
@@ -236,6 +243,10 @@ public class UsuariosDao {
         return correroExist;
     }
 
+    /**
+     * Actualiza datos basicos del usuario.
+     * Retorna status 200 si actualiza, 404 si no hubo cambios.
+     */
     public static JsonObject actualizarUsuario(String nombre, String correo, String contraseña, int id){
         JsonObject json = new JsonObject();
         
@@ -272,6 +283,9 @@ public class UsuariosDao {
     }
 
 
+    /**
+     * Elimina un usuario por id y devuelve resultado con status.
+     */
     public static JsonObject eliminarPorId(int id) {
 
         JsonObject response = new JsonObject();

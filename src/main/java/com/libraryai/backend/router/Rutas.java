@@ -12,10 +12,10 @@ import com.sun.net.httpserver.HttpHandler;
 
 /**
  * RUTAS - El archivo de configuración de rutas
- * 
+ *
  * Aquí se definen TODAS las rutas de la aplicación.
  * Es como el "mapa" que le dice al servidor qué hacer con cada petición.
- * 
+ *
  * Para agregar una nueva ruta:
  * 1. Importar el Controller correspondiente
  * 2. Usar rutas.addroute(MÉTODO, PATH, HANDLER)
@@ -27,48 +27,42 @@ public class Rutas {
 
     /**
      * MÉTODO QUE REGISTRA TODAS LAS RUTAS
-     * 
+     *
      * Este método:
      * 1. Registra cada ruta con su método HTTP, path y handler
      * 2. Retorna el Router configurado para que el servidor lo use
-     * 
+     *
      * @return Router configurado con todas las rutas (es un HttpHandler)
      */
     public HttpHandler ruts() {
 
         AuthMiddleware auth = new AuthMiddleware();
 
+        // ========== RUTAS DE AUTH ==========
+        router.post("/api/v1/login", LoginController.loginUsuario());
 
         // ========== RUTAS DE USUARIOS ==========
-
-        // GET /api/v1/usuarios → Lista todos los usuarios
+        // GET /api/v1/usuarios � Lista todos los usuarios
         // Cuando alguien haga GET a esta ruta, se ejecuta listarUsuarios()
-        router.get("/api/v1/usuarios", 
-            auth.proteger("Admin", UserController.listarUsuarios())
-        );
-
-
-
-
-        // GET /api/v1/usuarios/id?id=X → Obtiene un usuario específico por ID
-        // Ejemplo: GET /api/v1/usuarios/id?id=5
-        router.get("/api/v1/usuarios/id",
-            auth.proteger("Admin", UserController.obtenerUsuarioId())
-        );
+        router.get("/api/v1/usuarios",
+                auth.proteger(UserController.listarUsuarios(), "Admin"));
 
         router.post("/api/v1/usuarios", UserController.crearUsuario());
 
-        router.put("/api/v1/usuarios/id", 
-            auth.proteger("Gratuito", UserController.actualizarUsuario())
-        );
+        // GET /api/v1/usuarios/id?id=X � Obtiene un usuario espec�fico por ID
+        // Ejemplo: GET /api/v1/usuarios/id?id=5
+        router.get("/api/v1/usuarios/id",
+                auth.proteger(UserController.obtenerUsuarioId(), "Admin"));
 
-        router.delete("/api/v1/usuarios/id", UserController.eliminarUsuario());
+        router.put("/api/v1/usuarios/id",
+                auth.proteger(UserController.actualizarUsuario(), "Gratuito", "Premium"));
 
-        router.post("/api/v1/login", LoginController.loginUsuario());
+        router.delete("/api/v1/usuarios/id",
+                auth.proteger(UserController.eliminarUsuario(), "Gratuito", "Premium", "Admin"));
 
-        router.post("/api/v1/generar-historias", 
-            auth.proteger("Gratuito", AiController.generarHistoria())
-        );
+        // ========== RUTAS DE IA ==========
+        router.post("/api/v1/generar-historias",
+                auth.proteger(AiController.generarHistoria(), "Gratuito", "Premium"));
 
         // ========== AQUÍ PUEDES AGREGAR MÁS RUTAS ==========
         // Ejemplo para futuros controllers:

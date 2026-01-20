@@ -1,6 +1,9 @@
 package com.libraryai.backend.models;
 
 //*Clase modelo de la tabla Estanteria
+/**
+ * Modelo de dominio para estanteria.
+ */
 public class Estanteria {
 
     // **atributos de la tabla privados

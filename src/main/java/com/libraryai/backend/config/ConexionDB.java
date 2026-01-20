@@ -4,6 +4,9 @@ import java.sql.*;
 
 import io.github.cdimascio.dotenv.Dotenv;
 
+/**
+ * Manejo de conexion a base de datos.
+ */
 public class ConexionDB {
     private static final String URL = Dotenv.load().get("DB_URL");
     private static final String USER = Dotenv.load().get("DB_USER");
@@ -13,7 +16,7 @@ public class ConexionDB {
      * Intenta establecer una conexión con la base de datos utilizando las
      * credenciales
      * proporcionadas en las variables de entorno.
-     * 
+     *
      * @return Connection Objeto de conexión a la base de datos.
      * @throws SQLException Si ocurre un error al intentar conectar.
      */

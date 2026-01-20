@@ -8,6 +8,10 @@ import com.libraryai.backend.server.ServerMain;
  * Web.
  */
 public class App {
+    /**
+     * Punto de entrada de la aplicacion.
+     * Inicia el servidor HTTP y deja el proceso en ejecucion.
+     */
     public static void main(String[] args) throws Exception {
         try {
             // 1. Iniciar Servidor (Bloqueante)

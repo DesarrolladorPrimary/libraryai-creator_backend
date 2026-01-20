@@ -14,24 +14,24 @@ import com.sun.net.httpserver.*;
 
 /**
  * ROUTER - El "recepcionista" del servidor
- * 
+ *
  * Esta clase se encarga de:
  * 1. Almacenar todas las rutas registradas (GET /usuarios, POST /login, etc.)
  * 2. Cuando llega una petición, buscar qué handler debe procesarla
  * 3. Si no existe la ruta, responder con error 404
- * 
+ *
  * Implementa HttpHandler para poder recibir peticiones HTTP del servidor
  */
 public class Router implements HttpHandler {
 
     /**
      * ESTRUCTURA DE ALMACENAMIENTO DE RUTAS
-     * 
+     *
      * Es un Map anidado (Map dentro de Map):
      * - Primera clave: método HTTP ("GET", "POST", "DELETE", etc.)
      * - Segunda clave: path de la ruta ("/api/v1/usuarios", "/login", etc.)
      * - Valor final: el HttpHandler que procesa esa ruta
-     * 
+     *
      * Ejemplo de cómo se ve internamente:
      * {
      * "GET" -> { "/api/v1/usuarios" -> listarUsuariosHandler,
@@ -44,7 +44,7 @@ public class Router implements HttpHandler {
 
     /**
      * MÉTODO PARA REGISTRAR RUTAS
-     * 
+     *
      * @param method - El método HTTP (ej: "GET", "POST", "DELETE")
      * @param path   - La ruta/endpoint (ej: "/api/v1/usuarios")
      * @param handle - El handler que procesará las peticiones a esta ruta
@@ -59,31 +59,43 @@ public class Router implements HttpHandler {
         map.put(path, handle);
     }
 
+    /**
+     * Registra una ruta GET.
+     */
     public void get(String path, HttpHandler handle) {
         addroute("GET", path, handle);
     }
 
+    /**
+     * Registra una ruta POST.
+     */
     public void post(String path, HttpHandler handle) {
         addroute("POST", path, handle);
     }
 
+    /**
+     * Registra una ruta PUT.
+     */
     public void put(String path, HttpHandler handle) {
         addroute("PUT", path, handle);
 
     }
 
+    /**
+     * Registra una ruta DELETE.
+     */
     public void delete(String path, HttpHandler handle) {
         addroute("DELETE", path, handle);
     }
 
     /**
      * MÉTODO QUE PROCESA CADA PETICIÓN HTTP
-     * 
+     *
      * Este método se ejecuta automáticamente cuando llega una petición al servidor.
      * Es obligatorio implementarlo porque Router implementa HttpHandler.
-     * 
+     *
      * @param exchange - Contiene toda la información de la petición y permite
-     *                 enviar respuesta
+     * enviar respuesta
      */
     @Override
     public void handle(HttpExchange exchange) throws IOException {

@@ -1,6 +1,9 @@
 package com.libraryai.backend.models;
 
 //*Clase modelo de la tabla Rol
+/**
+ * Modelo de dominio para rol.
+ */
 public class Rol {
 
     // **atributos de la tabla privados

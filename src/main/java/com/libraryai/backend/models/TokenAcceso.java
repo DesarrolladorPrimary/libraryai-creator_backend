@@ -3,6 +3,9 @@ package com.libraryai.backend.models;
 import java.time.LocalDateTime;
 
 //*Clase modelo de la tabla TokenAcceso
+/**
+ * Modelo de dominio para token de acceso.
+ */
 public class TokenAcceso {
 
     // **atributos de la tabla privados

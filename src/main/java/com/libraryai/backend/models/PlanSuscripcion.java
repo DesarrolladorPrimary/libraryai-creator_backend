@@ -3,6 +3,9 @@ package com.libraryai.backend.models;
 import java.math.BigDecimal;
 
 //*Clase modelo de la tabla PlanSuscripcion
+/**
+ * Modelo de dominio para plan de suscripcion.
+ */
 public class PlanSuscripcion {
 
     // **atributos de la tabla privados

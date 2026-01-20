@@ -3,6 +3,9 @@ package com.libraryai.backend.models;
 import java.time.LocalDateTime;
 
 //*Clase modelo de la tabla Correo
+/**
+ * Modelo de dominio para correo.
+ */
 public class Correo {
 
     // **atributos de la tabla privados

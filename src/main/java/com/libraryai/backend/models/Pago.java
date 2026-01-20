@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 //*Clase modelo de la tabla Pago
+/**
+ * Modelo de dominio para pago.
+ */
 public class Pago {
 
     // **atributos de la tabla privados

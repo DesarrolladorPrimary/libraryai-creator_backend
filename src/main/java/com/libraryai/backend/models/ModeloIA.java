@@ -3,6 +3,9 @@ package com.libraryai.backend.models;
 import java.time.LocalDateTime;
 
 //*Clase modelo de la tabla ModeloIA
+/**
+ * Modelo de dominio para modelo de IA.
+ */
 public class ModeloIA {
 
     // **atributos de la tabla privados

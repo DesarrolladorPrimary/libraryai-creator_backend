@@ -3,6 +3,9 @@ package com.libraryai.backend.models;
 import java.time.LocalDateTime;
 
 //*Clase modelo de la tabla ArchivoSubido
+/**
+ * Modelo de dominio para archivo subido.
+ */
 public class ArchivoSubido {
 
     // **atributos de la tabla privados

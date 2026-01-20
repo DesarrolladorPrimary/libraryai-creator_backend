@@ -3,6 +3,9 @@ package com.libraryai.backend.models;
 import java.time.LocalDate;
 
 //*Clase modelo de la tabla Usuarios
+/**
+ * Modelo de dominio para usuario.
+ */
 public class Usuario {
 
     // **atributos de la tabla y del usuario privados

@@ -20,15 +20,15 @@ import com.sun.net.httpserver.HttpHandler;
 
 /**
  * USERCONTROLLER - Controlador de la entidad Usuario
- * 
+ *
  * Este controlador maneja todas las operaciones HTTP relacionadas con usuarios:
  * - GET: Listar usuarios, obtener usuario por ID
  * - POST: Crear nuevo usuario
  * - DELETE: Eliminar usuario
- * 
+ *
  * Cada método público retorna un HttpHandler que el Router usa para procesar
  * peticiones.
- * 
+ *
  * PATRÓN USADO: Cada método retorna un lambda (exchange -> { ... })
  * Este lambda es el código que se ejecuta cuando llega una petición a esa ruta.
  */
@@ -36,10 +36,10 @@ public class UserController {
 
     /**
      * HANDLER: Obtener usuario por ID
-     * 
+     *
      * Ruta: GET /api/v1/usuarios/id?id=X
      * Ejemplo: GET /api/v1/usuarios/id?id=5
-     * 
+     *
      * @return HttpHandler que busca un usuario por su ID y retorna sus datos
      */
     public static HttpHandler obtenerUsuarioId() {
@@ -95,9 +95,9 @@ public class UserController {
 
     /**
      * HANDLER: Listar todos los usuarios
-     * 
+     *
      * Ruta: GET /api/v1/usuarios
-     * 
+     *
      * @return HttpHandler que obtiene la lista completa de usuarios de la BD
      */
     public static HttpHandler listarUsuarios() {
@@ -136,10 +136,10 @@ public class UserController {
 
     /**
      * HANDLER: Crear nuevo usuario
-     * 
+     *
      * Ruta: POST /api/v1/usuarios
      * Body esperado: { "nombre": "...", "correo": "...", "contraseña": ... }
-     * 
+     *
      * @return HttpHandler que crea un nuevo usuario con los datos del body
      */
     public static HttpHandler crearUsuario() {
@@ -200,18 +200,24 @@ public class UserController {
         };
     }
 
+    /**
+     * Handler para actualizar un usuario por id.
+     * Lee id desde query y campos opcionales desde el body.
+     */
     public static HttpHandler actualizarUsuario() {
         return exchange -> {
             System.out.println("\n\nPeticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
 
             ApiRequest request = new ApiRequest(exchange);
 
+            // Lee el body con los campos a actualizar.
             String body = request.readBody();
 
             if (body.isEmpty()) {
                 ApiResponse.error(exchange, 400, "No hay cuerpo");
             }
 
+            // Obtiene el id desde la query.
             URI path = exchange.getRequestURI();
             String parametroId = path.getQuery();
 
@@ -219,6 +225,7 @@ public class UserController {
                 ApiResponse.error(exchange, 404, "no existe el id");
             }
 
+            // Valida y parsea el id.
             JsonObject idJson = QueryParams.parseId(parametroId);
 
             int id = 0;
@@ -234,6 +241,7 @@ public class UserController {
             id = idJson.get("id").getAsInt();
 
 
+            // Parseo del JSON con los campos a actualizar.
             Gson gson = new Gson();
             JsonObject json = gson.fromJson(body, JsonObject.class);
 
@@ -268,10 +276,10 @@ public class UserController {
 
     /**
      * HANDLER: Eliminar usuario por ID
-     * 
+     *
      * Ruta: DELETE /api/v1/usuarios?id=X
      * Ejemplo: DELETE /api/v1/usuarios?id=5
-     * 
+     *
      * @return HttpHandler que elimina un usuario de la base de datos
      */
     public static HttpHandler eliminarUsuario() {

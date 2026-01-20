@@ -12,14 +12,14 @@ import com.sun.net.httpserver.HttpExchange;
 
 /**
  * APIREQUEST - Utilidad para leer peticiones HTTP
- * 
+ *
  * Esta clase encapsula el HttpExchange y proporciona métodos
  * útiles para extraer información de la petición del cliente.
- * 
+ *
  * Uso:
  * 1. Crear instancia: new ApiRequest(exchange)
  * 2. Leer body: request.readBody()
- * 
+ *
  * Métodos disponibles:
  * - readBody(): Lee y retorna el body de la petición como String
  */
@@ -31,9 +31,9 @@ public class ApiRequest {
 
     /**
      * CONSTRUCTOR
-     * 
+     *
      * Crea una nueva instancia de ApiRequest envolviendo un HttpExchange.
-     * 
+     *
      * @param exchange - El HttpExchange de la petición actual
      */
     public ApiRequest(HttpExchange exchange) {
@@ -43,17 +43,17 @@ public class ApiRequest {
 
     /**
      * LEER BODY DE LA PETICIÓN
-     * 
+     *
      * Este método lee todo el contenido del body de la petición
      * y lo retorna como String (útil para peticiones POST, PUT, etc.)
-     * 
+     *
      * @return String con el contenido del body (normalmente JSON)
      * @throws IOException si hay error al leer el body
-     * 
-     *                     Ejemplo de uso:
-     *                     ApiRequest request = new ApiRequest(exchange);
-     *                     String jsonBody = request.readBody();
-     *                     // jsonBody = "{ \"nombre\": \"Juan\", \"edad\": 25 }"
+     *
+     * Ejemplo de uso:
+     * ApiRequest request = new ApiRequest(exchange);
+     * String jsonBody = request.readBody();
+     * // jsonBody = "{ \"nombre\": \"Juan\", \"edad\": 25 }"
      */
     public String readBody() throws IOException {
 

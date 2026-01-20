@@ -7,8 +7,15 @@ import com.libraryai.backend.server.http.ApiResponse;
 import com.libraryai.backend.service.auth.LoginService;
 import com.sun.net.httpserver.HttpHandler;
 
+/**
+ * Handlers HTTP para login.
+ */
 public class LoginController {
     
+    /**
+     * Handler de login.
+     * Lee correo y contrasena del body, valida credenciales y responde con token.
+     */
     public static HttpHandler loginUsuario(){
         return exchange -> {
             ApiRequest request = new ApiRequest(exchange);
@@ -16,7 +23,7 @@ public class LoginController {
 
             System.out.println("\n\nPeticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
 
-
+            // Parseo del JSON del body.
             Gson gson = new Gson();
             JsonObject user = gson.fromJson(body, JsonObject.class);
 

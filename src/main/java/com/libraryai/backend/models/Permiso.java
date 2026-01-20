@@ -1,6 +1,9 @@
 package com.libraryai.backend.models;
 
 //*Clase modelo de la tabla Permiso
+/**
+ * Modelo de dominio para permiso.
+ */
 public class Permiso {
 
     // **atributos de la tabla privados

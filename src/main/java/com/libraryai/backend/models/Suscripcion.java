@@ -3,6 +3,9 @@ package com.libraryai.backend.models;
 import java.time.LocalDateTime;
 
 //*Clase modelo de la tabla Suscripcion
+/**
+ * Modelo de dominio para suscripcion.
+ */
 public class Suscripcion {
 
     // **atributos de la tabla privados

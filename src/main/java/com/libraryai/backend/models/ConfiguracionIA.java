@@ -1,6 +1,9 @@
 package com.libraryai.backend.models;
 
 //*Clase modelo de la tabla ConfiguracionIA
+/**
+ * Modelo de dominio para configuracion de IA.
+ */
 public class ConfiguracionIA {
 
     // **atributos de la tabla privados

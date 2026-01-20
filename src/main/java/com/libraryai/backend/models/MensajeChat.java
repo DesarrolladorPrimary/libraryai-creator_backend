@@ -3,6 +3,9 @@ package com.libraryai.backend.models;
 import java.time.LocalDateTime;
 
 //*Clase modelo de la tabla MensajeChat
+/**
+ * Modelo de dominio para mensaje de chat.
+ */
 public class MensajeChat {
 
     // **atributos de la tabla privados

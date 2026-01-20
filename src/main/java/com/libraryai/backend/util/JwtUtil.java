@@ -14,6 +14,9 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
+/**
+ * Utilidades para crear y validar JWT.
+ */
 public class JwtUtil {
 
     private static final String key = Dotenv.load().get("JWT_KEY");
@@ -21,19 +24,27 @@ public class JwtUtil {
 
     static {
 
+        // Valida que exista la llave en el entorno antes de construir el SecretKey.
         if (key == null) {
             throw new RuntimeException("Llave faltante o no existente");
         }
 
+        // Convierte la llave en un SecretKey compatible con JWT HMAC.
         keyMaster = Keys.hmacShaKeyFor(key.getBytes(StandardCharsets.UTF_8));
     }
 
-    public static String tokenUsuario(String usuario, String rol) {
+    /**
+     * Genera un JWT firmado con rol e id embebidos como claims.
+     * El token expira a la hora de su emision.
+     */
+    public static String tokenUsuario(String usuario, String rol, int id) {
 
+        // Construye el JWT con issuer, subject y claims custom.
         String token = Jwts.builder()
                 .issuer("Library-Creator")
                 .subject(usuario)
                 .claim("role", rol)
+                .claim("id", id)
                 .issuedAt(new Date())
                 .expiration(Date.from(Instant.now().plusSeconds(3600)))
                 .signWith(keyMaster)
@@ -42,23 +53,32 @@ public class JwtUtil {
         return token;
     }
 
+    /**
+     * Valida un JWT y devuelve claims basicos en un JsonObject.
+     * Si falla, retorna un objeto con Mensaje y code.
+     */
     public static JsonObject validarToken(String token) {
         JsonObject very = new JsonObject();
         try {
+            // Parsea y verifica la firma del token.
             Claims validarClaims = Jwts.parser()
                     .verifyWith(keyMaster)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
 
+                // Extrae claims y los expone con nombres legibles.
                 String usuario = validarClaims.getSubject();
                 String role = validarClaims.get("role", String.class);
+                int id = validarClaims.get("id", Integer.class);
 
                 very.addProperty("Rol", role);
                 very.addProperty("Usuario", usuario);
+                very.addProperty("Id", id);
             
         } catch (JwtException e) {
             e.printStackTrace();
+            // Marca el error con mensaje y codigo para que el caller responda 401.
             very.addProperty("Mensaje", "El token expiro o ya no funciona");
             very.addProperty("code", 401);
         }
