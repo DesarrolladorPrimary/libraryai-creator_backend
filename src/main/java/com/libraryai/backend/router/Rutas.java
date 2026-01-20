@@ -4,6 +4,7 @@ package com.libraryai.backend.router;
 import com.libraryai.backend.controller.UserController;
 import com.libraryai.backend.controller.ai.AiController;
 import com.libraryai.backend.controller.auth.LoginController;
+import com.libraryai.backend.middleware.AuthMiddleware;
 // Importamos nuestro Router personalizado
 import com.libraryai.backend.server.Router;
 // HttpHandler es la interfaz que retornaremos
@@ -35,24 +36,39 @@ public class Rutas {
      */
     public HttpHandler ruts() {
 
+        AuthMiddleware auth = new AuthMiddleware();
+
+
         // ========== RUTAS DE USUARIOS ==========
 
         // GET /api/v1/usuarios → Lista todos los usuarios
         // Cuando alguien haga GET a esta ruta, se ejecuta listarUsuarios()
-        router.get("/api/v1/usuarios", UserController.listarUsuarios());
+        router.get("/api/v1/usuarios", 
+            auth.proteger("Admin", UserController.listarUsuarios())
+        );
+
+
+
+
         // GET /api/v1/usuarios/id?id=X → Obtiene un usuario específico por ID
         // Ejemplo: GET /api/v1/usuarios/id?id=5
-        router.get("/api/v1/usuarios/id", UserController.obtenerUsuarioId());
+        router.get("/api/v1/usuarios/id",
+            auth.proteger("Admin", UserController.obtenerUsuarioId())
+        );
 
         router.post("/api/v1/usuarios", UserController.crearUsuario());
 
-        router.put("/api/v1/usuarios/id", UserController.actualizarUsuario());
+        router.put("/api/v1/usuarios/id", 
+            auth.proteger("Gratuito", UserController.actualizarUsuario())
+        );
 
         router.delete("/api/v1/usuarios/id", UserController.eliminarUsuario());
 
         router.post("/api/v1/login", LoginController.loginUsuario());
 
-        router.post("/api/v1/generar-historias", AiController.generarHistoria());
+        router.post("/api/v1/generar-historias", 
+            auth.proteger("Gratuito", AiController.generarHistoria())
+        );
 
         // ========== AQUÍ PUEDES AGREGAR MÁS RUTAS ==========
         // Ejemplo para futuros controllers:

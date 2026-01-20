@@ -6,7 +6,11 @@ import java.util.Date;
 
 import javax.crypto.SecretKey;
 
+import com.google.gson.JsonObject;
+
 import io.github.cdimascio.dotenv.Dotenv;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
@@ -38,21 +42,25 @@ public class JwtUtil {
         return token;
     }
 
-    public static String validarToken(String token) {
-        String very;
+    public static JsonObject validarToken(String token) {
+        JsonObject very = new JsonObject();
         try {
-            String validar = Jwts.parser()
+            Claims validarClaims = Jwts.parser()
                     .verifyWith(keyMaster)
                     .build()
                     .parseSignedClaims(token)
-                    .getPayload()
-                    .getSubject();
+                    .getPayload();
 
-            very = validar;
+                String usuario = validarClaims.getSubject();
+                String role = validarClaims.get("role", String.class);
 
-        } catch (Exception e) {
+                very.addProperty("Rol", role);
+                very.addProperty("Usuario", usuario);
+            
+        } catch (JwtException e) {
             e.printStackTrace();
-            very = null;
+            very.addProperty("Mensaje", "El token expiro o ya no funciona");
+            very.addProperty("code", 401);
         }
 
         return very;
