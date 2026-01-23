@@ -1,6 +1,5 @@
 package com.libraryai.backend.dao;
 
-import java.lang.Thread.State;
 import java.sql.*;
 
 import com.google.gson.JsonArray;

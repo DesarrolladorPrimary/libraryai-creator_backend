@@ -17,7 +17,7 @@ public class LoginService {
 
         JsonObject response = new JsonObject();
 
-        if (!correo.matches("[a-zA-Z]+@[a-zA-Z]+\\.[a-zA-Z]{2,6}")) {
+        if (!correo.matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9._%+-]+\\.[a-zA-Z]{2,100}")) {
             response.addProperty("Mensaje", "El correo no es valido");
             response.addProperty("status", 400);
 

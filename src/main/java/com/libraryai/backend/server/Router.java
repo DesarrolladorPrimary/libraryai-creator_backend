@@ -88,6 +88,11 @@ public class Router implements HttpHandler {
         addroute("DELETE", path, handle);
     }
 
+
+    public void options(String path, HttpHandler handle){
+        addroute("OPTIONS", path, handle);
+
+    }
     /**
      * MÉTODO QUE PROCESA CADA PETICIÓN HTTP
      *
@@ -103,6 +108,10 @@ public class Router implements HttpHandler {
         // Extraemos el método HTTP de la petición (GET, POST, DELETE, etc.)
         String method = exchange.getRequestMethod();
 
+        if (method.equalsIgnoreCase("OPTIONS")) {
+            ApiResponse.send(exchange, "", 200);
+            return;
+        }
         // Extraemos el path/ruta de la petición (ej: "/api/v1/usuarios")
         String path = exchange.getRequestURI().getPath();
 
@@ -131,6 +140,7 @@ public class Router implements HttpHandler {
             String error = "No encontrado";
             ApiResponse.error(exchange, 404, error);
         }
+
     }
 
 }
