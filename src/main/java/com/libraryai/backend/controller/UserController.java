@@ -158,7 +158,6 @@ public class UserController {
             // Si el body está vacío, respondemos error 400 Bad Request
             if (body.isEmpty()) {
 
-                String responseJson = response.toString();
                 ApiResponse.error(exchange, 400, "Los datos estan vacios");
                 return; // Importante: salimos del handler aquí
             }
