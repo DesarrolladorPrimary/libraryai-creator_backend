@@ -70,7 +70,7 @@ public class JwtUtil {
                 // Extrae claims y los expone con nombres legibles.
                 String usuario = validarClaims.getSubject();
                 String role = validarClaims.get("role", String.class);
-                int id = validarClaims.get("id", Integer.class);
+                double id = validarClaims.get("id", Double.class);
 
                 very.addProperty("Rol", role);
                 very.addProperty("Usuario", usuario);
