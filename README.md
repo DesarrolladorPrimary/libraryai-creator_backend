@@ -44,7 +44,7 @@ com.libraryai.backend/
 | Tecnología            | Uso                          |
 | --------------------- | ---------------------------- |
 | Java 25               | Lenguaje principal           |
-| Sockets TCP           | Servidor HTTP sin frameworks |
+| Servidor Https        | Servidor HTTP sin frameworks |
 | MySQL                 | Base de datos                |
 | Gson                  | Serialización JSON           |
 | Google Gemini API     | Asistente de IA "Poly"       |
