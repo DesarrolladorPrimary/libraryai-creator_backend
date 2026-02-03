@@ -41,14 +41,14 @@ com.libraryai.backend/
 
 ## Tecnologías
 
-| Tecnología            | Uso                          |
-| --------------------- | ---------------------------- |
-| Java 25               | Lenguaje principal           |
-| Servidor Https        | Servidor HTTP sin frameworks |
-| MySQL                 | Base de datos                |
-| Gson                  | Serialización JSON           |
-| Google Gemini API     | Asistente de IA "Poly"       |
-| Maven                 | Gestión de dependencias      |
+| Tecnología        | Uso                          |
+| ----------------- | ---------------------------- |
+| Java 25           | Lenguaje principal           |
+| Servidor Https    | Servidor HTTP sin frameworks |
+| MySQL             | Base de datos                |
+| Gson              | Serialización JSON           |
+| Google Gemini API | Asistente de IA "Poly"       |
+| Maven             | Gestión de dependencias      |
 
 ---
 
@@ -56,11 +56,22 @@ com.libraryai.backend/
 
 ### Variables de entorno requeridas
 
-```bash
-DB_URL=jdbc:mysql://localhost:3306/LibraryAI_DB
-DB_USER=tu_usuario
-DB_PASSWD=tu_contrasena
-GOOGLE_API_KEY=tu_api_key_de_gemini
+Configura las siguientes variables en un archivo `.env` en la raíz del proyecto.
+Puedes copiar el archivo `.env.example` (si existe) o crear uno nuevo.
+
+```ini
+# Configuración de Base de Datos
+DB_URL="jdbc:mysql://localhost:3306/libraryai_db"
+DB_USER="root"
+DB_PASSWD="tu_contraseña_segura"
+
+# Seguridad (JWT)
+# ¡IMPORTANTE! Debe tener al menos 32 caracteres (256 bits) para HS256.
+JWT_KEY="clave_muy_segura_y_larga_para_firmar_tokens_jwt_min_32_chars"
+
+# Inteligencia Artificial (Google Gemini)
+GEMINI_API_KEY="tu_api_key_de_gemini"
+GEMINI_MODEL="gemini-2.0-flash-exp"
 ```
 
 ### Instalación
