@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Date;
 
 import javax.crypto.SecretKey;
+import javax.management.RuntimeErrorException;
 
 import com.google.gson.JsonObject;
 
@@ -26,7 +27,7 @@ public class JwtUtil {
 
         // Valida que exista la llave en el entorno antes de construir el SecretKey.
         if (key == null) {
-            throw new RuntimeException("Llave faltante o no existente");
+            throw new RuntimeErrorException(null, "Llave faltante o no existente");
         }
 
         // Convierte la llave en un SecretKey compatible con JWT HMAC.
@@ -38,7 +39,7 @@ public class JwtUtil {
      * El token expira a la hora de su emision.
      */
     public static String tokenUsuario(String usuario, String rol, int id) {
-
+        try {
         // Construye el JWT con issuer, subject y claims custom.
         String token = Jwts.builder()
                 .issuer("Library-Creator")
@@ -51,6 +52,10 @@ public class JwtUtil {
                 .compact();
 
         return token;
+        } catch (Throwable e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     /**
