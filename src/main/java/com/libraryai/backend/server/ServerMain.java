@@ -43,7 +43,7 @@ public class ServerMain {
             // Creamos el servidor HTTP
             // InetSocketAddress(port) = escucha en todas las IPs en el puerto 8080
             // El 0 es el backlog (cola de conexiones pendientes, 0 = valor por defecto)
-            server = HttpServer.create(new InetSocketAddress(port), 0);
+            server = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
 
             System.out.println("Servidor iniciado correctamente en el puerto: " + port + "\n\n");
 
