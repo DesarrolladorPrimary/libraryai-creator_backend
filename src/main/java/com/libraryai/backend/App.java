@@ -1,5 +1,6 @@
 package com.libraryai.backend;
 
+import com.libraryai.backend.seeders.SeedRoles;
 import com.libraryai.backend.server.ServerMain;
 
 /**
@@ -14,6 +15,9 @@ public class App {
      */
     public static void main(String[] args) throws Exception {
         try {
+            // Inserta los roles en la DB al iniciar el servidor.
+            SeedRoles.insertRoles();
+
             // 1. Iniciar Servidor (Bloqueante)
             ServerMain.ServerExect();
         }

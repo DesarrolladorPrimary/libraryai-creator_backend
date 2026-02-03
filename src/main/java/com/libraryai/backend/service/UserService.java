@@ -35,13 +35,13 @@ public class UserService {
 
             if (nombre.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+") && nombre.length() > 2 && !(nombre.matches("@-$"))) {
                 // Si el correo NO existe en la base de datos...
-                if (correoDB == false) {
+                if (correoDB == false) { 
 
                     // Validación simple de formato de correo (debe tener @)
                     if (correo.matches("[a-zA-Z]+\\d*@[a-zA-Z]+\\.[a-zA-Z]{2,6}")) {
 
 
-                        // Hasheamos la contraseña 
+                        // Hasheamos la contraseña
                         String contraseñaHash = BCrypt.hashpw(contraseña, BCrypt.gensalt());
 
                         // Creamos el objeto Modelo 'Usuario' con todos los datos
@@ -50,11 +50,17 @@ public class UserService {
                         // Le decimos al DAO que lo guarde en la BD
                         int id = UsuariosDao.guardar(user);
 
-                        UsuarioRolDao.asignarRol(id);
+                        if (id != 0) {
+                            UsuarioRolDao.asignarRol(id);
 
-                        // Preparamos respuesta de éxito
-                        rJsonObject.addProperty("Mensaje", "Usuario creado correctamente");
-                        rJsonObject.addProperty("status", 201); // Created
+                            // Preparamos respuesta de éxito
+                            rJsonObject.addProperty("Mensaje", "Usuario creado correctamente");
+                            rJsonObject.addProperty("status", 201); // Created
+                        } else {
+                            rJsonObject.addProperty("Mensaje", "Error del servidor");
+                            rJsonObject.addProperty("status", 500); // Error
+                        }
+
                     } else {
                         // Error: correo sin @
                         rJsonObject.addProperty("Mensaje", "Correo no valido");
@@ -87,7 +93,8 @@ public class UserService {
      * Valida datos de actualizacion y delega al DAO.
      * Completa campos vacios con valores actuales de la DB.
      */
-    public static JsonObject verificarDatosActualizar(String nombre, String correo, String contraseña, int id) throws IOException {
+    public static JsonObject verificarDatosActualizar(String nombre, String correo, String contraseña, int id)
+            throws IOException {
 
         // Obtiene el usuario actual para completar valores faltantes.
         JsonObject datos = UsuariosDao.buscarPorId(id);
@@ -120,11 +127,9 @@ public class UserService {
             if (contraseña.isBlank()) {
                 contraseña = contraseñaDB;
 
-            }
-            else {
+            } else {
                 contraseña = BCrypt.hashpw(contraseña, BCrypt.gensalt());
             }
-            
 
             if (correo.matches("[a-zA-Z]+@[a-zA-Z]+\\.[a-zA-Z]{2,6}")) {
 

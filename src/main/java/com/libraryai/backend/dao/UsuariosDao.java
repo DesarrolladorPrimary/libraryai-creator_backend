@@ -17,7 +17,7 @@ public class UsuariosDao {
 
     // Language=sql
     private final static String SQL_INSERT = """
-            INSERT INTO usuario(Nombre, Correo, PasswordHash, FechaRegistro, Activo) values (?,?,?,?,?)
+            INSERT INTO Usuario(Nombre, Correo, PasswordHash, FechaRegistro, Activo) values (?,?,?,?,?)
             """;
 
     // language=sql
@@ -37,12 +37,12 @@ public class UsuariosDao {
 
     // language=sql
     private final static String SQL_DELETE = """
-            DELETE FROM usuario WHERE `PK_UsuarioID` = ?;
+            DELETE FROM Usuario WHERE `PK_UsuarioID` = ?;
             """;
 
     // language=sql
     private final static String SQL_UPDATE = """
-            UPDATE usuario SET Nombre = ?, Correo = ?, PasswordHash = ? WHERE  PK_UsuarioID=?;
+            UPDATE Usuario SET Nombre = ?, Correo = ?, PasswordHash = ? WHERE  PK_UsuarioID=?;
             """;
 
     /**
@@ -90,7 +90,6 @@ public class UsuariosDao {
         } catch (SQLException e) {
             // Si hay error SQL, lo imprimimos en la consola de errores
             System.err.println("Error al registrar el usuario: " + e.getMessage());
-            e.printStackTrace();
             return 0;
         }
     }
