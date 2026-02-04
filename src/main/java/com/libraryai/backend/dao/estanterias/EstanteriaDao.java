@@ -4,7 +4,6 @@ import java.sql.*;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.config.ConexionDB;
-import com.libraryai.backend.models.Estanteria;
 
 public class EstanteriaDao {
 
