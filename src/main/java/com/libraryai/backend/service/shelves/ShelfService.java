@@ -10,7 +10,12 @@ public class ShelfService {
 
 
             if (nombreCategoria.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ]+") && nombreCategoria.length() > 3) {
+
+                
+
+
                 response = ShelfDao.createShelf(idUser, nombreCategoria);
+
             }
             else
             {

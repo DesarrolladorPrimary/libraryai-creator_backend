@@ -39,6 +39,7 @@ public class Routes {
 
         AuthMiddleware auth = new AuthMiddleware();
 
+
         // ========== RUTAS DE AUTH ==========
         router.post("/api/v1/login", LoginController.loginUser());
 
@@ -65,7 +66,11 @@ public class Routes {
         router.post("/api/v1/generar-historias",
                 auth.protect(AiController.generateStory(), "Gratuito", "Premium"));
 
-        router.post("/api/v1/shelves", ShelfController.createShelf());
+
+
+        router.post("/api/v1/shelves", 
+                auth.protect(ShelfController.createShelf(), "Gratuito", "Premium")
+        );
 
         // Retornamos el router con todas las rutas configuradas
         // Este router será usado por el servidor en ServerMain
