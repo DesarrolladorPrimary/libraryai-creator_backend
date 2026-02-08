@@ -6,7 +6,7 @@ import com.google.gson.JsonObject;
 import com.libraryai.backend.config.DbConnection;
 
 public class ShelfDao {
-
+        
         // language=sql
         private static String SQL_INSERT = """
                         INSERT INTO Estanteria(FK_UsuarioID, NombreCategoria) VALUES(?,?);
@@ -37,7 +37,7 @@ public class ShelfDao {
                 JsonObject responseJson = new JsonObject();
                 try (
                                 Connection conn = DbConnection.getConnection();
-                                PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT);) {
+                                PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT, Statement.RETURN_GENERATED_KEYS);) {
                         pstmt.setInt(1, idUser);
                         pstmt.setString(2, nombreEstanteria);
 

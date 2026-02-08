@@ -5,8 +5,7 @@ import java.io.IOException;
 // InetSocketAddress para especificar IP y puerto del servidor
 import java.net.InetSocketAddress;
 
-// Importamos nuestra clase de rutas
-import com.libraryai.backend.router.Routes;
+import com.libraryai.backend.routes.Routes;
 // Clases del servidor HTTP de Java
 import com.sun.net.httpserver.*;
 

@@ -1,4 +1,4 @@
-package com.libraryai.backend.router;
+package com.libraryai.backend.routes;
 
 // Importamos el controlador que tiene los handlers de usuarios
 import com.libraryai.backend.controller.UserController;
@@ -72,7 +72,7 @@ public class Routes {
                 auth.protect(ShelfController.createShelf(), "Gratuito", "Premium")
         );
 
-        // Retornamos el router con todas las rutas configuradas
+       
         // Este router será usado por el servidor en ServerMain
         return router;
     }
