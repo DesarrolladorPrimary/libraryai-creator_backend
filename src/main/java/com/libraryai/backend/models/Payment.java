@@ -3,11 +3,11 @@ package com.libraryai.backend.models;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-//*Clase modelo de la tabla Pago
+//*Clase modelo de la tabla Payment
 /**
  * Modelo de dominio para pago.
  */
-public class Pago {
+public class Payment {
 
     // **atributos de la tabla privados
     private int pago_id;
@@ -19,7 +19,7 @@ public class Pago {
     private LocalDateTime fechaPago;
 
     // **Constructor para crear pagos
-    public Pago(int pago_id, int suscripcion_id, String pasarela, String estadoPago,
+    public Payment(int pago_id, int suscripcion_id, String pasarela, String estadoPago,
             String referenciaExterna, BigDecimal monto, LocalDateTime fechaPago) {
         this.pago_id = pago_id;
         this.suscripcion_id = suscripcion_id;

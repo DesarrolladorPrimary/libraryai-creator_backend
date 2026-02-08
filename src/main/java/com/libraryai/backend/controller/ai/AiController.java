@@ -17,7 +17,7 @@ public class AiController {
      * Handler para generar historias con IA.
      * Lee mensaje/instrucciones, delega al servicio y normaliza status.
      */
-    public static HttpHandler generarHistoria() {
+    public static HttpHandler generateStory() {
         return exchange -> {
             try {
                 System.out.println("\n\nPeticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");

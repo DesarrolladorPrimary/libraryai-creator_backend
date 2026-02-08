@@ -89,7 +89,7 @@ public class ApiResponse {
         // Cuerpo basico de confirmacion.
         JsonObject json = new JsonObject();
 
-        json.addProperty("Mensaje", "Usuario creado exitosamente");
+        json.addProperty("Mensaje", "User creado exitosamente");
 
         String body = json.toString();
 

@@ -1,10 +1,10 @@
 package com.libraryai.backend.models;
 
-//*Clase modelo de la tabla Estanteria
+//*Clase modelo de la tabla Shelf
 /**
  * Modelo de dominio para estanteria.
  */
-public class Estanteria {
+public class Shelf {
 
     // **atributos de la tabla privados
     private int estanteria_id;
@@ -12,7 +12,7 @@ public class Estanteria {
     private String nombreCategoria;
 
     // **Constructor para crear estanterias
-    public Estanteria(int estanteria_id, int usuario_id, String nombreCategoria) {
+    public Shelf(int estanteria_id, int usuario_id, String nombreCategoria) {
         this.estanteria_id = estanteria_id;
         this.usuario_id = usuario_id;
         this.nombreCategoria = nombreCategoria;

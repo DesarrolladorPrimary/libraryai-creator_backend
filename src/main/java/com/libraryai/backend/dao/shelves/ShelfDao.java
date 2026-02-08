@@ -1,11 +1,11 @@
-package com.libraryai.backend.dao.estanterias;
+package com.libraryai.backend.dao.shelves;
 
 import java.sql.*;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.libraryai.backend.config.ConexionDB;
+import com.libraryai.backend.config.DbConnection;
 
-public class EstanteriaDao {
+public class ShelfDao {
 
         // language=sql
         private static String SQL_INSERT = """
@@ -33,10 +33,10 @@ public class EstanteriaDao {
                         DELETE FROM  Estanteria WHERE PK_EstanteriaID = ?;
                         """;
 
-        public static JsonObject crearEstanteria(int idUser, String nombreEstanteria) {
+        public static JsonObject createShelf(int idUser, String nombreEstanteria) {
                 JsonObject responseJson = new JsonObject();
                 try (
-                                Connection conn = ConexionDB.getConexion();
+                                Connection conn = DbConnection.getConnection();
                                 PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT);) {
                         pstmt.setInt(1, idUser);
                         pstmt.setString(2, nombreEstanteria);
@@ -61,10 +61,10 @@ public class EstanteriaDao {
                 }
         }
 
-        public static JsonArray obtenerEstanteriasPorIdUser(int idUser) {
+        public static JsonArray getShelvesByUserId(int idUser) {
     JsonArray estanteriasArray = new JsonArray();
     
-    try (Connection conn = ConexionDB.getConexion();
+    try (Connection conn = DbConnection.getConnection();
          PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT)) {
         
         pstmt.setInt(1, idUser);
@@ -98,10 +98,10 @@ public class EstanteriaDao {
 
 
 
-        public static JsonObject actualizarEstanteria(String nombreCategoria, int idEstanteria){
+        public static JsonObject updateShelf(String nombreCategoria, int idEstanteria){
                 JsonObject response = new JsonObject();
                 try (
-                        Connection conn = ConexionDB.getConexion();
+                        Connection conn = DbConnection.getConnection();
                         PreparedStatement pstmt = conn.prepareStatement(SQL_UPDATE);
                 ) {
                         pstmt.setString(1, nombreCategoria);
@@ -133,10 +133,10 @@ public class EstanteriaDao {
 
 
 
-        public static JsonObject eliminarEstanteria(int idEstanteria){
+        public static JsonObject deleteShelf(int idEstanteria){
                 JsonObject response = new JsonObject();
                 try (
-                        Connection conn = ConexionDB.getConexion();
+                        Connection conn = DbConnection.getConnection();
                         PreparedStatement pstmt = conn.prepareStatement(SQL_DELETE);
                 ) {
                         pstmt.setInt(1, idEstanteria);
