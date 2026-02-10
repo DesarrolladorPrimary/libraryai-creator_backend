@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import com.libraryai.backend.config.ConexionDB;
+import com.libraryai.backend.config.DatabaseConnection;
 
 public class ChatDao {
     // language=sql;
@@ -12,9 +12,9 @@ public class ChatDao {
             INSERT INTO MensajeChat (FK_RelatoID, Emisor, ContenidoMensaje, Orden) VALUES (?, ?, ?, ?)
             """;;
 
-    public static void guardar(int idRelato, String emisor, String mensaje, int orden){
+    public static void save(int idRelato, String emisor, String mensaje, int orden){
         try (
-            Connection conn = ConexionDB.getConexion();
+            Connection conn = DatabaseConnection.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT);
     ) {
         pstmt.setInt(0, idRelato );
@@ -34,7 +34,7 @@ public class ChatDao {
 
     }
 
-    public static void listarPorRelato(){
+    public static void listByStory(){
 
     }
 }

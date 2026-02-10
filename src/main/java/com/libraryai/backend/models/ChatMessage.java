@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 /**
  * Modelo de dominio para mensaje de chat.
  */
-public class MensajeChat {
+public class ChatMessage {
 
     // **atributos de la tabla privados
     private int mensaje_id;
@@ -17,7 +17,7 @@ public class MensajeChat {
     private int orden;
 
     // **Constructor para crear mensajes de chat
-    public MensajeChat(int mensaje_id, int relato_id, String emisor, String contenidoMensaje,
+    public ChatMessage(int mensaje_id, int relato_id, String emisor, String contenidoMensaje,
             LocalDateTime fechaEnvio, int orden) {
         this.mensaje_id = mensaje_id;
         this.relato_id = relato_id;
@@ -29,43 +29,43 @@ public class MensajeChat {
 
     // **Getter y Setter para manipulacion de datos privados
 
-    public int getMensaje_id() {
+    public int getMessageId() {
         return mensaje_id;
     }
 
-    public void setMensaje_id(int mensaje_id) {
+    public void setMessageId(int mensaje_id) {
         this.mensaje_id = mensaje_id;
     }
 
-    public int getRelato_id() {
+    public int getStoryId() {
         return relato_id;
     }
 
-    public void setRelato_id(int relato_id) {
+    public void setStoryId(int relato_id) {
         this.relato_id = relato_id;
     }
 
-    public String getEmisor() {
+    public String getSender() {
         return emisor;
     }
 
-    public void setEmisor(String emisor) {
+    public void setSender(String emisor) {
         this.emisor = emisor;
     }
 
-    public String getContenidoMensaje() {
+    public String getMessageContent() {
         return contenidoMensaje;
     }
 
-    public void setContenidoMensaje(String contenidoMensaje) {
+    public void setMessageContent(String contenidoMensaje) {
         this.contenidoMensaje = contenidoMensaje;
     }
 
-    public LocalDateTime getFechaEnvio() {
+    public LocalDateTime getSentAt() {
         return fechaEnvio;
     }
 
-    public void setFechaEnvio(LocalDateTime fechaEnvio) {
+    public void setSentAt(LocalDateTime fechaEnvio) {
         this.fechaEnvio = fechaEnvio;
     }
 

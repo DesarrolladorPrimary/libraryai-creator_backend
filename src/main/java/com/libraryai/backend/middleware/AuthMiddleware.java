@@ -31,7 +31,7 @@ public class AuthMiddleware {
                 String rolUser = parts[parts.length - 1].trim();
 
                 // Valida el token y obtiene claims basicos (rol, usuario, id).
-                JsonObject infoToken = JwtUtil.validarToken(rolUser);
+                JsonObject infoToken = JwtUtil.validateToken(rolUser);
 
                 if (infoToken.has("Mensaje")) {
                     ApiResponse.error(exchange, 401, infoToken.get("Mensaje").getAsString());

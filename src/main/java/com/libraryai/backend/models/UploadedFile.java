@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 /**
  * Modelo de dominio para archivo subido.
  */
-public class ArchivoSubido {
+public class UploadedFile {
 
     // **atributos de la tabla privados
     private int archivo_id;
@@ -18,7 +18,7 @@ public class ArchivoSubido {
     private LocalDateTime fechaSubida;
 
     // **Constructor para crear archivos subidos
-    public ArchivoSubido(int archivo_id, int usuario_id, String nombreArchivo, String tipoArchivo,
+    public UploadedFile(int archivo_id, int usuario_id, String nombreArchivo, String tipoArchivo,
             String rutaAlmacenamiento, int tamanoBytes, LocalDateTime fechaSubida) {
         this.archivo_id = archivo_id;
         this.usuario_id = usuario_id;
@@ -31,59 +31,59 @@ public class ArchivoSubido {
 
     // **Getter y Setter para manipulacion de datos privados
 
-    public int getArchivo_id() {
+    public int getFileId() {
         return archivo_id;
     }
 
-    public void setArchivo_id(int archivo_id) {
+    public void setFileId(int archivo_id) {
         this.archivo_id = archivo_id;
     }
 
-    public int getUsuario_id() {
+    public int getUserId() {
         return usuario_id;
     }
 
-    public void setUsuario_id(int usuario_id) {
+    public void setUserId(int usuario_id) {
         this.usuario_id = usuario_id;
     }
 
-    public String getNombreArchivo() {
+    public String getFileName() {
         return nombreArchivo;
     }
 
-    public void setNombreArchivo(String nombreArchivo) {
+    public void setFileName(String nombreArchivo) {
         this.nombreArchivo = nombreArchivo;
     }
 
-    public String getTipoArchivo() {
+    public String getFileType() {
         return tipoArchivo;
     }
 
-    public void setTipoArchivo(String tipoArchivo) {
+    public void setFileType(String tipoArchivo) {
         this.tipoArchivo = tipoArchivo;
     }
 
-    public String getRutaAlmacenamiento() {
+    public String getStoragePath() {
         return rutaAlmacenamiento;
     }
 
-    public void setRutaAlmacenamiento(String rutaAlmacenamiento) {
+    public void setStoragePath(String rutaAlmacenamiento) {
         this.rutaAlmacenamiento = rutaAlmacenamiento;
     }
 
-    public int getTamanoBytes() {
+    public int getSizeBytes() {
         return tamanoBytes;
     }
 
-    public void setTamanoBytes(int tamanoBytes) {
+    public void setSizeBytes(int tamanoBytes) {
         this.tamanoBytes = tamanoBytes;
     }
 
-    public LocalDateTime getFechaSubida() {
+    public LocalDateTime getUploadedAt() {
         return fechaSubida;
     }
 
-    public void setFechaSubida(LocalDateTime fechaSubida) {
+    public void setUploadedAt(LocalDateTime fechaSubida) {
         this.fechaSubida = fechaSubida;
     }
 

@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 /**
  * Modelo de dominio para suscripcion.
  */
-public class Suscripcion {
+public class Subscription {
 
     // **atributos de la tabla privados
     private int suscripcion_id;
@@ -18,7 +18,7 @@ public class Suscripcion {
     private boolean renovacionAutomatica;
 
     // **Constructor para crear suscripciones
-    public Suscripcion(int suscripcion_id, int usuario_id, int plan_id,
+    public Subscription(int suscripcion_id, int usuario_id, int plan_id,
             LocalDateTime fechaInicio, LocalDateTime fechaFin,
             String estado, boolean renovacionAutomatica) {
         this.suscripcion_id = suscripcion_id;
@@ -32,43 +32,43 @@ public class Suscripcion {
 
     // **Getter y Setter para manipulacion de datos privados
 
-    public int getSuscripcion_id() {
+    public int getSubscriptionId() {
         return suscripcion_id;
     }
 
-    public void setSuscripcion_id(int suscripcion_id) {
+    public void setSubscriptionId(int suscripcion_id) {
         this.suscripcion_id = suscripcion_id;
     }
 
-    public int getUsuario_id() {
+    public int getUserId() {
         return usuario_id;
     }
 
-    public void setUsuario_id(int usuario_id) {
+    public void setUserId(int usuario_id) {
         this.usuario_id = usuario_id;
     }
 
-    public int getPlan_id() {
+    public int getPlanId() {
         return plan_id;
     }
 
-    public void setPlan_id(int plan_id) {
+    public void setPlanId(int plan_id) {
         this.plan_id = plan_id;
     }
 
-    public LocalDateTime getFechaInicio() {
+    public LocalDateTime getStartDate() {
         return fechaInicio;
     }
 
-    public void setFechaInicio(LocalDateTime fechaInicio) {
+    public void setStartDate(LocalDateTime fechaInicio) {
         this.fechaInicio = fechaInicio;
     }
 
-    public LocalDateTime getFechaFin() {
+    public LocalDateTime getEndDate() {
         return fechaFin;
     }
 
-    public void setFechaFin(LocalDateTime fechaFin) {
+    public void setEndDate(LocalDateTime fechaFin) {
         this.fechaFin = fechaFin;
     }
 
@@ -80,11 +80,11 @@ public class Suscripcion {
         this.estado = estado;
     }
 
-    public boolean isRenovacionAutomatica() {
+    public boolean isAutoRenewal() {
         return renovacionAutomatica;
     }
 
-    public void setRenovacionAutomatica(boolean renovacionAutomatica) {
+    public void setAutoRenewal(boolean renovacionAutomatica) {
         this.renovacionAutomatica = renovacionAutomatica;
     }
 

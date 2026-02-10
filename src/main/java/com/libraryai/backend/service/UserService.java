@@ -6,9 +6,9 @@ import java.time.LocalDate;
 import org.mindrot.jbcrypt.BCrypt;
 
 import com.google.gson.JsonObject;
-import com.libraryai.backend.dao.UsuarioRolDao;
-import com.libraryai.backend.dao.UsuariosDao;
-import com.libraryai.backend.models.Usuario;
+import com.libraryai.backend.dao.UserRoleDao;
+import com.libraryai.backend.dao.UserDao;
+import com.libraryai.backend.models.User;
 
 /**
  * Servicio de negocio para usuarios.
@@ -23,12 +23,12 @@ public class UserService {
      * @param contraseña Contraseña (numérica en este ejemplo).
      * @return JsonObject con el resultado de la operación y el código de estado.
      */
-    public static JsonObject verificarDatosUsuario(String nombre, String correo, String contraseña) {
+    public static JsonObject validateUserData(String nombre, String correo, String contraseña) {
 
         // Objeto JSON para devolver la respuesta
         JsonObject rJsonObject = new JsonObject();
         // Llamamos al DAO para ver si el correo ya existe en DB
-        boolean correoDB = UsuariosDao.existePorCorreo(correo);
+        boolean correoDB = UserDao.existsByEmail(correo);
 
         // Validamos que los datos básicos no sean null y la contraseña sea positiva
         if (!(nombre == null) && !(correo == null) && !(contraseña.isBlank())) {
@@ -45,13 +45,13 @@ public class UserService {
                         String contraseñaHash = BCrypt.hashpw(contraseña, BCrypt.gensalt());
 
                         // Creamos el objeto Modelo 'Usuario' con todos los datos
-                        Usuario user = new Usuario(0, nombre, correo, contraseñaHash, LocalDate.now(), true);
+                        User user = new User(0, nombre, correo, contraseñaHash, LocalDate.now(), true);
 
                         // Le decimos al DAO que lo guarde en la BD
-                        int id = UsuariosDao.guardar(user);
+                        int id = UserDao.save(user);
 
                         if (id != 0) {
-                            UsuarioRolDao.asignarRol(id);
+                            UserRoleDao.assignRole(id);
 
                             // Preparamos respuesta de éxito
                             rJsonObject.addProperty("Mensaje", "Usuario creado correctamente");
@@ -93,11 +93,11 @@ public class UserService {
      * Valida datos de actualizacion y delega al DAO.
      * Completa campos vacios con valores actuales de la DB.
      */
-    public static JsonObject verificarDatosActualizar(String nombre, String correo, String contraseña, int id)
+    public static JsonObject validateUpdateData(String nombre, String correo, String contraseña, int id)
             throws IOException {
 
         // Obtiene el usuario actual para completar valores faltantes.
-        JsonObject datos = UsuariosDao.buscarPorId(id);
+        JsonObject datos = UserDao.findById(id);
 
         JsonObject response = new JsonObject();
 
@@ -133,7 +133,7 @@ public class UserService {
 
             if (correo.matches("[a-zA-Z]+@[a-zA-Z]+\\.[a-zA-Z]{2,6}")) {
 
-                response = UsuariosDao.actualizarUsuario(nombre, correo, contraseña, id);
+                response = UserDao.updateUser(nombre, correo, contraseña, id);
             }
 
             else {

@@ -17,7 +17,7 @@ public class AiController {
      * Handler para generar historias con IA.
      * Lee mensaje/instrucciones, delega al servicio y normaliza status.
      */
-    public static HttpHandler generarHistoria() {
+    public static HttpHandler generateStory() {
         return exchange -> {
             try {
                 System.out.println("\n\nPeticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
@@ -42,7 +42,7 @@ public class AiController {
                 }
 
                 // Ejecuta la generacion y obtiene respuesta.
-                JsonObject responseJson = GeminiService.verificarGeneracionTexto(mensaje, instrucciones);
+                JsonObject responseJson = GeminiService.generateText(mensaje, instrucciones);
                 
                 // Usa status del servicio o 200 por defecto.
                 int code = responseJson.has("status") ? responseJson.get("status").getAsInt() : 200;

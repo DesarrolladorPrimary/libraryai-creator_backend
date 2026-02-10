@@ -19,7 +19,7 @@ public class App {
             SeedRoles.insertRoles();
 
             // 1. Iniciar Servidor (Bloqueante)
-            ServerMain.ServerExect();
+            ServerMain.startServer();
         }
 
         catch (ExceptionInInitializerError e) {

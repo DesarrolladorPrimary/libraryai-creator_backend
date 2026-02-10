@@ -6,7 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import com.google.gson.JsonObject;
-import com.libraryai.backend.config.ConexionDB;
+import com.libraryai.backend.config.DatabaseConnection;
 
 /**
  * DAO para autenticacion de usuarios.
@@ -26,11 +26,11 @@ public class LoginDao {
      * Busca un usuario por correo y devuelve hash, rol e id.
      * Retorna status 200 si encuentra, 404 si no existe.
      */
-    public static JsonObject validarUsuario(String correo) {
+    public static JsonObject findUserByEmail(String correo) {
         JsonObject user = new JsonObject();
 
         try (
-                Connection conn = ConexionDB.getConexion();
+                Connection conn = DatabaseConnection.getConnection();
                 PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT_WHERE);) {
             // Prepara la consulta con el correo recibido.
             pstmt.setString(1, correo);

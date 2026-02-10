@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 /**
  * Modelo de dominio para correo.
  */
-public class Correo {
+public class Email {
 
     // **atributos de la tabla privados
     private int correo_id;
@@ -17,7 +17,7 @@ public class Correo {
     private String estado;
 
     // **Constructor para crear correos
-    public Correo(int correo_id, int usuario_id, String asunto, String cuerpo,
+    public Email(int correo_id, int usuario_id, String asunto, String cuerpo,
             LocalDateTime fechaEnvio, String estado) {
         this.correo_id = correo_id;
         this.usuario_id = usuario_id;
@@ -29,43 +29,43 @@ public class Correo {
 
     // **Getter y Setter para manipulacion de datos privados
 
-    public int getCorreo_id() {
+    public int getEmailId() {
         return correo_id;
     }
 
-    public void setCorreo_id(int correo_id) {
+    public void setEmailId(int correo_id) {
         this.correo_id = correo_id;
     }
 
-    public int getUsuario_id() {
+    public int getUserId() {
         return usuario_id;
     }
 
-    public void setUsuario_id(int usuario_id) {
+    public void setUserId(int usuario_id) {
         this.usuario_id = usuario_id;
     }
 
-    public String getAsunto() {
+    public String getSubject() {
         return asunto;
     }
 
-    public void setAsunto(String asunto) {
+    public void setSubject(String asunto) {
         this.asunto = asunto;
     }
 
-    public String getCuerpo() {
+    public String getBody() {
         return cuerpo;
     }
 
-    public void setCuerpo(String cuerpo) {
+    public void setBody(String cuerpo) {
         this.cuerpo = cuerpo;
     }
 
-    public LocalDateTime getFechaEnvio() {
+    public LocalDateTime getSentAt() {
         return fechaEnvio;
     }
 
-    public void setFechaEnvio(LocalDateTime fechaEnvio) {
+    public void setSentAt(LocalDateTime fechaEnvio) {
         this.fechaEnvio = fechaEnvio;
     }
 

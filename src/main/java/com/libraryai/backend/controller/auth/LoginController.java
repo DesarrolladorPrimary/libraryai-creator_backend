@@ -16,7 +16,7 @@ public class LoginController {
      * Handler de login.
      * Lee correo y contrasena del body, valida credenciales y responde con token.
      */
-    public static HttpHandler loginUsuario(){
+    public static HttpHandler loginUser(){
         return exchange -> {
             ApiRequest request = new ApiRequest(exchange);
             String body = request.readBody();
@@ -38,7 +38,7 @@ public class LoginController {
                 contraseña = user.get("contraseña").getAsString();
             }
 
-            JsonObject response = LoginService.verificarDatosLogin(correo, contraseña);
+            JsonObject response = LoginService.validateLoginData(correo, contraseña);
             int code = response.get("status").getAsInt();
             response.remove("status");
 

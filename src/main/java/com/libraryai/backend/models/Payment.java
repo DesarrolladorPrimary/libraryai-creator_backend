@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 /**
  * Modelo de dominio para pago.
  */
-public class Pago {
+public class Payment {
 
     // **atributos de la tabla privados
     private int pago_id;
@@ -19,7 +19,7 @@ public class Pago {
     private LocalDateTime fechaPago;
 
     // **Constructor para crear pagos
-    public Pago(int pago_id, int suscripcion_id, String pasarela, String estadoPago,
+    public Payment(int pago_id, int suscripcion_id, String pasarela, String estadoPago,
             String referenciaExterna, BigDecimal monto, LocalDateTime fechaPago) {
         this.pago_id = pago_id;
         this.suscripcion_id = suscripcion_id;
@@ -32,59 +32,59 @@ public class Pago {
 
     // **Getter y Setter para manipulacion de datos privados
 
-    public int getPago_id() {
+    public int getPaymentId() {
         return pago_id;
     }
 
-    public void setPago_id(int pago_id) {
+    public void setPaymentId(int pago_id) {
         this.pago_id = pago_id;
     }
 
-    public int getSuscripcion_id() {
+    public int getSubscriptionId() {
         return suscripcion_id;
     }
 
-    public void setSuscripcion_id(int suscripcion_id) {
+    public void setSubscriptionId(int suscripcion_id) {
         this.suscripcion_id = suscripcion_id;
     }
 
-    public String getPasarela() {
+    public String getGateway() {
         return pasarela;
     }
 
-    public void setPasarela(String pasarela) {
+    public void setGateway(String pasarela) {
         this.pasarela = pasarela;
     }
 
-    public String getEstadoPago() {
+    public String getPaymentStatus() {
         return estadoPago;
     }
 
-    public void setEstadoPago(String estadoPago) {
+    public void setPaymentStatus(String estadoPago) {
         this.estadoPago = estadoPago;
     }
 
-    public String getReferenciaExterna() {
+    public String getExternalReference() {
         return referenciaExterna;
     }
 
-    public void setReferenciaExterna(String referenciaExterna) {
+    public void setExternalReference(String referenciaExterna) {
         this.referenciaExterna = referenciaExterna;
     }
 
-    public BigDecimal getMonto() {
+    public BigDecimal getAmount() {
         return monto;
     }
 
-    public void setMonto(BigDecimal monto) {
+    public void setAmount(BigDecimal monto) {
         this.monto = monto;
     }
 
-    public LocalDateTime getFechaPago() {
+    public LocalDateTime getPaidAt() {
         return fechaPago;
     }
 
-    public void setFechaPago(LocalDateTime fechaPago) {
+    public void setPaidAt(LocalDateTime fechaPago) {
         this.fechaPago = fechaPago;
     }
 

@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 /**
  * Modelo de dominio para version de relato.
  */
-public class RelatoVersion {
+public class StoryVersion {
 
     // **atributos de la tabla privados
     private int version_id;
@@ -18,7 +18,7 @@ public class RelatoVersion {
     private LocalDateTime fechaVersion;
 
     // **Constructor para crear versiones de relato
-    public RelatoVersion(int version_id, int relato_id, float numeroVersion, String contenido,
+    public StoryVersion(int version_id, int relato_id, float numeroVersion, String contenido,
             String notas, boolean esPublicada, LocalDateTime fechaVersion) {
         this.version_id = version_id;
         this.relato_id = relato_id;
@@ -31,59 +31,59 @@ public class RelatoVersion {
 
     // **Getter y Setter para manipulacion de datos privados
 
-    public int getVersion_id() {
+    public int getVersionId() {
         return version_id;
     }
 
-    public void setVersion_id(int version_id) {
+    public void setVersionId(int version_id) {
         this.version_id = version_id;
     }
 
-    public int getRelato_id() {
+    public int getStoryId() {
         return relato_id;
     }
 
-    public void setRelato_id(int relato_id) {
+    public void setStoryId(int relato_id) {
         this.relato_id = relato_id;
     }
 
-    public float getNumeroVersion() {
+    public float getVersionNumber() {
         return numeroVersion;
     }
 
-    public void setNumeroVersion(float numeroVersion) {
+    public void setVersionNumber(float numeroVersion) {
         this.numeroVersion = numeroVersion;
     }
 
-    public String getContenido() {
+    public String getContent() {
         return contenido;
     }
 
-    public void setContenido(String contenido) {
+    public void setContent(String contenido) {
         this.contenido = contenido;
     }
 
-    public String getNotas() {
+    public String getNotes() {
         return notas;
     }
 
-    public void setNotas(String notas) {
+    public void setNotes(String notas) {
         this.notas = notas;
     }
 
-    public boolean isEsPublicada() {
+    public boolean isPublished() {
         return esPublicada;
     }
 
-    public void setEsPublicada(boolean esPublicada) {
+    public void setPublished(boolean esPublicada) {
         this.esPublicada = esPublicada;
     }
 
-    public LocalDateTime getFechaVersion() {
+    public LocalDateTime getVersionDate() {
         return fechaVersion;
     }
 
-    public void setFechaVersion(LocalDateTime fechaVersion) {
+    public void setVersionDate(LocalDateTime fechaVersion) {
         this.fechaVersion = fechaVersion;
     }
 

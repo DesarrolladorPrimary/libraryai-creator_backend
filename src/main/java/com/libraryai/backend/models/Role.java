@@ -4,33 +4,33 @@ package com.libraryai.backend.models;
 /**
  * Modelo de dominio para rol.
  */
-public class Rol {
+public class Role {
 
     // **atributos de la tabla privados
     private int rol_id;
     private String nombreRol;
 
     // **Constructor para crear roles
-    public Rol(int rol_id, String nombreRol) {
+    public Role(int rol_id, String nombreRol) {
         this.rol_id = rol_id;
         this.nombreRol = nombreRol;
     }
 
     // **Getter y Setter para manipulacion de datos privados
 
-    public int getRol_id() {
+    public int getRoleId() {
         return rol_id;
     }
 
-    public void setRol_id(int rol_id) {
+    public void setRoleId(int rol_id) {
         this.rol_id = rol_id;
     }
 
-    public String getNombreRol() {
+    public String getRoleName() {
         return nombreRol;
     }
 
-    public void setNombreRol(String nombreRol) {
+    public void setRoleName(String nombreRol) {
         this.nombreRol = nombreRol;
     }
 

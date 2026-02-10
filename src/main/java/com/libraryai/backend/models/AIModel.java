@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 /**
  * Modelo de dominio para modelo de IA.
  */
-public class ModeloIA {
+public class AIModel {
 
     // **atributos de la tabla privados
     private int modelo_id;
@@ -19,7 +19,7 @@ public class ModeloIA {
     private String estado;
 
     // **Constructor para crear modelos de IA
-    public ModeloIA(int modelo_id, String nombreModelo, String version, String descripcion,
+    public AIModel(int modelo_id, String nombreModelo, String version, String descripcion,
             String notasVersion, LocalDateTime fechaLanzamiento, boolean esGratuito, String estado) {
         this.modelo_id = modelo_id;
         this.nombreModelo = nombreModelo;
@@ -33,19 +33,19 @@ public class ModeloIA {
 
     // **Getter y Setter para manipulacion de datos privados
 
-    public int getModelo_id() {
+    public int getModelId() {
         return modelo_id;
     }
 
-    public void setModelo_id(int modelo_id) {
+    public void setModelId(int modelo_id) {
         this.modelo_id = modelo_id;
     }
 
-    public String getNombreModelo() {
+    public String getModelName() {
         return nombreModelo;
     }
 
-    public void setNombreModelo(String nombreModelo) {
+    public void setModelName(String nombreModelo) {
         this.nombreModelo = nombreModelo;
     }
 
@@ -57,35 +57,35 @@ public class ModeloIA {
         this.version = version;
     }
 
-    public String getDescripcion() {
+    public String getDescription() {
         return descripcion;
     }
 
-    public void setDescripcion(String descripcion) {
+    public void setDescription(String descripcion) {
         this.descripcion = descripcion;
     }
 
-    public String getNotasVersion() {
+    public String getVersionNotes() {
         return notasVersion;
     }
 
-    public void setNotasVersion(String notasVersion) {
+    public void setVersionNotes(String notasVersion) {
         this.notasVersion = notasVersion;
     }
 
-    public LocalDateTime getFechaLanzamiento() {
+    public LocalDateTime getReleaseDate() {
         return fechaLanzamiento;
     }
 
-    public void setFechaLanzamiento(LocalDateTime fechaLanzamiento) {
+    public void setReleaseDate(LocalDateTime fechaLanzamiento) {
         this.fechaLanzamiento = fechaLanzamiento;
     }
 
-    public boolean isEsGratuito() {
+    public boolean isFree() {
         return esGratuito;
     }
 
-    public void setEsGratuito(boolean esGratuito) {
+    public void setFree(boolean esGratuito) {
         this.esGratuito = esGratuito;
     }
 

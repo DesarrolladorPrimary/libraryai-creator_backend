@@ -7,7 +7,7 @@ import io.github.cdimascio.dotenv.Dotenv;
 /**
  * Manejo de conexion a base de datos.
  */
-public class ConexionDB {
+public class DatabaseConnection {
     private static final String URL = Dotenv.load().get("DB_URL");
     private static final String USER = Dotenv.load().get("DB_USER");
     private static final String PASSWD_DB = Dotenv.load().get("DB_PASSWD");
@@ -20,7 +20,7 @@ public class ConexionDB {
      * @return Connection Objeto de conexión a la base de datos.
      * @throws SQLException Si ocurre un error al intentar conectar.
      */
-    public static Connection getConexion() throws SQLException {
+    public static Connection getConnection() throws SQLException {
         // Validación: Verifica si alguna de las variables vitales está vacía
         if (URL.isEmpty() && USER.isEmpty() && PASSWD_DB.isEmpty()) {
             System.err.println(

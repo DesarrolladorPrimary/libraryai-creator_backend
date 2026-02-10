@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 /**
  * Modelo de dominio para relato.
  */
-public class Relato {
+public class Story {
 
     // **atributos de la tabla privados
     private int relato_id;
@@ -20,7 +20,7 @@ public class Relato {
     private LocalDateTime fechaModificacion;
 
     // **Constructor para crear relatos
-    public Relato(int relato_id, int usuario_id, Integer estanteria_id, Integer modeloUsado_id,
+    public Story(int relato_id, int usuario_id, Integer estanteria_id, Integer modeloUsado_id,
             String titulo, String modoOrigen, String descripcion,
             LocalDateTime fechaCreacion, LocalDateTime fechaModificacion) {
         this.relato_id = relato_id;
@@ -36,75 +36,75 @@ public class Relato {
 
     // **Getter y Setter para manipulacion de datos privados
 
-    public int getRelato_id() {
+    public int getStoryId() {
         return relato_id;
     }
 
-    public void setRelato_id(int relato_id) {
+    public void setStoryId(int relato_id) {
         this.relato_id = relato_id;
     }
 
-    public int getUsuario_id() {
+    public int getUserId() {
         return usuario_id;
     }
 
-    public void setUsuario_id(int usuario_id) {
+    public void setUserId(int usuario_id) {
         this.usuario_id = usuario_id;
     }
 
-    public Integer getEstanteria_id() {
+    public Integer getShelfId() {
         return estanteria_id;
     }
 
-    public void setEstanteria_id(Integer estanteria_id) {
+    public void setShelfId(Integer estanteria_id) {
         this.estanteria_id = estanteria_id;
     }
 
-    public Integer getModeloUsado_id() {
+    public Integer getUsedModelId() {
         return modeloUsado_id;
     }
 
-    public void setModeloUsado_id(Integer modeloUsado_id) {
+    public void setUsedModelId(Integer modeloUsado_id) {
         this.modeloUsado_id = modeloUsado_id;
     }
 
-    public String getTitulo() {
+    public String getTitle() {
         return titulo;
     }
 
-    public void setTitulo(String titulo) {
+    public void setTitle(String titulo) {
         this.titulo = titulo;
     }
 
-    public String getModoOrigen() {
+    public String getOriginMode() {
         return modoOrigen;
     }
 
-    public void setModoOrigen(String modoOrigen) {
+    public void setOriginMode(String modoOrigen) {
         this.modoOrigen = modoOrigen;
     }
 
-    public String getDescripcion() {
+    public String getDescription() {
         return descripcion;
     }
 
-    public void setDescripcion(String descripcion) {
+    public void setDescription(String descripcion) {
         this.descripcion = descripcion;
     }
 
-    public LocalDateTime getFechaCreacion() {
+    public LocalDateTime getCreatedAt() {
         return fechaCreacion;
     }
 
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
+    public void setCreatedAt(LocalDateTime fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
     }
 
-    public LocalDateTime getFechaModificacion() {
+    public LocalDateTime getUpdatedAt() {
         return fechaModificacion;
     }
 
-    public void setFechaModificacion(LocalDateTime fechaModificacion) {
+    public void setUpdatedAt(LocalDateTime fechaModificacion) {
         this.fechaModificacion = fechaModificacion;
     }
 

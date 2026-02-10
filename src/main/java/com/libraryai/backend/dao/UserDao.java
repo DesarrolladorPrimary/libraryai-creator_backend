@@ -4,15 +4,15 @@ import java.sql.*;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.libraryai.backend.config.ConexionDB;
-import com.libraryai.backend.models.Usuario;
+import com.libraryai.backend.config.DatabaseConnection;
+import com.libraryai.backend.models.User;
 
 
 //**Clase encargada de servir de puente entre el modelo y la DB
 /**
  * DAO para operaciones de usuario.
  */
-public class UsuariosDao {
+public class UserDao {
     // **Consultas SQL
 
     // Language=sql
@@ -51,26 +51,26 @@ public class UsuariosDao {
      *
      * @param usuario Objeto Usuario con los datos a insertar.
      */
-    public static int guardar(Usuario usuario) {
+    public static int save(User usuario) {
 
         try (
                 // Obtenemos la conexión a la base de datos desde la clase de configuración
-                Connection conn = ConexionDB.getConexion();
+                Connection conn = DatabaseConnection.getConnection();
                 // Preparamos la sentencia SQL usando la constante definida arriba
                 PreparedStatement sfmt = conn.prepareStatement(SQL_INSERT, Statement.RETURN_GENERATED_KEYS);
             
             ) {
 
             // Asignamos el nombre al primer parámetro (?) del SQL
-            sfmt.setString(1, usuario.getNombre());
+            sfmt.setString(1, usuario.getName());
             // Asignamos el correo al segundo parámetro
-            sfmt.setString(2, usuario.getCorreo());
+            sfmt.setString(2, usuario.getEmail());
             // Asignamos el hash de la contraseña al tercer parámetro
-            sfmt.setString(3, usuario.getContrasenaHash());
+            sfmt.setString(3, usuario.getPasswordHash());
             // Convertimos la fecha LocalDate a Date de SQL y la asignamos
-            sfmt.setDate(4, Date.valueOf(usuario.getFechaRegistro()));
+            sfmt.setDate(4, Date.valueOf(usuario.getRegistrationDate()));
             // Asignamos el booleano 'Activo'
-            sfmt.setBoolean(5, usuario.isActivo());
+            sfmt.setBoolean(5, usuario.isActive());
 
             // Ejecutamos la actualización en la DB y guardamos cuántas filas se afectaron
             int filasAfectadas = sfmt.executeUpdate();
@@ -98,10 +98,10 @@ public class UsuariosDao {
      * Busca un usuario por id en la vista V_RolesDeUsuario.
      * Devuelve un JSON con campos de usuario y status (200/404).
      */
-    public static JsonObject buscarPorId(int id) {
+    public static JsonObject findById(int id) {
         JsonObject user = new JsonObject();
         try (
-                Connection conn = ConexionDB.getConexion();
+                Connection conn = DatabaseConnection.getConnection();
                 PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT_WHEREID);) {
 
             pstmt.setInt(1, id);
@@ -147,14 +147,14 @@ public class UsuariosDao {
      * @return JsonArray con los usuarios encontrados o un mensaje de error si no
      * hay datos.
      */
-    public static JsonArray listarTodos() {
+    public static JsonArray findAll() {
 
         // Creamos la lista JSON donde guardaremos los usuarios
-        JsonArray listarUsuarios = new JsonArray();
+        JsonArray listUsers = new JsonArray();
 
         try (
                 // Obtenemos conexión
-                Connection conn = ConexionDB.getConexion();
+                Connection conn = DatabaseConnection.getConnection();
                 // Creamos un Statement simple porque no hay parámetros (?)
                 Statement sfmt = conn.createStatement();
                 // Ejecutamos la consulta y obtenemos los resultados
@@ -170,7 +170,7 @@ public class UsuariosDao {
                 // Añadimos código de estatus 404
                 datosVacios.addProperty("status", 404);
                 // Lo agregamos a la lista
-                listarUsuarios.add(datosVacios);
+                listUsers.add(datosVacios);
 
             } else {
                 // Si sí había datos, usamos do-while para no saltarnos el primero
@@ -193,7 +193,7 @@ public class UsuariosDao {
                     user.addProperty("status", 200);
 
                     // Añadimos este usuario a la lista final
-                    listarUsuarios.add(user);
+                    listUsers.add(user);
                 } while (rs.next()); // Repetimos mientras queden filas
 
             }
@@ -203,7 +203,7 @@ public class UsuariosDao {
             e.printStackTrace();
         }
         // Retornamos la lista completa
-        return listarUsuarios;
+        return listUsers;
     }
 
     /**
@@ -212,13 +212,13 @@ public class UsuariosDao {
      * @param correo Correo del usuario a verificar.
      * @return true si el usuario existe, false en caso contrario.
      */
-    public static boolean existePorCorreo(String correo) {
+    public static boolean existsByEmail(String correo) {
 
         // Variable bandera, por defecto asumimos que NO existe
         boolean correoExist = false;
         try (
                 // Conectamos
-                Connection conn = ConexionDB.getConexion();
+                Connection conn = DatabaseConnection.getConnection();
                 // Preparamos el SQL de búsqueda con filtro WHERE
                 PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT_WHERE);) {
             // Asignamos el correo que recibimos al parámetro (?)
@@ -245,11 +245,11 @@ public class UsuariosDao {
      * Actualiza datos basicos del usuario.
      * Retorna status 200 si actualiza, 404 si no hubo cambios.
      */
-    public static JsonObject actualizarUsuario(String nombre, String correo, String contraseña, int id){
+    public static JsonObject updateUser(String nombre, String correo, String contraseña, int id){
         JsonObject json = new JsonObject();
         
         try (
-            Connection conn = ConexionDB.getConexion();
+            Connection conn = DatabaseConnection.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(SQL_UPDATE);
         ) {
 
@@ -284,12 +284,12 @@ public class UsuariosDao {
     /**
      * Elimina un usuario por id y devuelve resultado con status.
      */
-    public static JsonObject eliminarPorId(int id) {
+    public static JsonObject deleteById(int id) {
 
         JsonObject response = new JsonObject();
 
         try (
-                Connection conn = ConexionDB.getConexion();
+                Connection conn = DatabaseConnection.getConnection();
                 PreparedStatement pstmt = conn.prepareStatement(SQL_DELETE);) {
 
             pstmt.setInt(1, id);

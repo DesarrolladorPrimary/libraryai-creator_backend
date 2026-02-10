@@ -4,7 +4,7 @@ package com.libraryai.backend.models;
 /**
  * Modelo de dominio para estanteria.
  */
-public class Estanteria {
+public class Shelf {
 
     // **atributos de la tabla privados
     private int estanteria_id;
@@ -12,7 +12,7 @@ public class Estanteria {
     private String nombreCategoria;
 
     // **Constructor para crear estanterias
-    public Estanteria(int estanteria_id, int usuario_id, String nombreCategoria) {
+    public Shelf(int estanteria_id, int usuario_id, String nombreCategoria) {
         this.estanteria_id = estanteria_id;
         this.usuario_id = usuario_id;
         this.nombreCategoria = nombreCategoria;
@@ -20,27 +20,27 @@ public class Estanteria {
 
     // **Getter y Setter para manipulacion de datos privados
 
-    public int getEstanteria_id() {
+    public int getShelfId() {
         return estanteria_id;
     }
 
-    public void setEstanteria_id(int estanteria_id) {
+    public void setShelfId(int estanteria_id) {
         this.estanteria_id = estanteria_id;
     }
 
-    public int getUsuario_id() {
+    public int getUserId() {
         return usuario_id;
     }
 
-    public void setUsuario_id(int usuario_id) {
+    public void setUserId(int usuario_id) {
         this.usuario_id = usuario_id;
     }
 
-    public String getNombreCategoria() {
+    public String getCategoryName() {
         return nombreCategoria;
     }
 
-    public void setNombreCategoria(String nombreCategoria) {
+    public void setCategoryName(String nombreCategoria) {
         this.nombreCategoria = nombreCategoria;
     }
 

@@ -11,7 +11,7 @@ public class GeminiService {
     /**
      * Valida el input, llama al cliente Gemini y normaliza la respuesta.
      */
-    public static JsonObject verificarGeneracionTexto(String mensaje, String instrucciones){
+    public static JsonObject generateText(String mensaje, String instrucciones){
         JsonObject responseAI = new JsonObject();
         
         // No se puede generar respuesta sin prompt.
@@ -22,7 +22,7 @@ public class GeminiService {
         }
 
         // Llama al cliente de IA con el prompt e instrucciones.
-        String response = GeminiAI.generarTexto(mensaje, instrucciones);
+        String response = GeminiAI.generateText(mensaje, instrucciones);
         // Si la IA no responde, devolvemos error.
         if (response == null || response.isBlank()) {
             responseAI.addProperty("mensaje", "No se obtuvo respuesta de la IA");

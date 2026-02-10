@@ -13,7 +13,7 @@ public class LoginService {
     /**
      * Valida formato de correo, verifica credenciales y genera token JWT.
      */
-    public static JsonObject verificarDatosLogin(String correo, String contraseña) {
+    public static JsonObject validateLoginData(String correo, String contraseña) {
         
         JsonObject response = new JsonObject();
         try {
@@ -25,7 +25,7 @@ public class LoginService {
 
             } else {
                 // Busca usuario por correo en la DB.
-                JsonObject user = LoginDao.validarUsuario(correo);
+                JsonObject user = LoginDao.findUserByEmail(correo);
 
                 int code = user.get("status").getAsInt();
 
@@ -46,7 +46,7 @@ public class LoginService {
                 }
 
                 // Genera JWT con correo, rol e id.
-                String token = JwtUtil.tokenUsuario(correo, rol, id);
+                String token = JwtUtil.generateUserToken(correo, rol, id);
                 response.addProperty("Mensaje", "Usuario logueado correctamente");
                 response.addProperty("Token", token);
                 response.addProperty("status", 200);

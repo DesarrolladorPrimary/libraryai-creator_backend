@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 /**
  * Modelo de dominio para plan de suscripcion.
  */
-public class PlanSuscripcion {
+public class SubscriptionPlan {
 
     // **atributos de la tabla privados
     private int plan_id;
@@ -16,7 +16,7 @@ public class PlanSuscripcion {
     private boolean activo;
 
     // **Constructor para crear planes de suscripcion
-    public PlanSuscripcion(int plan_id, String nombrePlan, int almacenamientoMaxMB,
+    public SubscriptionPlan(int plan_id, String nombrePlan, int almacenamientoMaxMB,
             BigDecimal precio, boolean activo) {
         this.plan_id = plan_id;
         this.nombrePlan = nombrePlan;
@@ -27,27 +27,27 @@ public class PlanSuscripcion {
 
     // **Getter y Setter para manipulacion de datos privados
 
-    public int getPlan_id() {
+    public int getPlanId() {
         return plan_id;
     }
 
-    public void setPlan_id(int plan_id) {
+    public void setPlanId(int plan_id) {
         this.plan_id = plan_id;
     }
 
-    public String getNombrePlan() {
+    public String getPlanName() {
         return nombrePlan;
     }
 
-    public void setNombrePlan(String nombrePlan) {
+    public void setPlanName(String nombrePlan) {
         this.nombrePlan = nombrePlan;
     }
 
-    public int getAlmacenamientoMaxMB() {
+    public int getMaxStorageMb() {
         return almacenamientoMaxMB;
     }
 
-    public void setAlmacenamientoMaxMB(int almacenamientoMaxMB) {
+    public void setMaxStorageMb(int almacenamientoMaxMB) {
         this.almacenamientoMaxMB = almacenamientoMaxMB;
     }
 
@@ -59,11 +59,11 @@ public class PlanSuscripcion {
         this.precio = precio;
     }
 
-    public boolean isActivo() {
+    public boolean isActive() {
         return activo;
     }
 
-    public void setActivo(boolean activo) {
+    public void setActive(boolean activo) {
         this.activo = activo;
     }
 

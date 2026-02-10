@@ -4,7 +4,7 @@ package com.libraryai.backend.models;
 /**
  * Modelo de dominio para configuracion de IA.
  */
-public class ConfiguracionIA {
+public class AIConfiguration {
 
     // **atributos de la tabla privados
     private int config_id;
@@ -15,7 +15,7 @@ public class ConfiguracionIA {
     private String tonoEmocional;
 
     // **Constructor para crear configuraciones de IA
-    public ConfiguracionIA(int config_id, int relato_id, String estiloEscritura,
+    public AIConfiguration(int config_id, int relato_id, String estiloEscritura,
             String nivelCreatividad, String longitudRespuesta, String tonoEmocional) {
         this.config_id = config_id;
         this.relato_id = relato_id;
@@ -27,51 +27,51 @@ public class ConfiguracionIA {
 
     // **Getter y Setter para manipulacion de datos privados
 
-    public int getConfig_id() {
+    public int getConfigId() {
         return config_id;
     }
 
-    public void setConfig_id(int config_id) {
+    public void setConfigId(int config_id) {
         this.config_id = config_id;
     }
 
-    public int getRelato_id() {
+    public int getStoryId() {
         return relato_id;
     }
 
-    public void setRelato_id(int relato_id) {
+    public void setStoryId(int relato_id) {
         this.relato_id = relato_id;
     }
 
-    public String getEstiloEscritura() {
+    public String getWritingStyle() {
         return estiloEscritura;
     }
 
-    public void setEstiloEscritura(String estiloEscritura) {
+    public void setWritingStyle(String estiloEscritura) {
         this.estiloEscritura = estiloEscritura;
     }
 
-    public String getNivelCreatividad() {
+    public String getCreativityLevel() {
         return nivelCreatividad;
     }
 
-    public void setNivelCreatividad(String nivelCreatividad) {
+    public void setCreativityLevel(String nivelCreatividad) {
         this.nivelCreatividad = nivelCreatividad;
     }
 
-    public String getLongitudRespuesta() {
+    public String getResponseLength() {
         return longitudRespuesta;
     }
 
-    public void setLongitudRespuesta(String longitudRespuesta) {
+    public void setResponseLength(String longitudRespuesta) {
         this.longitudRespuesta = longitudRespuesta;
     }
 
-    public String getTonoEmocional() {
+    public String getEmotionalTone() {
         return tonoEmocional;
     }
 
-    public void setTonoEmocional(String tonoEmocional) {
+    public void setEmotionalTone(String tonoEmocional) {
         this.tonoEmocional = tonoEmocional;
     }
 
