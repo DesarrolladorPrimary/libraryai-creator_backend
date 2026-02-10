@@ -9,7 +9,7 @@ import java.time.LocalDate;
 public class User {
 
     // **atributos de la tabla y del usuario privados
-    private int usuario_id;
+    private int usuarioId;
     private String nombre;
     private String correo;
     private String contrasenaHash;
@@ -17,9 +17,9 @@ public class User {
     private boolean activo;
 
     // **Constructor para crear usuarios
-    public User(int usuario_id, String nombre, String correo, String contrasenaHash, LocalDate fechaRegistro,
+    public User(int usuarioId, String nombre, String correo, String contrasenaHash, LocalDate fechaRegistro,
             boolean activo) {
-        this.usuario_id = usuario_id;
+        this.usuarioId = usuarioId;
         this.nombre = nombre;
         this.correo = correo;
         this.contrasenaHash = contrasenaHash;
@@ -29,12 +29,12 @@ public class User {
 
     // **Getter y Setter para manipulacion de datos privados
     
-    public int getUsuario_id() {
-        return usuario_id;
+    public int getUsuarioId() {
+        return usuarioId;
     }
 
-    public void setUsuario_id(int usuario_id) {
-        this.usuario_id = usuario_id;
+    public void setUsuarioId(int usuario_id) {
+        this.usuarioId = usuarioId;
     }
 
     public String getNombre() {

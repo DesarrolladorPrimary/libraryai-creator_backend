@@ -111,7 +111,7 @@ public class UserDao {
             if (!rs.next()) {
                 System.out.println("El usuario no existe");
                 user.addProperty("status" , 404);
-                user.addProperty("Mensaje", "No esxiste el usuario");
+                user.addProperty("Mensaje", "No existe el usuario");
 
             } else {
 
@@ -215,7 +215,7 @@ public class UserDao {
     public static boolean existsByEmail(String correo) {
 
         // Variable bandera, por defecto asumimos que NO existe
-        boolean correroExist = false;
+        boolean correoExist = false;
         try (
                 // Conectamos
                 Connection conn = DbConnection.getConnection();
@@ -228,9 +228,9 @@ public class UserDao {
 
             // Si rs.next() es true, significa que encontró al menos un registro
             if (rs.next()) {
-                correroExist = true; // El usuario existe
+                correoExist = true; // El usuario existe
             } else {
-                correroExist = false; // No se encontró nada
+                correoExist = false; // No se encontró nada
             }
 
         } catch (SQLException e) {
@@ -238,7 +238,7 @@ public class UserDao {
             e.printStackTrace();
         }
         // Devolvemos el resultado booleano
-        return correroExist;
+        return correoExist;
     }
 
     /**

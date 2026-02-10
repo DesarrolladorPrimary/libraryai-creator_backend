@@ -86,7 +86,7 @@ public class UserController {
                 response.remove("status");
             }
 
-            response.remove("Contraseña");
+            response.remove("contraseña");
 
             String responsString = response.toString();
             ApiResponse.send(exchange, responsString, statusCode);
@@ -158,7 +158,7 @@ public class UserController {
             // Si el body está vacío, respondemos error 400 Bad Request
             if (body.isEmpty()) {
 
-                ApiResponse.error(exchange, 400, "Los datos estan vacios");
+                ApiResponse.error(exchange, 400, "Los datos están vacíos");
                 return; // Importante: salimos del handler aquí
             }
 
@@ -213,7 +213,7 @@ public class UserController {
             String body = request.readBody();
 
             if (body.isEmpty()) {
-                ApiResponse.error(exchange, 400, "No hay cuerpo");
+                ApiResponse.error(exchange, 400, "No hay cuerpo en la peticion");
             }
 
             // Obtiene el id desde la query.
@@ -221,7 +221,7 @@ public class UserController {
             String parametroId = path.getQuery();
 
             if (parametroId == null || parametroId.isEmpty()) {
-                ApiResponse.error(exchange, 404, "no existe el id");
+                ApiResponse.error(exchange, 404, "No existe el ID");
             }
 
             // Valida y parsea el id.
