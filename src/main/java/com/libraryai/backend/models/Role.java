@@ -1,17 +1,17 @@
 package com.libraryai.backend.models;
 
-//*Clase modelo de la tabla Rol
+//*Clase modelo de la tabla Role
 /**
  * Modelo de dominio para rol.
  */
-public class Rol {
+public class Role {
 
     // **atributos de la tabla privados
     private int rol_id;
     private String nombreRol;
 
     // **Constructor para crear roles
-    public Rol(int rol_id, String nombreRol) {
+    public Role(int rol_id, String nombreRol) {
         this.rol_id = rol_id;
         this.nombreRol = nombreRol;
     }
