@@ -6,7 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import com.google.gson.JsonObject;
-import com.libraryai.backend.config.DbConnection;
+import com.libraryai.backend.config.ConexionDB;
 
 /**
  * DAO para autenticacion de usuarios.
@@ -15,7 +15,7 @@ public class LoginDao {
 
     // language=sql
     final static String SQL_SELECT_WHERE = """
-            SELECT u.Correo, u.PasswordHash, r.NombreRol, u.PK_UsuarioID
+            SELECT u.Correo, u.Passwordhash, r.NombreRol, u.PK_UsuarioID
             FROM Usuario u
             INNER JOIN UsuarioRol ur ON u.PK_UsuarioID = ur.FK_UsuarioID
             INNER JOIN Rol r ON ur.FK_RolID = r.PK_RolID
@@ -26,11 +26,11 @@ public class LoginDao {
      * Busca un usuario por correo y devuelve hash, rol e id.
      * Retorna status 200 si encuentra, 404 si no existe.
      */
-    public static JsonObject validateUser(String correo) {
+    public static JsonObject validarUsuario(String correo) {
         JsonObject user = new JsonObject();
 
         try (
-                Connection conn = DbConnection.getConnection();
+                Connection conn = ConexionDB.getConexion();
                 PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT_WHERE);) {
             // Prepara la consulta con el correo recibido.
             pstmt.setString(1, correo);
@@ -43,7 +43,7 @@ public class LoginDao {
             } else {
                 // Lee los datos necesarios para login.
                 do {
-                    String contraseñaDB = rs.getString("PasswordHash");
+                    String contraseñaDB = rs.getString("Passwordhash");
                     String rolUsuario = rs.getString("NombreRol");
                     int idUsuario = rs.getInt("PK_UsuarioID");
                     user.addProperty("status", 200);

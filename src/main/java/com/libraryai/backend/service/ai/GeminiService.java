@@ -22,7 +22,7 @@ public class GeminiService {
         }
 
         // Llama al cliente de IA con el prompt e instrucciones.
-        String response = GeminiAI.generateText(mensaje, instrucciones);
+        String response = GeminiAI.generarTexto(mensaje, instrucciones);
         // Si la IA no responde, devolvemos error.
         if (response == null || response.isBlank()) {
             responseAI.addProperty("mensaje", "No se obtuvo respuesta de la IA");

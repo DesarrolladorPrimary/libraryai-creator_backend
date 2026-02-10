@@ -4,12 +4,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import com.libraryai.backend.config.DbConnection;
+import com.libraryai.backend.config.ConexionDB;
 
 /**
  * DAO para relacion usuario-rol.
  */
-public class UserRoleDao {
+public class UsuarioRolDao {
     private static final int ROL_USUARIO_DEFAULT = 2;
 
     // language=sql
@@ -20,9 +20,9 @@ public class UserRoleDao {
     /**
      * Asigna el rol por defecto a un usuario recien creado.
      */
-    public static void assignRole(int id){
+    public static void asignarRol(int id){
         try (
-            Connection conn = DbConnection.getConnection();
+            Connection conn = ConexionDB.getConexion();
             PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT_ROL);
         ) {
             // FK_UsuarioID y FK_RolID.

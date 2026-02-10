@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import com.libraryai.backend.config.DbConnection;
+import com.libraryai.backend.config.ConexionDB;
 
 public class SeedRoles {
 
@@ -20,7 +20,7 @@ public class SeedRoles {
 
     public static void insertRoles() {
         try (
-                Connection conn = DbConnection.getConnection();
+                Connection conn = ConexionDB.getConexion();
                 PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT);
             ) {
 

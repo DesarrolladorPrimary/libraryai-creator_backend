@@ -42,8 +42,6 @@ public class Router implements HttpHandler {
      */
     Map<String, Map<String, HttpHandler>> router = new HashMap<>();
 
-    private HttpHandler beforeEachHandler;
-
     /**
      * MÉTODO PARA REGISTRAR RUTAS
      *
@@ -90,15 +88,11 @@ public class Router implements HttpHandler {
         addroute("DELETE", path, handle);
     }
 
-    public void options(String path, HttpHandler handle) {
+
+    public void options(String path, HttpHandler handle){
         addroute("OPTIONS", path, handle);
 
     }
-
-    public void beforeEachHandler(HttpHandler handler) {
-        beforeEachHandler = handler;
-    }
-
     /**
      * MÉTODO QUE PROCESA CADA PETICIÓN HTTP
      *
@@ -106,7 +100,7 @@ public class Router implements HttpHandler {
      * Es obligatorio implementarlo porque Router implementa HttpHandler.
      *
      * @param exchange - Contiene toda la información de la petición y permite
-     *                 enviar respuesta
+     * enviar respuesta
      */
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -114,22 +108,12 @@ public class Router implements HttpHandler {
         // Extraemos el método HTTP de la petición (GET, POST, DELETE, etc.)
         String method = exchange.getRequestMethod();
 
-        // CORS: siempre agregamos cabeceras antes de responder (incluye preflight)
-        exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-        exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-        exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
         if (method.equalsIgnoreCase("OPTIONS")) {
-            exchange.sendResponseHeaders(204, -1);
+            ApiResponse.send(exchange, "", 200);
             return;
         }
         // Extraemos el path/ruta de la petición (ej: "/api/v1/usuarios")
         String path = exchange.getRequestURI().getPath();
-
-        if (beforeEachHandler != null) {
-            beforeEachHandler.handle(exchange);
-        } else {
-        }
 
         // Buscamos si existe un Map de rutas para este método HTTP
         // Ejemplo: buscamos todas las rutas GET registradas

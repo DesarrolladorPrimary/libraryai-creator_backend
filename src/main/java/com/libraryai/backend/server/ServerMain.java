@@ -5,7 +5,8 @@ import java.io.IOException;
 // InetSocketAddress para especificar IP y puerto del servidor
 import java.net.InetSocketAddress;
 
-import com.libraryai.backend.routes.Routes;
+// Importamos nuestra clase de rutas
+import com.libraryai.backend.router.Rutas;
 // Clases del servidor HTTP de Java
 import com.sun.net.httpserver.*;
 
@@ -51,12 +52,12 @@ public class ServerMain {
 
             // ========== CONFIGURACIÓN DE RUTAS ==========
 
-            // Creamos una instancia de nuestra clase de Routes
-            Routes rutas = new Routes();
+            // Creamos una instancia de nuestra clase de Rutas
+            Rutas rutas = new Rutas();
 
             // Llamamos al método que registra todas las rutas
             // y nos devuelve el Router configurado
-            HttpHandler router = rutas.routes();
+            HttpHandler router = rutas.ruts();
 
             // Conectamos el Router al servidor
             // "/" significa que el Router manejará TODAS las rutas que empiecen con /

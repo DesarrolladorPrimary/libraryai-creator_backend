@@ -6,7 +6,7 @@ import java.time.LocalDate;
 /**
  * Modelo de dominio para usuario.
  */
-public class User {
+public class Usuario {
 
     // **atributos de la tabla y del usuario privados
     private int usuarioId;
@@ -17,7 +17,7 @@ public class User {
     private boolean activo;
 
     // **Constructor para crear usuarios
-    public User(int usuarioId, String nombre, String correo, String contrasenaHash, LocalDate fechaRegistro,
+    public Usuario(int usuarioId, String nombre, String correo, String contrasenaHash, LocalDate fechaRegistro,
             boolean activo) {
         this.usuarioId = usuarioId;
         this.nombre = nombre;

@@ -16,7 +16,7 @@ public class AuthMiddleware {
      * - el token es valido y el rol esta en rolesPermitidos, o
      * - el token corresponde al mismo id solicitado en la query.
      */
-    public HttpHandler protect( HttpHandler proximoPaso, String...rolesPermitidos) {
+    public HttpHandler proteger( HttpHandler proximoPaso, String...rolesPermitidos) {
         return (exchange) -> {
             try {
                 // Extrae el token de la cabecera Authorization.
@@ -31,13 +31,13 @@ public class AuthMiddleware {
                 String rolUser = parts[parts.length - 1].trim();
 
                 // Valida el token y obtiene claims basicos (rol, usuario, id).
-                JsonObject infoToken = JwtUtil.validateToken(rolUser);
+                JsonObject infoToken = JwtUtil.validarToken(rolUser);
 
                 if (infoToken.has("Mensaje")) {
                     ApiResponse.error(exchange, 401, infoToken.get("Mensaje").getAsString());
                     return;
                 }
-                String rolToken = infoToken.get("Role").getAsString();
+                String rolToken = infoToken.get("Rol").getAsString();
                 int idToken = infoToken.get("Id").getAsInt();
 
                 // Si la ruta incluye un id en query, permitimos acceso al mismo usuario.
