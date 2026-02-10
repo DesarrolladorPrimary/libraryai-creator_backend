@@ -2,11 +2,11 @@ package com.libraryai.backend.models;
 
 import java.time.LocalDateTime;
 
-//*Clase modelo de la tabla Story
+//*Clase modelo de la tabla Relato
 /**
  * Modelo de dominio para relato.
  */
-public class Story {
+public class Relato {
 
     // **atributos de la tabla privados
     private int relato_id;
@@ -20,7 +20,7 @@ public class Story {
     private LocalDateTime fechaModificacion;
 
     // **Constructor para crear relatos
-    public Story(int relato_id, int usuario_id, Integer estanteria_id, Integer modeloUsado_id,
+    public Relato(int relato_id, int usuario_id, Integer estanteria_id, Integer modeloUsado_id,
             String titulo, String modoOrigen, String descripcion,
             LocalDateTime fechaCreacion, LocalDateTime fechaModificacion) {
         this.relato_id = relato_id;

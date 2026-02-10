@@ -1,10 +1,10 @@
 package com.libraryai.backend.models;
 
-//*Clase modelo de la tabla AiConfiguration
+//*Clase modelo de la tabla ConfiguracionIA
 /**
  * Modelo de dominio para configuracion de IA.
  */
-public class AiConfiguration {
+public class ConfiguracionIA {
 
     // **atributos de la tabla privados
     private int config_id;
@@ -15,7 +15,7 @@ public class AiConfiguration {
     private String tonoEmocional;
 
     // **Constructor para crear configuraciones de IA
-    public AiConfiguration(int config_id, int relato_id, String estiloEscritura,
+    public ConfiguracionIA(int config_id, int relato_id, String estiloEscritura,
             String nivelCreatividad, String longitudRespuesta, String tonoEmocional) {
         this.config_id = config_id;
         this.relato_id = relato_id;
