@@ -2,11 +2,11 @@ package com.libraryai.backend.models;
 
 import java.time.LocalDateTime;
 
-//*Clase modelo de la tabla AiModel
+//*Clase modelo de la tabla ModeloIA
 /**
  * Modelo de dominio para modelo de IA.
  */
-public class AiModel {
+public class ModeloIA {
 
     // **atributos de la tabla privados
     private int modelo_id;
@@ -19,7 +19,7 @@ public class AiModel {
     private String estado;
 
     // **Constructor para crear modelos de IA
-    public AiModel(int modelo_id, String nombreModelo, String version, String descripcion,
+    public ModeloIA(int modelo_id, String nombreModelo, String version, String descripcion,
             String notasVersion, LocalDateTime fechaLanzamiento, boolean esGratuito, String estado) {
         this.modelo_id = modelo_id;
         this.nombreModelo = nombreModelo;

@@ -9,7 +9,7 @@ import com.google.gson.JsonArray;
 // JsonObject para objetos JSON individuales
 import com.google.gson.JsonObject;
 // DAO (Data Access Object) para operaciones con la base de datos
-import com.libraryai.backend.dao.UserDao;
+import com.libraryai.backend.dao.UsuariosDao;
 import com.libraryai.backend.server.http.ApiRequest;
 import com.libraryai.backend.server.http.ApiResponse;
 // Servicio para lógica de negocio de usuarios
@@ -19,7 +19,7 @@ import com.libraryai.backend.util.QueryParams;
 import com.sun.net.httpserver.HttpHandler;
 
 /**
- * USERCONTROLLER - Controlador de la entidad User
+ * USERCONTROLLER - Controlador de la entidad Usuario
  *
  * Este controlador maneja todas las operaciones HTTP relacionadas con usuarios:
  * - GET: Listar usuarios, obtener usuario por ID
@@ -42,7 +42,7 @@ public class UserController {
      *
      * @return HttpHandler que busca un usuario por su ID y retorna sus datos
      */
-    public static HttpHandler getUserById() {
+    public static HttpHandler obtenerUsuarioId() {
 
         // Retornamos un lambda que procesa la petición
         return exchange -> {
@@ -74,7 +74,7 @@ public class UserController {
             idJson.remove("status");
             id = idJson.get("id").getAsInt();
             // Llamamos al DAO para buscar el usuario en la base de datos
-            response = UserDao.getById(id);
+            response = UsuariosDao.buscarPorId(id);
 
             // Código HTTP por defecto: 200 OK
             int statusCode = 200;
@@ -100,14 +100,14 @@ public class UserController {
      *
      * @return HttpHandler que obtiene la lista completa de usuarios de la BD
      */
-    public static HttpHandler listUsers() {
+    public static HttpHandler listarUsuarios() {
         return exchange -> {
             // Imprime en consola el método HTTP recibido para logging
             System.out.println("Peticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
 
             // Llama al DAO para obtener todos los usuarios de la base de datos
             // Retorna un JsonArray con la lista de objetos JSON de usuarios
-            JsonArray response = UserDao.listAllUsers();
+            JsonArray response = UsuariosDao.listarTodos();
 
             // Código HTTP por defecto: 200 OK (éxito)
             int statusCode = 200;
@@ -142,7 +142,7 @@ public class UserController {
      *
      * @return HttpHandler que crea un nuevo usuario con los datos del body
      */
-    public static HttpHandler createUser() {
+    public static HttpHandler crearUsuario() {
 
         return exchange -> {
             // Objeto para construir respuestas
@@ -180,8 +180,8 @@ public class UserController {
 
             // ========== LÓGICA DE NEGOCIO ==========
 
-            // Llamamos al servicio para validar y save el usuario
-            response = UserService.validateUserData(nombre, correo, contraseña);
+            // Llamamos al servicio para validar y guardar el usuario
+            response = UserService.verificarDatosUsuario(nombre, correo, contraseña);
 
             // Código HTTP por defecto: 201 Created (recurso creado)
             int statusCode = 201;
@@ -203,7 +203,7 @@ public class UserController {
      * Handler para actualizar un usuario por id.
      * Lee id desde query y campos opcionales desde el body.
      */
-    public static HttpHandler updateUser() {
+    public static HttpHandler actualizarUsuario() {
         return exchange -> {
             System.out.println("\n\nPeticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
 
@@ -261,7 +261,7 @@ public class UserController {
                 contraseña = json.get("contraseña").getAsString();
             }
             
-            JsonObject response = UserService.validateUserUpdate(nombre, correo, contraseña, id);
+            JsonObject response = UserService.verificarDatosActualizar(nombre, correo, contraseña, id);
 
             int code = response.get("status").getAsInt();
 
@@ -281,7 +281,7 @@ public class UserController {
      *
      * @return HttpHandler que elimina un usuario de la base de datos
      */
-    public static HttpHandler deleteUser() {
+    public static HttpHandler eliminarUsuario() {
 
         return exchange -> {
             System.out.println("\n\nPeticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
@@ -313,7 +313,7 @@ public class UserController {
             // ========== ELIMINACIÓN EN BD ==========
 
             // Llamamos al DAO para eliminar el usuario
-            JsonObject responseJson = UserDao.deleteById(id);
+            JsonObject responseJson = UsuariosDao.eliminarPorId(id);
 
             // Código HTTP por defecto: 200 OK
             int statusCode = 200;

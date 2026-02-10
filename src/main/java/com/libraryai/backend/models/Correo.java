@@ -2,11 +2,11 @@ package com.libraryai.backend.models;
 
 import java.time.LocalDateTime;
 
-//*Clase modelo de la tabla Email
+//*Clase modelo de la tabla Correo
 /**
  * Modelo de dominio para correo.
  */
-public class Email {
+public class Correo {
 
     // **atributos de la tabla privados
     private int correo_id;
@@ -17,7 +17,7 @@ public class Email {
     private String estado;
 
     // **Constructor para crear correos
-    public Email(int correo_id, int usuario_id, String asunto, String cuerpo,
+    public Correo(int correo_id, int usuario_id, String asunto, String cuerpo,
             LocalDateTime fechaEnvio, String estado) {
         this.correo_id = correo_id;
         this.usuario_id = usuario_id;

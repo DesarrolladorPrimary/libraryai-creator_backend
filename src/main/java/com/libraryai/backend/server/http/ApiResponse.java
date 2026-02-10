@@ -40,6 +40,10 @@ public class ApiResponse {
 
         // Agregamos la cabecera Content-Type para indicar que enviamos JSON
         exchange.getResponseHeaders().add("Content-Type", "Application/json; charset=utf-8");
+        exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+        exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET ,POST, PUT, DELETE, OPTIONS");
+        exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
 
         // Enviamos las cabeceras HTTP:
         // - statusCode: código de respuesta (200, 404, 500, etc.)
@@ -85,7 +89,7 @@ public class ApiResponse {
         // Cuerpo basico de confirmacion.
         JsonObject json = new JsonObject();
 
-        json.addProperty("Mensaje", "User creado exitosamente");
+        json.addProperty("Mensaje", "Usuario creado exitosamente");
 
         String body = json.toString();
 
