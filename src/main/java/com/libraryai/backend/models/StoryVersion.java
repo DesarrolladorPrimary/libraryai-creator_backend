@@ -2,11 +2,11 @@ package com.libraryai.backend.models;
 
 import java.time.LocalDateTime;
 
-//*Clase modelo de la tabla RelatoVersion
+//*Clase modelo de la tabla StoryVersion
 /**
  * Modelo de dominio para version de relato.
  */
-public class RelatoVersion {
+public class StoryVersion {
 
     // **atributos de la tabla privados
     private int version_id;
@@ -18,7 +18,7 @@ public class RelatoVersion {
     private LocalDateTime fechaVersion;
 
     // **Constructor para crear versiones de relato
-    public RelatoVersion(int version_id, int relato_id, float numeroVersion, String contenido,
+    public StoryVersion(int version_id, int relato_id, float numeroVersion, String contenido,
             String notas, boolean esPublicada, LocalDateTime fechaVersion) {
         this.version_id = version_id;
         this.relato_id = relato_id;

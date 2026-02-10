@@ -2,11 +2,11 @@ package com.libraryai.backend.models;
 
 import java.time.LocalDateTime;
 
-//*Clase modelo de la tabla MensajeChat
+//*Clase modelo de la tabla ChatMessage
 /**
  * Modelo de dominio para mensaje de chat.
  */
-public class MensajeChat {
+public class ChatMessage {
 
     // **atributos de la tabla privados
     private int mensaje_id;
@@ -17,7 +17,7 @@ public class MensajeChat {
     private int orden;
 
     // **Constructor para crear mensajes de chat
-    public MensajeChat(int mensaje_id, int relato_id, String emisor, String contenidoMensaje,
+    public ChatMessage(int mensaje_id, int relato_id, String emisor, String contenidoMensaje,
             LocalDateTime fechaEnvio, int orden) {
         this.mensaje_id = mensaje_id;
         this.relato_id = relato_id;

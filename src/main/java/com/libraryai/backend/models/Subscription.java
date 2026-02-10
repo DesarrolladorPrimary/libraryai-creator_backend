@@ -2,11 +2,11 @@ package com.libraryai.backend.models;
 
 import java.time.LocalDateTime;
 
-//*Clase modelo de la tabla Suscripcion
+//*Clase modelo de la tabla Subscription
 /**
  * Modelo de dominio para suscripcion.
  */
-public class Suscripcion {
+public class Subscription {
 
     // **atributos de la tabla privados
     private int suscripcion_id;
@@ -18,7 +18,7 @@ public class Suscripcion {
     private boolean renovacionAutomatica;
 
     // **Constructor para crear suscripciones
-    public Suscripcion(int suscripcion_id, int usuario_id, int plan_id,
+    public Subscription(int suscripcion_id, int usuario_id, int plan_id,
             LocalDateTime fechaInicio, LocalDateTime fechaFin,
             String estado, boolean renovacionAutomatica) {
         this.suscripcion_id = suscripcion_id;

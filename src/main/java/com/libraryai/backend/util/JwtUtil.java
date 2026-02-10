@@ -62,7 +62,7 @@ public class JwtUtil {
      * Valida un JWT y devuelve claims basicos en un JsonObject.
      * Si falla, retorna un objeto con Mensaje y code.
      */
-    public static JsonObject validarToken(String token) {
+    public static JsonObject validateToken(String token) {
         JsonObject very = new JsonObject();
         try {
             // Parsea y verifica la firma del token.
@@ -77,8 +77,8 @@ public class JwtUtil {
                 String role = validarClaims.get("role", String.class);
                 double id = validarClaims.get("id", Double.class);
 
-                very.addProperty("Rol", role);
-                very.addProperty("Usuario", usuario);
+                very.addProperty("Role", role);
+                very.addProperty("User", usuario);
                 very.addProperty("Id", id);
             
         } catch (JwtException e) {

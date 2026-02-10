@@ -1,10 +1,10 @@
 package com.libraryai.backend.models;
 
-//*Clase modelo de la tabla Permiso
+//*Clase modelo de la tabla Permission
 /**
  * Modelo de dominio para permiso.
  */
-public class Permiso {
+public class Permission {
 
     // **atributos de la tabla privados
     private int permiso_id;
@@ -12,7 +12,7 @@ public class Permiso {
     private String descripcion;
 
     // **Constructor para crear permisos
-    public Permiso(int permiso_id, String clavePermiso, String descripcion) {
+    public Permission(int permiso_id, String clavePermiso, String descripcion) {
         this.permiso_id = permiso_id;
         this.clavePermiso = clavePermiso;
         this.descripcion = descripcion;
