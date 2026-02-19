@@ -120,12 +120,14 @@ public class UserDao {
                 String nombre = rs.getString("Nombre");
                 String correo = rs.getString("Correo");
                 String rol = rs.getString("NombreRol");
+                Date fechaRegistro = rs.getDate("FechaRegistro");
 
                 // Rellenamos el objeto JSON con los datos obtenidos
                 user.addProperty("PK_UsuarioID", usuario_id);
                 user.addProperty("Nombre", nombre);
                 user.addProperty("Correo", correo);
                 user.addProperty("Rol", rol);
+                user.addProperty("Fecha Registro", fechaRegistro.toString());
                 // Agregamos status 200 (OK) al usuario
                 user.addProperty("status", 200);
 

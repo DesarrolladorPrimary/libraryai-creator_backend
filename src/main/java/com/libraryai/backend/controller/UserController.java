@@ -83,7 +83,7 @@ public class UserController {
             if (response.has("status")) {
                 statusCode = response.get("status").getAsInt();
                 // Removemos el status del JSON para no mostrarlo al cliente
-                response.remove("status");
+                // response.remove("status");
             }
 
             response.remove("contraseña");

@@ -209,7 +209,7 @@ JOIN Estanteria e ON r.FK_EstanteriaID = e.PK_EstanteriaID
 JOIN Usuario u ON r.FK_UsuarioID = u.PK_UsuarioID;
 
 CREATE VIEW V_RolesDeUsuario AS
-SELECT u.PK_UsuarioID, u.Nombre, u.Correo, r.NombreRol
+SELECT u.PK_UsuarioID, u.Nombre, u.Correo,  u.FechaRegistro, r.NombreRol
 FROM UsuarioRol ur
 JOIN Usuario u ON ur.FK_UsuarioID = u.PK_UsuarioID
 JOIN Rol r ON ur.FK_RolID = r.PK_RolID;
