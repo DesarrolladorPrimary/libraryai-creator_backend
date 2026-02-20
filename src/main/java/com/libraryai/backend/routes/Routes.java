@@ -1,7 +1,8 @@
 package com.libraryai.backend.routes;
 
-// Importamos el controlador que tiene los handlers de usuarios
+// Importamos los controladores
 import com.libraryai.backend.controller.UserController;
+import com.libraryai.backend.controller.SettingsController;
 import com.libraryai.backend.controller.ai.AiController;
 import com.libraryai.backend.controller.auth.LoginController;
 import com.libraryai.backend.middleware.AuthMiddleware;
@@ -18,7 +19,7 @@ import com.sun.net.httpserver.HttpHandler;
  *
  * Para agregar una nueva ruta:
  * 1. Importar el Controller correspondiente
- * 2. Usar rutas.addroute(MÉTODO, PATH, HANDLER)
+ * 2. Usar router.get/post/put/delete(PATH, HANDLER)
  */
 public class Routes {
 
@@ -42,15 +43,11 @@ public class Routes {
         router.post("/api/v1/login", LoginController.loginUser());
 
         // ========== RUTAS DE USUARIOS ==========
-        // GET /api/v1/usuarios � Lista todos los usuarios
-        // Cuando alguien haga GET a esta ruta, se ejecuta listarUsuarios()
         router.get("/api/v1/usuarios",
                 auth.proteger(UserController.listUsers(), "Admin"));
 
         router.post("/api/v1/usuarios", UserController.createUser());
 
-        // GET /api/v1/usuarios/id?id=X � Obtiene un usuario espec�fico por ID
-        // Ejemplo: GET /api/v1/usuarios/id?id=5
         router.get("/api/v1/usuarios/id",
                 auth.proteger(UserController.getUserById(), "Admin"));
 
@@ -64,14 +61,21 @@ public class Routes {
         router.post("/api/v1/generar-historias",
                 auth.proteger(AiController.generateStory(), "Gratuito", "Premium"));
 
+        // ========== RUTAS DE CONFIGURACIONES ==========
+        router.get("/api/v1/settings/instruccion-ia",
+                auth.proteger(SettingsController.getInstruccionIA(), "Gratuito", "Premium"));
+
+        router.put("/api/v1/settings/instruccion-ia",
+                auth.proteger(SettingsController.updateInstruccionIA(), "Gratuito", "Premium"));
+
+        router.get("/api/v1/settings/suscripcion",
+                auth.proteger(SettingsController.getSuscripcion(), "Gratuito", "Premium"));
+
         // ========== AQUÍ PUEDES AGREGAR MÁS RUTAS ==========
-        // Ejemplo para futuros controllers:
-        // rutas.addroute("GET", "/api/v1/libros", LibroController.listarLibros());
-        // rutas.addroute("POST", "/api/v1/login", AuthController.login());
+        // Ejemplo:
+        // router.get("/api/v1/relatos", auth.proteger(RelatoController.list(), "Gratuito", "Premium"));
 
         // Retornamos el router con todas las rutas configuradas
-        // Este router será usado por el servidor en ServerMain
         return router;
     }
-
 }
