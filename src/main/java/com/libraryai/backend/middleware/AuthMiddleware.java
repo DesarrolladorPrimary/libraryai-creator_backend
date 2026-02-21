@@ -26,12 +26,12 @@ public class AuthMiddleware {
                     ApiResponse.error(exchange, 401, "No tienes autorizacion para esto");
                     return;
                 }
-                // Espera el formato "Bearer <token>" y toma el ultimo fragmento como token.
-                String[] parts = peticion.split("Bearer");
-                String rolUser = parts[parts.length - 1].trim();
+                // Espera el formato "Bearer <token>" y toma el token
+                String[] parts = peticion.split(" ");
+                String token = parts.length > 1 ? parts[1].trim() : parts[0].trim();
 
                 // Valida el token y obtiene claims basicos (rol, usuario, id).
-                JsonObject infoToken = JwtUtil.validateToken(rolUser);
+                JsonObject infoToken = JwtUtil.validateToken(token);
 
                 if (infoToken.has("Mensaje")) {
                     ApiResponse.error(exchange, 401, infoToken.get("Mensaje").getAsString());

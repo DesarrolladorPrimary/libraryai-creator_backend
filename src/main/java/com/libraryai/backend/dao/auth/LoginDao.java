@@ -41,16 +41,13 @@ public class LoginDao {
                 user.addProperty("Mensaje", "El usuario no existe");
                 user.addProperty("status", 404);
             } else {
-                // Lee los datos necesarios para login.
-                do {
-                    String contraseñaDB = rs.getString("Passwordhash");
-                    String rolUsuario = rs.getString("NombreRol");
-                    int idUsuario = rs.getInt("PK_UsuarioID");
-                    user.addProperty("status", 200);
-                    user.addProperty("contraseña", contraseñaDB);
-                    user.addProperty("rol", rolUsuario);
-                    user.addProperty("id", idUsuario);
-                } while (rs.next());
+                String contraseñaDB = rs.getString("Passwordhash");
+                String rolUsuario = rs.getString("NombreRol");
+                int idUsuario = rs.getInt("PK_UsuarioID");
+                user.addProperty("status", 200);
+                user.addProperty("contraseña", contraseñaDB);
+                user.addProperty("rol", rolUsuario);
+                user.addProperty("id", idUsuario);
             }
 
         } catch (SQLException e) {

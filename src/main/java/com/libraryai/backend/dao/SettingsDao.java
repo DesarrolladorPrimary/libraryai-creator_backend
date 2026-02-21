@@ -1,8 +1,7 @@
 package com.libraryai.backend.dao;
 
 import com.google.gson.JsonObject;
-import com.libraryai.backend.config.ConexionDB;
-
+import com.libraryai.backend.config.DatabaseConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,7 +24,7 @@ public class SettingsDao {
         JsonObject response = new JsonObject();
         String sql = "SELECT InstruccionPermanenteIA FROM Usuario WHERE PK_UsuarioID = ?";
 
-        try (Connection conn = ConexionDB.getConnection();
+        try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, userId);
@@ -57,7 +56,7 @@ public class SettingsDao {
         JsonObject response = new JsonObject();
         String sql = "UPDATE Usuario SET InstruccionPermanenteIA = ? WHERE PK_UsuarioID = ?";
 
-        try (Connection conn = ConexionDB.getConnection();
+        try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, instruccion);
@@ -98,7 +97,7 @@ public class SettingsDao {
             LIMIT 1
         """;
 
-        try (Connection conn = ConexionDB.getConnection();
+        try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, userId);
