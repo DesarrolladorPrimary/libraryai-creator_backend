@@ -9,6 +9,7 @@ import com.google.gson.JsonObject;
 import com.libraryai.backend.dao.UserDao;
 import com.libraryai.backend.dao.auth.RecuperacionDao;
 import com.libraryai.backend.dao.auth.LoginDao;
+import com.libraryai.backend.service.EmailService;
 
 /**
  * Servicio de recuperación de contraseña.
@@ -49,17 +50,23 @@ public class RecuperacionService {
         // Guarda el token en la base de datos
         RecuperacionDao.guardarToken(usuarioId, token, expiracion);
         
-        // Por ahora, muestra el link en la consola del servidor
-        // (después se enviará por correo electrónico)
-        String link = "http://localhost:8080/api/v1/recuperar/validar?token=" + token;
-        System.out.println("\n========== LINK DE RECUPERACIÓN ==========");
-        System.out.println("Para recuperar contraseña, ingresa a:");
-        System.out.println(link);
-        System.out.println("============================================\n");
+        // Enviar correo con el enlace de recuperación
+        boolean correoEnviado = EmailService.enviarCorreoRecuperacion(correo, token);
         
         // Responde al cliente
-        response.addProperty("Mensaje", "Se ha enviado un enlace a tu correo");
-        response.addProperty("status", 200);
+        if (correoEnviado) {
+            response.addProperty("Mensaje", "Se ha enviado un enlace a tu correo");
+            response.addProperty("status", 200);
+        } else {
+            // Si falla el correo, mostrar link en consola como respaldo
+            String link = "http://localhost:8080/auth/recovery_passwd_change.html?token=" + token;
+            System.out.println("\n========== LINK DE RECUPERACIÓN (FALLÓ CORREO) ==========");
+            System.out.println("Para recuperar contraseña, ingresa a:");
+            System.out.println(link);
+            System.out.println("============================================\n");
+            response.addProperty("Mensaje", "Error al enviar correo. Contacta al administrador.");
+            response.addProperty("status", 500);
+        }
         
         return response;
     }

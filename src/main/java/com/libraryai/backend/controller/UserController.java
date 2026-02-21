@@ -274,6 +274,73 @@ public class UserController {
     }
 
     /**
+     * Handler para actualizar un solo campo del usuario.
+     * Ruta: PUT /api/v1/usuarios/campo?id=X
+     * Body esperado: { "campo": "nombre", "valor": "Juan" }
+     */
+    public static HttpHandler updateCampo() {
+        return exchange -> {
+            System.out.println("\n\nPeticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
+
+            ApiRequest request = new ApiRequest(exchange);
+            String body = request.readBody();
+
+            if (body.isEmpty()) {
+                ApiResponse.error(exchange, 400, "No hay cuerpo en la peticion");
+                return;
+            }
+
+            // Obtiene el id desde la query.
+            URI path = exchange.getRequestURI();
+            String parametroId = path.getQuery();
+
+            if (parametroId == null || parametroId.isEmpty()) {
+                ApiResponse.error(exchange, 404, "No existe el ID");
+                return;
+            }
+
+            // Valida y parsea el id.
+            JsonObject idJson = QueryParams.parseId(parametroId);
+            int codeQuery = idJson.get("status").getAsInt();
+
+            if (codeQuery != 200) {
+                String mensaje = idJson.get("Mensaje").getAsString();
+                ApiResponse.error(exchange, codeQuery, mensaje);
+                return;
+            }
+
+            int id = idJson.get("id").getAsInt();
+
+            // Parsea el JSON con campo y valor.
+            Gson gson = new Gson();
+            JsonObject json = gson.fromJson(body, JsonObject.class);
+
+            String campo = "";
+            String valor = "";
+
+            if (json.has("campo")) {
+                campo = json.get("campo").getAsString();
+            }
+            if (json.has("valor")) {
+                valor = json.get("valor").getAsString();
+            }
+
+            if (campo.isEmpty() || valor.isEmpty()) {
+                ApiResponse.error(exchange, 400, "Debe enviar campo y valor");
+                return;
+            }
+
+            JsonObject response = UserService.updateCampo(campo, valor, id);
+
+            int code = response.get("status").getAsInt();
+            response.remove("status");
+
+            String responseJson = response.toString();
+            ApiResponse.send(exchange, responseJson, code);
+        };
+    }
+
+    /**
      * HANDLER: Eliminar usuario por ID
      *
      * Ruta: DELETE /api/v1/usuarios?id=X

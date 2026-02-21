@@ -145,4 +145,31 @@ public class UserService {
         return response;
     }
 
+    /**
+     * Actualiza un solo campo del usuario.
+     * 
+     * @param campo Campo a actualizar (nombre, correo, contraseña).
+     * @param valor Nuevo valor.
+     * @param id ID del usuario.
+     * @return JsonObject con el resultado.
+     */
+    public static JsonObject updateCampo(String campo, String valor, int id) {
+        JsonObject response = new JsonObject();
+        
+        // Validaciones según el campo
+        if (campo.equalsIgnoreCase("correo")) {
+            if (!valor.matches("[a-zA-Z]+@[a-zA-Z]+\\.[a-zA-Z]{2,6}")) {
+                response.addProperty("Mensaje", "Correo no válido");
+                response.addProperty("status", 400);
+                return response;
+            }
+        }
+        
+        if (campo.equalsIgnoreCase("contraseña")) {
+            valor = BCrypt.hashpw(valor, BCrypt.gensalt());
+        }
+        
+        return UserDao.updateCampo(campo, valor, id);
+    }
+
 }
