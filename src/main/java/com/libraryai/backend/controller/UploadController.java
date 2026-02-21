@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.UUID;
 
 import com.google.gson.Gson;
@@ -24,7 +25,7 @@ public class UploadController {
     /**
      * Handler para subir foto de perfil.
      * Ruta: POST /api/v1/upload/perfil?id=X
-     * Content-Type: multipart/form-data
+     * Body esperado: { "imagen": "base64..." }
      */
     public static HttpHandler subirFotoPerfil() {
         return exchange -> {
@@ -44,45 +45,38 @@ public class UploadController {
             }
             int usuarioId = idJson.get("id").getAsInt();
 
-            // Obtener content-type
-            String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
-            if (contentType == null || !contentType.contains("multipart/form-data")) {
-                ApiResponse.error(exchange, 400, "Debe ser multipart/form-data");
+            // Leer el body
+            ApiRequest request = new ApiRequest(exchange);
+            String body = request.readBody();
+
+            if (body.isEmpty()) {
+                ApiResponse.error(exchange, 400, "No hay cuerpo en la petición");
                 return;
             }
 
             try {
-                // Leer el body
-                byte[] bodyBytes = exchange.getRequestBody().readAllBytes();
+                // Parsear JSON
+                Gson gson = new Gson();
+                JsonObject json = gson.fromJson(body, JsonObject.class);
 
-                // Buscar el boundary
-                String boundary = contentType.split("boundary=")[1];
-
-                // Extraer la imagen del body
-                String bodyString = new String(bodyBytes);
-                String[] parts = bodyString.split("--" + boundary);
-
-                String fileName = "perfil_" + usuarioId + "_" + UUID.randomUUID() + ".jpg";
-                byte[] imageData = null;
-
-                for (String part : parts) {
-                    if (part.contains("filename=")) {
-                        // Encontrar el inicio de los datos de la imagen
-                        int headerEnd = part.indexOf("\r\n\r\n");
-                        if (headerEnd > 0) {
-                            String imageString = part.substring(headerEnd + 4);
-                            // Eliminar el último \r\n si existe
-                            if (imageString.endsWith("\r\n")) {
-                                imageString = imageString.substring(0, imageString.length() - 2);
-                            }
-                            imageData = imageString.getBytes("ISO-8859-1");
-                            break;
-                        }
-                    }
+                if (!json.has("imagen")) {
+                    ApiResponse.error(exchange, 400, "Falta el campo 'imagen'");
+                    return;
                 }
 
-                if (imageData == null || imageData.length == 0) {
-                    ApiResponse.error(exchange, 400, "No se recibió ninguna imagen");
+                String base64Image = json.get("imagen").getAsString();
+
+                // Eliminar prefijo data:image/jpeg;base64, si existe
+                if (base64Image.contains(",")) {
+                    base64Image = base64Image.split(",")[1];
+                }
+
+                // Decodificar base64 a bytes
+                byte[] imageData = Base64.getDecoder().decode(base64Image);
+
+                // Validar que sea una imagen
+                if (imageData.length == 0) {
+                    ApiResponse.error(exchange, 400, "Imagen inválida");
                     return;
                 }
 
@@ -92,12 +86,18 @@ public class UploadController {
                     Files.createDirectories(uploadPath);
                 }
 
-                // Guardar archivo
+                // Generar nombre de archivo
+                String fileName = "perfil_" + usuarioId + "_" + UUID.randomUUID() + ".jpg";
                 Path filePath = uploadPath.resolve(fileName);
+
+                // Guardar archivo
                 Files.write(filePath, imageData);
+                System.out.println("Imagen guardada en: " + filePath.toAbsolutePath());
 
                 // Guardar ruta en la base de datos
                 String rutaImagen = UPLOAD_DIR + fileName;
+                System.out.println("Ruta a guardar en DB: " + rutaImagen);
+                
                 JsonObject result = UserDao.updateFotoPerfil(rutaImagen, usuarioId);
 
                 JsonObject response = new JsonObject();
@@ -109,6 +109,8 @@ public class UploadController {
                     ApiResponse.error(exchange, 500, "Error al guardar en DB");
                 }
 
+            } catch (IllegalArgumentException e) {
+                ApiResponse.error(exchange, 400, "Imagen base64 inválida");
             } catch (Exception e) {
                 e.printStackTrace();
                 ApiResponse.error(exchange, 500, "Error al procesar imagen: " + e.getMessage());
