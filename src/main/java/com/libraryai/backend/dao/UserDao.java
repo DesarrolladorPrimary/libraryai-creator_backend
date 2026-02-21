@@ -121,6 +121,7 @@ public class UserDao {
                 String correo = rs.getString("Correo");
                 String rol = rs.getString("NombreRol");
                 Date fechaRegistro = rs.getDate("FechaRegistro");
+                String fotoPerfil = rs.getString("FotoPerfil");
 
                 // Rellenamos el objeto JSON con los datos obtenidos
                 user.addProperty("PK_UsuarioID", usuario_id);
@@ -128,6 +129,7 @@ public class UserDao {
                 user.addProperty("Correo", correo);
                 user.addProperty("Rol", rol);
                 user.addProperty("Fecha Registro", fechaRegistro.toString());
+                user.addProperty("FotoPerfil", fotoPerfil != null ? fotoPerfil : "");
                 // Agregamos status 200 (OK) al usuario
                 user.addProperty("status", 200);
 
@@ -282,6 +284,61 @@ public class UserDao {
         return json;
     }
 
+    /**
+     * Actualiza un campo específico del usuario.
+     * 
+     * @param campo Nombre del campo a actualizar (nombre, correo, password).
+     * @param valor Nuevo valor para el campo.
+     * @param id ID del usuario.
+     * @return JsonObject con el resultado.
+     */
+    public static JsonObject updateCampo(String campo, String valor, int id) {
+        JsonObject json = new JsonObject();
+        
+        String sql = "";
+        
+        switch (campo.toLowerCase()) {
+            case "nombre":
+                sql = "UPDATE Usuario SET Nombre = ? WHERE PK_UsuarioID = ?";
+                break;
+            case "correo":
+                sql = "UPDATE Usuario SET Correo = ? WHERE PK_UsuarioID = ?";
+                break;
+            case "password":
+            case "contraseña":
+                sql = "UPDATE Usuario SET PasswordHash = ? WHERE PK_UsuarioID = ?";
+                break;
+            default:
+                json.addProperty("Mensaje", "Campo no válido. Usa: nombre, correo o contraseña");
+                json.addProperty("status", 400);
+                return json;
+        }
+        
+        try (
+            Connection conn = DatabaseConnection.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+        ) {
+            pstmt.setString(1, valor);
+            pstmt.setInt(2, id);
+            
+            int filasAfectadas = pstmt.executeUpdate();
+            
+            if (filasAfectadas > 0) {
+                json.addProperty("Mensaje", "Campo actualizado correctamente");
+                json.addProperty("status", 200);
+            } else {
+                json.addProperty("Mensaje", "Usuario no encontrado");
+                json.addProperty("status", 404);
+            }
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            json.addProperty("status", 500);
+        }
+        
+        return json;
+    }
+
 
     /**
      * Elimina un usuario por id y devuelve resultado con status.
@@ -317,6 +374,43 @@ public class UserDao {
         }
 
         return response;
+    }
+
+    /**
+     * Actualiza la foto de perfil del usuario.
+     * 
+     * @param fotoPerfil Ruta o URL de la foto de perfil.
+     * @param id ID del usuario.
+     * @return JsonObject con el resultado.
+     */
+    public static JsonObject updateFotoPerfil(String fotoPerfil, int id) {
+        JsonObject json = new JsonObject();
+        
+        String sql = "UPDATE Usuario SET FotoPerfil = ? WHERE PK_UsuarioID = ?";
+        
+        try (
+            Connection conn = DatabaseConnection.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+        ) {
+            pstmt.setString(1, fotoPerfil);
+            pstmt.setInt(2, id);
+            
+            int filasAfectadas = pstmt.executeUpdate();
+            
+            if (filasAfectadas > 0) {
+                json.addProperty("Mensaje", "Foto de perfil actualizada");
+                json.addProperty("status", 200);
+            } else {
+                json.addProperty("Mensaje", "Usuario no encontrado");
+                json.addProperty("status", 404);
+            }
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            json.addProperty("status", 500);
+        }
+        
+        return json;
     }
 
 }

@@ -6,6 +6,7 @@ import com.libraryai.backend.controller.SettingsController;
 import com.libraryai.backend.controller.ai.AiController;
 import com.libraryai.backend.controller.auth.LoginController;
 import com.libraryai.backend.controller.auth.RecuperacionController;
+import com.libraryai.backend.controller.UploadController;
 import com.libraryai.backend.middleware.AuthMiddleware;
 // Importamos nuestro Router personalizado
 import com.libraryai.backend.server.Router;
@@ -61,6 +62,10 @@ public class Routes {
         router.put("/api/v1/usuarios/id",
                 auth.proteger(UserController.updateUser(), "Gratuito", "Premium"));
 
+        // Actualizar un solo campo del usuario
+        router.put("/api/v1/usuarios/campo",
+                auth.proteger(UserController.updateCampo(), "Gratuito", "Premium"));
+
         router.delete("/api/v1/usuarios/id",
                 auth.proteger(UserController.deleteUser(), "Gratuito", "Premium", "Admin"));
 
@@ -77,6 +82,10 @@ public class Routes {
 
         router.get("/api/v1/settings/suscripcion",
                 auth.proteger(SettingsController.getSuscripcion(), "Gratuito", "Premium"));
+
+        // ========== RUTAS DE ARCHIVOS ==========
+        router.post("/api/v1/upload/perfil",
+                auth.proteger(UploadController.subirFotoPerfil(), "Gratuito", "Premium"));
 
         // ========== AQUÍ PUEDES AGREGAR MÁS RUTAS ==========
         // Ejemplo:

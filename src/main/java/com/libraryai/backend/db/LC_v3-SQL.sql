@@ -18,6 +18,7 @@ CREATE TABLE Usuario (
     Nombre VARCHAR(255) NOT NULL,
     Correo VARCHAR(255) NOT NULL UNIQUE,
     PasswordHash VARCHAR(255) NOT NULL,
+    FotoPerfil VARCHAR(500),
     InstruccionPermanenteIA TEXT,
     Activo BOOLEAN DEFAULT TRUE,
     CorreoVerificado BOOLEAN DEFAULT FALSE,
