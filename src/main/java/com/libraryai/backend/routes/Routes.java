@@ -48,8 +48,9 @@ public class Routes {
 
         router.post("/api/v1/usuarios", UserController.createUser());
 
+        // Abierta a Gratuito y Premium para que settings-user.html cargue el perfil
         router.get("/api/v1/usuarios/id",
-                auth.proteger(UserController.getUserById(), "Admin"));
+                auth.proteger(UserController.getUserById(), "Gratuito", "Premium", "Admin"));
 
         router.put("/api/v1/usuarios/id",
                 auth.proteger(UserController.updateUser(), "Gratuito", "Premium"));
