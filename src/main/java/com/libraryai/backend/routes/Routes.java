@@ -5,6 +5,7 @@ import com.libraryai.backend.controller.UserController;
 import com.libraryai.backend.controller.SettingsController;
 import com.libraryai.backend.controller.ai.AiController;
 import com.libraryai.backend.controller.auth.LoginController;
+import com.libraryai.backend.controller.auth.RecuperacionController;
 import com.libraryai.backend.middleware.AuthMiddleware;
 // Importamos nuestro Router personalizado
 import com.libraryai.backend.server.Router;
@@ -41,6 +42,11 @@ public class Routes {
 
         // ========== RUTAS DE AUTH ==========
         router.post("/api/v1/login", LoginController.loginUser());
+
+        // Rutas de recuperación de contraseña (sin auth, el usuario viene del correo)
+        router.post("/api/v1/recuperar", RecuperacionController.solicitarRecuperacion());
+        router.get("/api/v1/recuperar/validar", RecuperacionController.validarToken());
+        router.put("/api/v1/recuperar/nueva", RecuperacionController.nuevaPassword());
 
         // ========== RUTAS DE USUARIOS ==========
         router.get("/api/v1/usuarios",

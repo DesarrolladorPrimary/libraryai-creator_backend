@@ -9,3 +9,6 @@ ROADMAP.md
 test/
 tmp-genai-src/
 *.txt
+.settings/
+.project
+*.classpath
