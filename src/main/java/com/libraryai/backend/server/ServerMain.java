@@ -63,6 +63,9 @@ public class ServerMain {
             // "/" significa que el Router manejará TODAS las rutas que empiecen con /
             // Es decir, todas las peticiones pasan por nuestro Router
             server.createContext("/", router);
+            
+            // Agregar handler para archivos estáticos (imágenes, uploads, etc.)
+            server.createContext("/uploads/", new StaticFileHandler());
 
         } catch (IOException e) {
             // Si hay error al crear el servidor, lo mostramos
