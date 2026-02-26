@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.mindrot.jbcrypt.BCrypt;
 
 import com.google.gson.JsonObject;
-import com.libraryai.backend.dao.UserDao;
 import com.libraryai.backend.dao.auth.RecuperacionDao;
 import com.libraryai.backend.dao.auth.LoginDao;
 import com.libraryai.backend.service.EmailService;
