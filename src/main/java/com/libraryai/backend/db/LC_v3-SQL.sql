@@ -21,6 +21,8 @@ CREATE TABLE Usuario (
     FotoPerfil VARCHAR(500),
     InstruccionPermanenteIA TEXT,
     Activo BOOLEAN DEFAULT TRUE,
+    CorreoVerificado BOOLEAN DEFAULT FALSE,
+    FechaVerificacion DATETIME,
     FechaRegistro DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -53,10 +55,10 @@ CREATE TABLE PlanSuscripcion (
     Activo BOOLEAN DEFAULT TRUE
 );
 
--- Token exclusivo para flujo de recuperación de contraseña (RF_21)
-CREATE TABLE TokenRecuperacion (
+CREATE TABLE TokenAcceso (
     PK_TokenID INT AUTO_INCREMENT PRIMARY KEY,
     FK_UsuarioID INT NOT NULL,
+    TipoToken ENUM('Verificacion_Registro', 'Recuperacion_Password') NOT NULL,
     Token VARCHAR(255) NOT NULL,
     FechaCreacion DATETIME DEFAULT CURRENT_TIMESTAMP,
     FechaExpiracion DATETIME NOT NULL,
