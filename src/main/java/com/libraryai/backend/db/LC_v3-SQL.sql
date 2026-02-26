@@ -1,4 +1,4 @@
--- Active: 1769801523439@@127.0.0.1@3306@mysql
+-- Active: 1.769801523439e+12@@127.0.0.1@3306@mysql
 CREATE DATABASE IF NOT EXISTS LibraryAI_DB;
 USE LibraryAI_DB;
 
@@ -10,7 +10,7 @@ CREATE TABLE ModeloIA (
     NotasVersion TEXT,
     FechaLanzamiento DATETIME,
     EsGratuito BOOLEAN DEFAULT FALSE,
-    Estado VARCHAR(50) DEFAULT 'Activo'
+    Estado ENUM('Activo', 'Inactivo', 'Obsoleto') DEFAULT 'Activo'
 );
 
 CREATE TABLE Usuario (
@@ -21,8 +21,6 @@ CREATE TABLE Usuario (
     FotoPerfil VARCHAR(500),
     InstruccionPermanenteIA TEXT,
     Activo BOOLEAN DEFAULT TRUE,
-    CorreoVerificado BOOLEAN DEFAULT FALSE,
-    FechaVerificacion DATETIME,
     FechaRegistro DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -32,13 +30,13 @@ CREATE TABLE Correo (
     Asunto VARCHAR(255),
     Cuerpo TEXT,
     FechaEnvio DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Estado VARCHAR(50) DEFAULT 'Enviado',
+    Estado ENUM('Pendiente', 'Enviado', 'Fallido') DEFAULT 'Pendiente',
     FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE
 );
 
 CREATE TABLE Rol (
     PK_RolID INT AUTO_INCREMENT PRIMARY KEY,
-    NombreRol VARCHAR(100) NOT NULL
+    NombreRol VARCHAR(100) NOT NULL UNIQUE
 );
 
 CREATE TABLE Permiso (
@@ -49,19 +47,19 @@ CREATE TABLE Permiso (
 
 CREATE TABLE PlanSuscripcion (
     PK_PlanID INT AUTO_INCREMENT PRIMARY KEY,
-    NombrePlan VARCHAR(100) NOT NULL,
-    AlmacenamientoMaxMB INT,
-    Precio DECIMAL(10, 2),
+    NombrePlan VARCHAR(100) NOT NULL UNIQUE,
+    AlmacenamientoMaxMB BIGINT,
+    Precio DECIMAL(10, 2) CHECK (Precio >= 0),
     Activo BOOLEAN DEFAULT TRUE
 );
 
-CREATE TABLE TokenAcceso (
+-- Token exclusivo para flujo de recuperación de contraseña (RF_21)
+CREATE TABLE TokenRecuperacion (
     PK_TokenID INT AUTO_INCREMENT PRIMARY KEY,
     FK_UsuarioID INT NOT NULL,
-    TipoToken VARCHAR(50),
-    Token VARCHAR(500) NOT NULL,
+    Token VARCHAR(255) NOT NULL,
     FechaCreacion DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FechaExpiracion DATETIME,
+    FechaExpiracion DATETIME NOT NULL,
     Usado BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE
 );
@@ -69,8 +67,9 @@ CREATE TABLE TokenAcceso (
 CREATE TABLE Estanteria (
     PK_EstanteriaID INT AUTO_INCREMENT PRIMARY KEY,
     FK_UsuarioID INT NOT NULL,
-    NombreCategoria VARCHAR(150),
-    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE
+    NombreCategoria VARCHAR(150) NOT NULL,
+    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE,
+    UNIQUE (FK_UsuarioID, NombreCategoria) -- Evita categorías duplicadas por usuario
 );
 
 CREATE TABLE Suscripcion (
@@ -79,7 +78,7 @@ CREATE TABLE Suscripcion (
     FK_PlanID INT NOT NULL,
     FechaInicio DATETIME NOT NULL,
     FechaFin DATETIME,
-    Estado VARCHAR(50),
+    Estado ENUM('Activa', 'Cancelada', 'Vencida') DEFAULT 'Activa',
     RenovacionAutomatica BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE,
     FOREIGN KEY (FK_PlanID) REFERENCES PlanSuscripcion(PK_PlanID)
@@ -88,14 +87,14 @@ CREATE TABLE Suscripcion (
 CREATE TABLE ArchivoSubido (
     PK_ArchivoID INT AUTO_INCREMENT PRIMARY KEY,
     FK_UsuarioID INT NOT NULL,
-    NombreArchivo VARCHAR(255),
-    TipoArchivo VARCHAR(50),
-    RutaAlmacenamiento VARCHAR(500),
-    TamanoBytes INT,
+    NombreArchivo VARCHAR(255) NOT NULL,
+    TipoArchivo VARCHAR(50), -- ej: 'application/pdf', 'application/msword'
+    Origen ENUM('Subido', 'Exportado') NOT NULL DEFAULT 'Subido', -- RF_04 vs RF_09
+    RutaAlmacenamiento TEXT NOT NULL,
+    TamanoBytes BIGINT NOT NULL, -- Soporta archivos masivos sin overflow
     FechaSubida DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE
 );
-
 
 CREATE TABLE UsuarioRol (
     FK_UsuarioID INT,
@@ -125,9 +124,9 @@ CREATE TABLE Pago (
     PK_PagoID INT AUTO_INCREMENT PRIMARY KEY,
     FK_SuscripcionID INT NOT NULL,
     Pasarela VARCHAR(100),
-    EstadoPago VARCHAR(50),
+    EstadoPago ENUM('Pendiente', 'Completado', 'Fallido', 'Reembolsado') DEFAULT 'Pendiente',
     ReferenciaExterna VARCHAR(255),
-    Monto DECIMAL(10, 2),
+    Monto DECIMAL(10, 2) CHECK (Monto >= 0),
     FechaPago DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (FK_SuscripcionID) REFERENCES Suscripcion(PK_SuscripcionID) ON DELETE CASCADE
 );
@@ -137,8 +136,8 @@ CREATE TABLE Relato (
     FK_UsuarioID INT NOT NULL,
     FK_EstanteriaID INT,
     FK_ModeloUsadoID INT,
-    Titulo VARCHAR(255),
-    ModoOrigen VARCHAR(100),
+    Titulo VARCHAR(255) NOT NULL,
+    ModoOrigen ENUM('Seccion_Artificial', 'Seccion_Creativa') NOT NULL,
     Descripcion TEXT,
     FechaCreacion DATETIME DEFAULT CURRENT_TIMESTAMP,
     FechaModificacion DATETIME,
@@ -150,9 +149,9 @@ CREATE TABLE Relato (
 CREATE TABLE RelatoVersion (
     PK_VersionID INT AUTO_INCREMENT PRIMARY KEY,
     FK_RelatoID INT NOT NULL,
-    NumeroVersion FLOAT,
+    NumeroVersion DECIMAL(5,2) NOT NULL, -- Ej: 1.00, 1.10, 2.05
     Contenido TEXT,
-    Notas VARCHAR(500),
+    Notas TEXT,
     EsPublicada BOOLEAN DEFAULT FALSE,
     FechaVersion DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE CASCADE
@@ -162,8 +161,8 @@ CREATE TABLE ConfiguracionIA (
     PK_ConfigID INT AUTO_INCREMENT PRIMARY KEY,
     FK_RelatoID INT NOT NULL UNIQUE,
     EstiloEscritura VARCHAR(100),
-    NivelCreatividad VARCHAR(50),
-    LongitudRespuesta VARCHAR(50),
+    NivelCreatividad ENUM('Bajo', 'Medio', 'Alto', 'Extremo') DEFAULT 'Medio',
+    LongitudRespuesta ENUM('Corta', 'Media', 'Larga') DEFAULT 'Media',
     TonoEmocional VARCHAR(50),
     FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE CASCADE
 );
@@ -171,8 +170,8 @@ CREATE TABLE ConfiguracionIA (
 CREATE TABLE MensajeChat (
     PK_MensajeID INT AUTO_INCREMENT PRIMARY KEY,
     FK_RelatoID INT NOT NULL,
-    Emisor VARCHAR(50),
-    ContenidoMensaje TEXT,
+    Emisor ENUM('Usuario', 'Poly', 'Sistema') NOT NULL,
+    ContenidoMensaje TEXT NOT NULL,
     FechaEnvio DATETIME DEFAULT CURRENT_TIMESTAMP,
     Orden INT,
     FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE CASCADE
@@ -186,6 +185,22 @@ CREATE TABLE Relato_ArchivoFuente (
     FOREIGN KEY (FK_ArchivoID) REFERENCES ArchivoSubido(PK_ArchivoID) ON DELETE CASCADE
 );
 
+-- Tablas nuevas para cumplir el RF_05 (Filtro NSFW)
+CREATE TABLE PalabraProhibida (
+    PK_PalabraID INT AUTO_INCREMENT PRIMARY KEY,
+    Palabra VARCHAR(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE LogModeracion (
+    PK_LogID INT AUTO_INCREMENT PRIMARY KEY,
+    FK_UsuarioID INT NOT NULL,
+    Motivo VARCHAR(255) NOT NULL,
+    ContenidoBloqueadoHash VARCHAR(255), -- Hash del texto ofensivo por si hay auditorias
+    Fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE
+);
+
+-- Indices para rendimiento
 CREATE INDEX idx_usuario_correo ON Usuario(Correo);
 CREATE INDEX idx_suscripcion_estado ON Suscripcion(Estado);
 CREATE INDEX idx_relato_titulo ON Relato(Titulo);
@@ -196,7 +211,9 @@ CREATE INDEX idx_fk_suscripcion_usuario ON Suscripcion(FK_UsuarioID);
 CREATE INDEX idx_fk_relato_usuario ON Relato(FK_UsuarioID);
 CREATE INDEX idx_fk_mensaje_relato ON MensajeChat(FK_RelatoID);
 CREATE INDEX idx_fk_version_relato ON RelatoVersion(FK_RelatoID);
+CREATE INDEX idx_mensaje_fecha ON MensajeChat(FechaEnvio); -- Util para reportes mensuales
 
+-- Vistas
 CREATE VIEW V_UsuarioSuscripcion AS
 SELECT u.Nombre, u.Correo, s.FechaInicio, s.FechaFin, p.NombrePlan
 FROM Suscripcion s
@@ -222,16 +239,18 @@ JOIN Suscripcion s ON pg.FK_SuscripcionID = s.PK_SuscripcionID
 JOIN Usuario u ON s.FK_UsuarioID = u.PK_UsuarioID;
 
 CREATE VIEW V_ArchivosPorRelato AS
-SELECT r.Titulo AS Relato, a.NombreArchivo, a.TipoArchivo, a.TamanoBytes
+SELECT r.Titulo AS Relato, a.NombreArchivo, a.TipoArchivo, a.TamanoBytes, a.Origen
 FROM Relato_ArchivoFuente raf
 JOIN Relato r ON raf.FK_RelatoID = r.PK_RelatoID
 JOIN ArchivoSubido a ON raf.FK_ArchivoID = a.PK_ArchivoID;
 
+-- Vista actualizada para incluir RF_22 (Solicitudes mensuales)
 CREATE VIEW V_EstadisticasSistema AS
 SELECT 
     (SELECT COUNT(*) FROM Usuario WHERE Activo = TRUE) AS UsuariosActivos,
     (SELECT COUNT(*) FROM Suscripcion WHERE Estado = 'Activa' AND FK_PlanID = (SELECT PK_PlanID FROM PlanSuscripcion WHERE NombrePlan = 'Plan Premium')) AS UsuariosPremium,
-    (SELECT COUNT(*) FROM Relato) AS TotalRelatosCreados;
+    (SELECT COUNT(*) FROM Relato) AS TotalRelatosCreados,
+    (SELECT COUNT(*) FROM MensajeChat WHERE Emisor = 'Usuario' AND MONTH(FechaEnvio) = MONTH(CURRENT_DATE()) AND YEAR(FechaEnvio) = YEAR(CURRENT_DATE())) AS SolicitudesIAMesActual;
 
 CREATE VIEW V_DetalleRelatos AS
 SELECT 
@@ -245,7 +264,3 @@ FROM Relato r
 JOIN Usuario u ON r.FK_UsuarioID = u.PK_UsuarioID
 LEFT JOIN Estanteria e ON r.FK_EstanteriaID = e.PK_EstanteriaID
 LEFT JOIN ModeloIA m ON r.FK_ModeloUsadoID = m.PK_ModeloID;
-
-
-
-
