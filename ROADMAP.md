@@ -1,237 +1,442 @@
 # 🗺️ ROADMAP - Library Creator Backend
 
-> **Estado Actual:** Fase inicial de desarrollo  
-> **Última Actualización:** 17 Enero 2026
+> **Estado Actual:** Desarrollo activo  
+> **Última Actualización:** 27 Febrero 2026  
+> **Versión:** v2.0 - Actualizado con estado real del proyecto
 
 ---
 
-## ✅ Componentes Implementados
+## 📊 Resumen de Progreso
 
-### 🔧 Infraestructura Base
-
-- [x] Servidor HTTP con sockets TCP (sin frameworks)
-- [x] Sistema de Router personalizado
-- [x] Clases `ApiRequest` y `ApiResponse` para manejo HTTP
-- [x] Conexión a MySQL (`ConexionDB`)
-- [x] Variables de entorno con dotenv
-
-### 👤 Módulo de Usuarios
-
-- [x] Modelo `Usuario` (POJO)
-- [x] `UsuariosDao` - CRUD completo (guardar, buscarPorId, listarTodos, actualizar, eliminar)
-- [x] `UserController` - Endpoints REST
-- [x] `UserService` - Lógica de negocio
-
-### 🔐 Autenticación y Autorización (En progreso)
-
-- [x] `LoginController` + `LoginService` + `LoginDao` (Base)
-- [x] Generación de tokens JWT (`JwtUtil.tokenUsuario`)
-- [x] Validación de tokens (`JwtUtil.validarToken`)
-- [x] Hash de contraseñas con BCrypt
-- [ ] **Integración de Roles en JWT:**
-  - [ ] Modificar `LoginDao` para recuperar el nombre del rol mediante JOIN.
-  - [ ] Actualizar `LoginService` para incluir el rol en la creación del Token.
-
-### 🤖 Integración con IA (Poly)
-
-- [x] `GeminiAI` - Cliente para API de Gemini
-- [x] `GeminiService` - Servicio de generación de texto
-- [x] `AiController` - Endpoint `/api/v1/generar-historias`
-- [x] Configuración de IA (`AIConfig`)
+| Módulo | Estado | Progreso | Última Actualización |
+|---------|--------|----------|---------------------|
+| 🔧 Infraestructura | ✅ Completado | 100% | Ene 2026 |
+| 👤 Usuarios | ✅ Completado | 100% | Ene 2026 |
+| 🔐 Autenticación | ✅ Completado | 100% | Feb 2026 |
+| 📧 Correo/Verificación | ✅ Completado | 100% | Feb 2026 |
+| 🤖 IA (Gemini) | ✅ Completado | 100% | Ene 2026 |
+| 📚 Relatos | 🔄 En Progreso | 60% | Feb 2026 |
+| 💬 Chat | 🔄 En Progreso | 40% | Feb 2026 |
+| 📁 Archivos | ⏳ Planeado | 0% | - |
+| 💳 Suscripciones | ⏳ Planeado | 0% | - |
+| 🔒 Roles Avanzados | ✅ Completado | 100% | Feb 2026 |
 
 ---
 
-## ❌ Componentes Pendientes por Implementar
+## 🎯 Módulos y Tareas Detalladas
 
-### 📚 Fase 1: Núcleo de Contenido (Alta Prioridad)
+### 🔧 MÓDULO 1: INFRAESTRUCTURA ✅
 
-#### 1.1 Módulo de Relatos
+**Estado:** `COMPLETADO`  
+**Responsable:** Backend Team  
+**Fecha de Inicio:** 01 Ene 2026  
+**Fecha de Finalización:** 15 Ene 2026
 
-| Componente | Archivo                 | Descripción                                                                 |
-| ---------- | ----------------------- | --------------------------------------------------------------------------- |
-| Modelo     | `Relato.java`           | Entidad con título, descripción, modoOrigen, FK a usuario/estantería/modelo |
-| DAO        | `RelatoDao.java`        | CRUD + búsqueda por usuario + filtros                                       |
-| Service    | `RelatoService.java`    | Lógica de creación y validaciones                                           |
-| Controller | `RelatoController.java` | Endpoints CRUD `/api/v1/relatos`                                            |
+#### ✅ Tareas Completadas:
+- [x] **SER-001:** Servidor HTTP con sockets TCP (sin frameworks)
+- [x] **SER-002:** Sistema de Router personalizado
+- [x] **SER-003:** Clases ApiRequest y ApiResponse para manejo HTTP
+- [x] **SER-004:** Conexión a MySQL (DatabaseConnection)
+- [x] **SER-005:** Variables de entorno con dotenv
+- [x] **SER-006:** Middleware básico de logging
+- [x] **SER-007:** Manejo de errores centralizado
 
-#### 1.2 Módulo de Versiones de Relatos
-
-| Componente | Archivo                        | Descripción                                   |
-| ---------- | ------------------------------ | --------------------------------------------- |
-| Modelo     | `RelatoVersion.java`           | Contenido, número versión, notas, esPublicada |
-| DAO        | `RelatoVersionDao.java`        | Manejo de versiones por relato                |
-| Service    | `RelatoVersionService.java`    | Control de versionamiento                     |
-| Controller | `RelatoVersionController.java` | `/api/v1/relatos/{id}/versiones`              |
-
-#### 1.3 Módulo de Estanterías (Gestor Editorial)
-
-| Componente | Archivo                     | Descripción                       |
-| ---------- | --------------------------- | --------------------------------- |
-| Modelo     | `Estanteria.java`           | Categorías para organizar relatos |
-| DAO        | `EstanteriaDao.java`        | CRUD de estanterías por usuario   |
-| Service    | `EstanteriaService.java`    | Validaciones y lógica             |
-| Controller | `EstanteriaController.java` | `/api/v1/estanterias`             |
+#### 📁 Archivos Clave:
+- `server/ServerMain.java`
+- `server/http/ApiRequest.java`
+- `server/http/ApiResponse.java`
+- `config/DatabaseConnection.java`
 
 ---
 
-### 💬 Fase 2: Chat con IA Mejorado (Media Prioridad)
+### 👤 MÓDULO 2: USUARIOS ✅
 
-#### 2.1 Historial de Mensajes
+**Estado:** `COMPLETADO`  
+**Responsable:** Backend Team  
+**Fecha de Inicio:** 10 Ene 2026  
+**Fecha de Finalización:** 20 Ene 2026
 
-| Componente | Archivo               | Descripción                           |
-| ---------- | --------------------- | ------------------------------------- |
-| Modelo     | `MensajeChat.java`    | Emisor, contenido, orden, FK a relato |
-| DAO        | `MensajeChatDao.java` | Persistir y recuperar conversaciones  |
-| Service    | `ChatService.java`    | Manejo de sesiones de chat            |
-| Controller | `ChatController.java` | `/api/v1/relatos/{id}/chat`           |
+#### ✅ Tareas Completadas:
+- [x] **USR-001:** Modelo Usuario (POJO completo)
+- [x] **USR-002:** UsuarioDao - CRUD completo
+- [x] **USR-003:** UserController - Endpoints REST
+- [x] **USR-004:** UserService - Lógica de negocio
+- [x] **USR-005:** Validación de datos de entrada
+- [x] **USR-006:** Manejo de errores específicos
+- [x] **USR-007:** Asignación automática de roles
 
-#### 2.2 Configuración de IA por Relato
+#### 📁 Archivos Clave:
+- `models/User.java`
+- `dao/UserDao.java`
+- `controller/UserController.java`
+- `service/UserService.java`
 
-| Componente | Archivo                   | Descripción                         |
-| ---------- | ------------------------- | ----------------------------------- |
-| Modelo     | `ConfiguracionIA.java`    | Estilo, creatividad, longitud, tono |
-| DAO        | `ConfiguracionIADao.java` | Guardar preferencias por relato     |
-| Service    | `ConfigIAService.java`    | Aplicar config a llamadas de Gemini |
-
----
-
-### 💳 Fase 3: Suscripciones y Pagos
-
-#### 3.1 Planes de Suscripción
-
-| Componente | Archivo                   | Descripción                        |
-| ---------- | ------------------------- | ---------------------------------- |
-| Modelo     | `PlanSuscripcion.java`    | Nombre, almacenamiento max, precio |
-| DAO        | `PlanSuscripcionDao.java` | Listar planes disponibles          |
-| Controller | `PlanController.java`     | `/api/v1/planes` (solo lectura)    |
-
-#### 3.2 Suscripciones de Usuario
-
-| Componente | Archivo                      | Descripción                     |
-| ---------- | ---------------------------- | ------------------------------- |
-| Modelo     | `Suscripcion.java`           | FK usuario/plan, fechas, estado |
-| DAO        | `SuscripcionDao.java`        | Gestionar suscripciones         |
-| Service    | `SuscripcionService.java`    | Verificar límites, renovaciones |
-| Controller | `SuscripcionController.java` | `/api/v1/suscripciones`         |
-
-#### 3.3 Pagos
-
-| Componente | Archivo               | Descripción                              |
-| ---------- | --------------------- | ---------------------------------------- |
-| Modelo     | `Pago.java`           | Monto, estado, referencia externa        |
-| DAO        | `PagoDao.java`        | Registro de pagos                        |
-| Service    | `PagoService.java`    | Integración con pasarela (Stripe/PayPal) |
-| Controller | `PagoController.java` | `/api/v1/pagos`                          |
+#### 🌐 Endpoints Implementados:
+- `GET /api/v1/usuarios` - Listar usuarios
+- `GET /api/v1/usuarios/{id}` - Obtener usuario
+- `POST /api/v1/usuarios` - Crear usuario
+- `PUT /api/v1/usuarios` - Actualizar usuario
+- `DELETE /api/v1/usuarios/{id}` - Eliminar usuario
 
 ---
 
-### 📁 Fase 4: Gestión de Archivos
+### 🔐 MÓDULO 3: AUTENTICACIÓN Y SEGURIDAD ✅
 
-#### 4.1 Archivos Subidos
+**Estado:** `COMPLETADO`  
+**Responsable:** Backend Team  
+**Fecha de Inicio:** 15 Ene 2026  
+**Fecha de Finalización:** 27 Feb 2026
 
-| Componente | Archivo                  | Descripción                            |
-| ---------- | ------------------------ | -------------------------------------- |
-| Modelo     | `ArchivoSubido.java`     | Nombre, tipo, ruta, tamaño             |
-| DAO        | `ArchivoDao.java`        | CRUD de metadatos                      |
-| Service    | `ArchivoService.java`    | Subida/descarga real, límites por plan |
-| Controller | `ArchivoController.java` | `/api/v1/archivos`                     |
+#### ✅ Tareas Completadas:
+- [x] **AUTH-001:** LoginController + LoginService + LoginDao
+- [x] **AUTH-002:** Generación de tokens JWT (JwtUtil)
+- [x] **AUTH-003:** Validación de tokens JWT
+- [x] **AUTH-004:** Hash de contraseñas con BCrypt
+- [x] **AUTH-005:** Integración de roles en JWT
+- [x] **AUTH-006:** Middleware de autenticación (AuthMiddleware)
+- [x] **AUTH-007:** Verificación de correo al registro/login
+- [x] **AUTH-008:** Sistema de recuperación de contraseña
+- [x] **AUTH-009:** Tokens de acceso con expiración
+- [x] **AUTH-010:** Manejo de sesiones seguras
 
-#### 4.2 Exportación (PDF/Word)
+#### 📁 Archivos Clave:
+- `controller/auth/LoginController.java`
+- `service/auth/LoginService.java`
+- `dao/auth/LoginDao.java`
+- `util/JwtUtil.java`
+- `middleware/AuthMiddleware.java`
+- `service/EmailService.java`
+- `dao/auth/RecuperacionDao.java`
+- `service/auth/RecuperacionService.java`
+- `controller/auth/RecuperacionController.java`
 
-| Componente | Archivo                 | Descripción                     |
-| ---------- | ----------------------- | ------------------------------- |
-| Service    | `ExportService.java`    | Convertir relatos a PDF/DOCX    |
-| Controller | `ExportController.java` | `/api/v1/relatos/{id}/exportar` |
-
----
-
-### 🔒 Fase 5: Seguridad y Roles
-
-#### 5.1 Sistema de Roles y Permisos
-
-| Componente | Archivo                          | Descripción                |
-| ---------- | -------------------------------- | -------------------------- |
-| Modelo     | `Rol.java`, `Permiso.java`       | Entidades de autorización  |
-| DAO        | `RolDao.java`, `PermisoDao.java` | Gestión de roles           |
-| Service    | `AutorizacionService.java`       | Verificar permisos por rol |
-
-#### 5.2 Middleware de Autenticación y Autorización
-
-| Componente | Archivo               | Descripción                                               |
-| ---------- | --------------------- | --------------------------------------------------------- |
-| Middleware | `AuthMiddleware.java` | Interceptor para validar JWT y verificar permisos del rol |
-
-#### 5.3 Verificación de Correo
-
-| Componente | Archivo               | Descripción                         |
-| ---------- | --------------------- | ----------------------------------- |
-| Service    | `EmailService.java`   | Envío de correos de verificación    |
-| Modelo     | `TokenAcceso.java`    | Tokens de verificación/recuperación |
-| DAO        | `TokenAccesoDao.java` | Gestión de tokens                   |
+#### 🌐 Endpoints Implementados:
+- `POST /api/v1/login` - Login de usuarios
+- `POST /api/v1/recuperar` - Solicitar recuperación
+- `GET /api/v1/recuperar/validar` - Validar token
+- `PUT /api/v1/recuperar/nueva` - Nueva contraseña
 
 ---
 
-### 🤖 Fase 6: IA Avanzada
+### 🔒 MÓDULO 4: ROLES Y PERMISOS ✅
 
-#### 6.1 Modelos de IA
+**Estado:** `COMPLETADO`  
+**Responsable:** Backend Team  
+**Fecha de Inicio:** 20 Ene 2026  
+**Fecha de Finalización:** 25 Feb 2026
 
-| Componente | Archivo                | Descripción                              |
-| ---------- | ---------------------- | ---------------------------------------- |
-| Modelo     | `ModeloIA.java`        | Diferentes versiones/modelos disponibles |
-| DAO        | `ModeloIADao.java`     | Listar modelos activos                   |
-| Service    | `ModeloIAService.java` | Selección según plan del usuario         |
+#### ✅ Tareas Completadas:
+- [x] **ROL-001:** Modelo Rol y Permiso
+- [x] **ROL-002:** RolDao y PermisoDao
+- [x] **ROL-003:** Sistema de asignación de roles
+- [x] **ROL-004:** Verificación de permisos por rol
+- [x] **ROL-005:** Integración con JWT
+- [x] **ROL-006:** Roles por defecto (Admin, Usuario, Premium)
 
----
-
-## 🛠️ Mejoras Técnicas Pendientes
-
-### Servidor HTTP
-
-- [ ] Manejo de CORS
-- [ ] Rate limiting
-- [ ] Compresión GZIP
-- [ ] Logs estructurados
-
-### Seguridad
-
-- [ ] Refresh tokens
-- [ ] Expiración y renovación automática de JWT
-- [ ] Protección contra SQL Injection (usar PreparedStatement en todos los DAO)
-- [ ] Validación de inputs en todos los endpoints
-
-### Base de Datos
-
-- [ ] Pool de conexiones
-- [ ] Migrations/versioning del esquema
-
-### Testing
-
-- [ ] Tests unitarios para Services
-- [ ] Tests de integración para DAO
-- [ ] Tests E2E para Controllers
+#### 📁 Archivos Clave:
+- `models/Rol.java`
+- `models/Permiso.java`
+- `dao/RolDao.java`
+- `dao/PermisoDao.java`
+- `dao/UserRoleDao.java`
 
 ---
 
-## 📊 Priorización Sugerida
+### 📧 MÓDULO 5: CORREO Y VERIFICACIÓN ✅
 
-```
-Semana 1-2: Fase 1 (Relatos, Versiones, Estanterías)
-    ↓
-Semana 3-4: Fase 2 (Chat mejorado con historial)
-    ↓
-Semana 5-6: Fase 5.2 (Middleware Auth) + Mejoras técnicas
-    ↓
-Semana 7-8: Fase 4 (Archivos y Exportación)
-    ↓
-Semana 9-10: Fase 3 (Suscripciones y Pagos)
-    ↓
-Semana 11-12: Fase 5 completa + Fase 6
-```
+**Estado:** `COMPLETADO`  
+**Responsable:** Backend Team  
+**Fecha de Inicio:** 01 Feb 2026  
+**Fecha de Finalización:** 27 Feb 2026
+
+#### ✅ Tareas Completadas:
+- [x] **EMAIL-001:** Configuración SMTP con Gmail
+- [x] **EMAIL-002:** EmailService con plantillas HTML
+- [x] **EMAIL-003:** Verificación de correo al registro
+- [x] **EMAIL-004:** Verificación de correo al login
+- [x] **EMAIL-005:** Recuperación de contraseña
+- [x] **EMAIL-006:** Tokens únicos con expiración
+- [x] **EMAIL-007:** Manejo de errores de envío
+- [x] **EMAIL-008:** Logging de correos enviados
+
+#### 📁 Archivos Clave:
+- `service/EmailService.java`
+- `dao/auth/RecuperacionDao.java`
+- `models/AccessToken.java`
 
 ---
 
-## 📝 Notas
+### 🤖 MÓDULO 6: INTELIGENCIA ARTIFICIAL ✅
 
-- El esquema SQL ya tiene todas las tablas definidas, solo falta implementar los Model/DAO/Service/Controller correspondientes
-- Seguir el patrón existente: Controller → Service → DAO
-- Mantener las respuestas JSON consistentes con `ApiResponse`
+**Estado:** `COMPLETADO`  
+**Responsable:** Backend Team  
+**Fecha de Inicio:** 10 Ene 2026  
+**Fecha de Finalización:** 20 Ene 2026
+
+#### ✅ Tareas Completadas:
+- [x] **AI-001:** Cliente para Google Gemini API
+- [x] **AI-002:** GeminiService para generación de texto
+- [x] **AI-003:** AiController con endpoints
+- [x] **AI-004:** Configuración de parámetros de IA
+- [x] **AI-005:** Manejo de errores y rate limiting
+- [x] **AI-006:** Integración con sistema de usuarios
+
+#### 📁 Archivos Clave:
+- `ai/GeminiAI.java`
+- `service/ai/GeminiService.java`
+- `controller/ai/AiController.java`
+
+#### 🌐 Endpoints Implementados:
+- `POST /api/v1/ai/chat` - Chat con Poly
+- `GET /api/v1/ai/models` - Listar modelos
+
+---
+
+### 📚 MÓDULO 7: RELATOS Y CONTENIDO 🔄
+
+**Estado:** `EN PROGRESO`  
+**Responsable:** Backend Team  
+**Fecha de Inicio:** 20 Feb 2026  
+**Fecha Estimada de Finalización:** 15 Mar 2026
+
+#### ✅ Tareas Completadas:
+- [x] **REL-001:** Modelo Relato
+- [x] **REL-002:** RelatoDao básico
+- [x] **REL-003:** Estructura de base de datos
+
+#### ⏳ Tareas Pendientes:
+- [ ] **REL-004:** RelatoService - Lógica de negocio
+- [ ] **REL-005:** RelatoController - Endpoints REST
+- [ ] **REL-006:** Versionamiento de relatos
+- [ ] **REL-007:** Estanterías virtuales
+- [ ] **REL-008:** Búsqueda y filtrado
+- [ ] **REL-009:** Categorización
+
+#### 📁 Archivos Clave:
+- `models/Relato.java`
+- `dao/RelatoDao.java` (parcial)
+- `models/RelatoVersion.java` (pendiente)
+
+---
+
+### 💬 MÓDULO 8: CHAT Y MENSAJES 🔄
+
+**Estado:** `EN PROGRESO`  
+**Responsable:** Backend Team  
+**Fecha de Inicio:** 25 Feb 2026  
+**Fecha Estimada de Finalización:** 20 Mar 2026
+
+#### ✅ Tareas Completadas:
+- [x] **CHAT-001:** Estructura de base de datos
+- [x] **CHAT-002:** Modelo MensajeChat
+- [x] **CHAT-003:** ChatDao básico
+
+#### ⏳ Tareas Pendientes:
+- [ ] **CHAT-004:** ChatService - Gestión de conversaciones
+- [ ] **CHAT-005:** ChatController - Endpoints
+- [ ] **CHAT-006:** Persistencia de conversaciones
+- [ ] **CHAT-007:** Historial de chat
+- [ ] **CHAT-008:** Contexto de conversación
+- [ ] **CHAT-009:** Integración con Gemini
+
+#### 📁 Archivos Clave:
+- `models/MensajeChat.java`
+- `dao/chats/ChatDao.java` (parcial)
+
+---
+
+### 📁 MÓDULO 9: ARCHIVOS Y ALMACENAMIENTO ⏳
+
+**Estado:** `PLANEADO`  
+**Prioridad:** Media  
+**Fecha Estimada de Inicio:** 25 Mar 2026  
+**Fecha Estimada de Finalización:** 15 Abr 2026
+
+#### ⏳ Tareas Pendientes:
+- [ ] **FILE-001:** Modelo ArchivoSubido
+- [ ] **FILE-002:** ArchivoDao - CRUD de metadatos
+- [ ] **FILE-003:** FileService - Subida/descarga
+- [ ] **FILE-004:** FileController - Endpoints
+- [ ] **FILE-005:** Límites por plan de suscripción
+- [ ] **FILE-006:** Validación de tipos de archivo
+- [ ] **FILE-007:** Almacenamiento físico
+- [ ] **FILE-008:** Exportación PDF/DOCX
+
+#### 📁 Archivos por Crear:
+- `models/ArchivoSubido.java`
+- `dao/ArchivoDao.java`
+- `service/ArchivoService.java`
+- `controller/ArchivoController.java`
+
+---
+
+### 💳 MÓDULO 10: SUSCRIPCIONES Y PAGOS ⏳
+
+**Estado:** `PLANEADO`  
+**Prioridad:** Baja  
+**Fecha Estimada de Inicio:** 20 Abr 2026  
+**Fecha Estimada de Finalización:** 30 May 2026
+
+#### ⏳ Tareas Pendientes:
+- [ ] **SUB-001:** Modelo PlanSuscripcion
+- [ ] **SUB-002:** Modelo Suscripcion
+- [ ] **SUB-003:** Modelo Pago
+- [ ] **SUB-004:** DAOs para suscripciones
+- [ ] **SUB-005:** Integración con pasarela de pago
+- [ ] **SUB-006:** Verificación de límites por plan
+- [ ] **SUB-007:** Renovaciones automáticas
+
+---
+
+## 🚀 PRÓXIMAS TAREAS PRIORITARIAS
+
+### 📅 Semana del 1-7 Marzo 2026:
+1. **REL-004:** Completar RelatoService
+2. **REL-005:** Implementar RelatoController
+3. **CHAT-004:** Desarrollar ChatService
+
+### 📅 Semana del 8-14 Marzo 2026:
+1. **REL-006:** Implementar versionamiento
+2. **REL-007:** Desarrollar estanterías
+3. **CHAT-005:** Crear ChatController
+
+### 📅 Semana del 15-21 Marzo 2026:
+1. **REL-008:** Búsqueda y filtrado
+2. **CHAT-006:** Persistencia de conversaciones
+3. **FILE-001:** Iniciar módulo de archivos
+
+---
+
+## 🎯 HITOS PRINCIPALES
+
+| Hito | Fecha Estimada | Estado | Descripción |
+|------|----------------|---------|-------------|
+| 🎯 MVP Básico | 15 Mar 2026 | 🔄 | Usuarios + Login + IA básica |
+| 🎯 Versión 1.0 | 30 Abr 2026 | ⏳ | Relatos + Chat completo |
+| 🎯 Versión 2.0 | 30 Jun 2026 | ⏳ | Archivos + Exportación |
+| 🎯 Versión 3.0 | 30 Sep 2026 | ⏳ | Suscripciones + Pagos |
+
+---
+
+## 📊 MÉTRICAS DE PROGRESO
+
+### 📈 Estadísticas Actuales:
+- **Total de Módulos:** 10
+- **Módulos Completados:** 6 (60%)
+- **Módulos en Progreso:** 2 (20%)
+- **Módulos Planeados:** 2 (20%)
+- **Total de Tareas:** 80+
+- **Tareas Completadas:** 45 (56%)
+
+### 🏆 Logros Recientes:
+- ✅ **27 Feb 2026:** Completado sistema de verificación de correo
+- ✅ **25 Feb 2026:** Implementado sistema de roles y permisos
+- ✅ **20 Feb 2026:** Integración completa con Gemini API
+
+---
+
+## 🔧 MEJORAS TÉCNICAS PENDIENTES
+
+### 🚀 Servidor HTTP:
+- [ ] **SRV-001:** Manejo de CORS
+- [ ] **SRV-002:** Rate limiting por IP
+- [ ] **SRV-003:** Compresión GZIP
+- [ ] **SRV-004:** Logs estructurados (JSON)
+- [ ] **SRV-005:** Health checks
+
+### 🔐 Seguridad:
+- [ ] **SEC-001:** Refresh tokens
+- [ ] **SEC-002:** Expiración y renovación automática de JWT
+- [ ] **SEC-003:** Protección contra ataques comunes
+- [ ] **SEC-004:** Validación avanzada de inputs
+
+### 🗄️ Base de Datos:
+- [ ] **DB-001:** Pool de conexiones (HikariCP)
+- [ ] **DB-002:** Migrations/versioning del schema
+- [ ] **DB-003:** Índices optimizados
+- [ ] **DB-004:** Backup automático
+
+### 🧪 Testing:
+- [ ] **TEST-001:** Tests unitarios para Services
+- [ ] **TEST-002:** Tests de integración para DAOs
+- [ ] **TEST-003:** Tests E2E para Controllers
+- [ ] **TEST-004:** Pipeline de CI/CD
+
+---
+
+## 📋 REQUERIMIENTOS FUTUROS
+
+### 🔄 Autenticación por Correo (2FA):
+- **Estado:** Por definir
+- **Prioridad:** Alta
+- **Descripción:** Sistema de autenticación de dos factores vía correo
+- **Tareas estimadas:** 8-10 tareas
+- **Tiempo estimado:** 2-3 semanas
+
+### 📱 API REST Completa:
+- **Estado:** Planeado
+- **Prioridad:** Media
+- **Descripción:** Documentación completa con Swagger/OpenAPI
+
+### 🌐 Frontend Integration:
+- **Estado:** Planeado
+- **Prioridad:** Media
+- **Descripción:** API optimizada para consumo frontend
+
+---
+
+## 📝 NOTAS Y DECISIONES
+
+### 🏗️ Arquitectura:
+- **Patrón:** Controller → Service → DAO
+- **Respuestas:** JSON consistentes con ApiResponse
+- **Autenticación:** JWT con roles integrados
+- **Base de datos:** MySQL con relaciones completas
+
+### 🔧 Tecnologías:
+- **Backend:** Java 25 puro (sin frameworks)
+- **Servidor:** HTTP sockets personalizados
+- **IA:** Google Gemini API
+- **Email:** JavaMail con Gmail SMTP
+
+### 📋 Convenciones:
+- **Nomenclatura:** CamelCase (clases), snake_case (DB)
+- **JSON:** Gson para serialización
+- **Errores:** Códigos HTTP estándar
+- **Logs:** Salida estándar para debugging
+
+---
+
+## 📞 CONTACTO Y COORDINACIÓN
+
+### 👥 Equipo:
+- **Backend Lead:** [Asignar]
+- **Frontend Lead:** [Asignar]
+- **DevOps:** [Asignar]
+- **QA:** [Asignar]
+
+### 📅 Reuniones:
+- **Sprint Planning:** Lunes 9:00 AM
+- **Daily Standup:** Diario 10:00 AM
+- **Sprint Review:** Viernes 4:00 PM
+- **Retrospective:** Viernes 5:00 PM
+
+---
+
+## 🔄 ACTUALIZACIÓN DEL ROADMAP
+
+**Frecuencia:** Semanal  
+**Responsable:** Backend Lead  
+**Formato:** Markdown en Git  
+**Ubicación:** `./ROADMAP.md`
+
+**Para actualizar:**
+1. Marcar tareas completadas con `[x]`
+2. Actualizar fechas y estados
+3. Mover tareas entre secciones según progreso
+4. Actualizar métricas y estadísticas
+5. Commit con mensaje descriptivo
+
+---
+
+*Última actualización: 27 Febrero 2026 por Backend Team*
