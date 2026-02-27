@@ -1,39 +1,41 @@
-package com.libraryai.backend.controller.chats;
+package com.libraryai.backend.controller;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.server.http.ApiRequest;
 import com.libraryai.backend.server.http.ApiResponse;
-import com.libraryai.backend.service.ChatService;
+import com.libraryai.backend.service.StoryService;
 import com.sun.net.httpserver.HttpHandler;
 
 /**
- * Controlador para operaciones de chat.
+ * Controlador para operaciones de relatos.
  */
-public class ChatController {
+public class StoryController {
     
     /**
-     * Handler para enviar un mensaje al chat de un relato.
-     * Espera un JSON con: relatoId, emisor, contenido
+     * Handler para crear un nuevo relato.
+     * Espera un JSON con: titulo, modoOrigen, descripcion, estanteriaId, modeloUsadoId
      */
-    public static HttpHandler sendMessage() {
+    public static HttpHandler createStory() {
         return exchange -> {
             ApiRequest request = new ApiRequest(exchange);
             String body = request.readBody();
             
-            System.out.println("Petición POST /api/v1/chat/message recibida");
+            System.out.println("Petición POST /api/v1/stories recibida");
             
             try {
                 // Parsear el JSON del body
                 Gson gson = new Gson();
-                JsonObject messageData = gson.fromJson(body, JsonObject.class);
+                JsonObject storyData = gson.fromJson(body, JsonObject.class);
                 
                 // Extraer datos del JSON
-                int relatoId = messageData.get("relatoId").getAsInt();
-                String emisor = messageData.get("emisor").getAsString();
-                String contenido = messageData.get("contenido").getAsString();
+                String titulo = storyData.has("titulo") ? storyData.get("titulo").getAsString() : null;
+                String modoOrigen = storyData.has("modoOrigen") ? storyData.get("modoOrigen").getAsString() : null;
+                String descripcion = storyData.has("descripcion") ? storyData.get("descripcion").getAsString() : null;
+                Integer estanteriaId = storyData.has("estanteriaId") ? storyData.get("estanteriaId").getAsInt() : null;
+                Integer modeloUsadoId = storyData.has("modeloUsadoId") ? storyData.get("modeloUsadoId").getAsInt() : null;
                 
-                // Obtener usuarioId del token JWT
+                // Obtener usuarioId del token JWT (del header Authorization)
                 int usuarioId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
                 
                 if (usuarioId <= 0) {
@@ -44,8 +46,8 @@ public class ChatController {
                     return;
                 }
                 
-                // Enviar mensaje
-                JsonObject response = ChatService.sendMessage(relatoId, usuarioId, emisor, contenido);
+                // Crear el relato
+                JsonObject response = StoryService.createStory(usuarioId, titulo, modoOrigen, descripcion, estanteriaId, modeloUsadoId);
                 int statusCode = response.get("status").getAsInt();
                 
                 ApiResponse.send(exchange, response.toString(), statusCode);
@@ -60,10 +62,44 @@ public class ChatController {
     }
     
     /**
-     * Handler para obtener el historial de chat de un relato.
-     * Espera el relatoId como parámetro en la URL: /api/v1/chat/{relatoId}
+     * Handler para obtener todos los relatos de un usuario.
      */
-    public static HttpHandler getChatHistory() {
+    public static HttpHandler getUserStories() {
+        return exchange -> {
+            System.out.println("Petición GET /api/v1/stories recibida");
+            
+            try {
+                // Obtener usuarioId del token JWT
+                int usuarioId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
+                
+                if (usuarioId <= 0) {
+                    JsonObject errorResponse = new JsonObject();
+                    errorResponse.addProperty("Mensaje", "Usuario no autenticado");
+                    errorResponse.addProperty("status", 401);
+                    ApiResponse.send(exchange, errorResponse.toString(), 401);
+                    return;
+                }
+                
+                // Obtener relatos del usuario
+                JsonObject response = StoryService.getUserStories(usuarioId);
+                int statusCode = response.get("status").getAsInt();
+                
+                ApiResponse.send(exchange, response.toString(), statusCode);
+                
+            } catch (Exception e) {
+                JsonObject errorResponse = new JsonObject();
+                errorResponse.addProperty("Mensaje", "Error al obtener relatos: " + e.getMessage());
+                errorResponse.addProperty("status", 500);
+                ApiResponse.send(exchange, errorResponse.toString(), 500);
+            }
+        };
+    }
+    
+    /**
+     * Handler para obtener un relato específico por ID.
+     * Espera el ID como parámetro en la URL: /api/v1/stories/{id}
+     */
+    public static HttpHandler getStoryById() {
         return exchange -> {
             String path = exchange.getRequestURI().getPath();
             String[] pathParts = path.split("/");
@@ -102,15 +138,15 @@ public class ChatController {
                     return;
                 }
                 
-                // Obtener historial
-                JsonObject response = ChatService.getChatHistory(relatoId, usuarioId);
+                // Obtener relato
+                JsonObject response = StoryService.getStoryById(relatoId, usuarioId);
                 int statusCode = response.get("status").getAsInt();
                 
                 ApiResponse.send(exchange, response.toString(), statusCode);
                 
             } catch (Exception e) {
                 JsonObject errorResponse = new JsonObject();
-                errorResponse.addProperty("Mensaje", "Error al obtener historial: " + e.getMessage());
+                errorResponse.addProperty("Mensaje", "Error al obtener relato: " + e.getMessage());
                 errorResponse.addProperty("status", 500);
                 ApiResponse.send(exchange, errorResponse.toString(), 500);
             }
@@ -118,10 +154,84 @@ public class ChatController {
     }
     
     /**
-     * Handler para limpiar el historial de chat de un relato.
-     * Espera el relatoId como parámetro en la URL: /api/v1/chat/{relatoId}/clear
+     * Handler para actualizar un relato existente.
+     * Espera el ID en la URL y los datos en el body.
      */
-    public static HttpHandler clearChatHistory() {
+    public static HttpHandler updateStory() {
+        return exchange -> {
+            String path = exchange.getRequestURI().getPath();
+            String[] pathParts = path.split("/");
+            
+            System.out.println("Petición PUT " + path + " recibida");
+            
+            try {
+                // Extraer ID del relato de la URL
+                if (pathParts.length < 4) {
+                    JsonObject errorResponse = new JsonObject();
+                    errorResponse.addProperty("Mensaje", "ID de relato no proporcionado");
+                    errorResponse.addProperty("status", 400);
+                    ApiResponse.send(exchange, errorResponse.toString(), 400);
+                    return;
+                }
+                
+                int relatoId;
+                try {
+                    relatoId = Integer.parseInt(pathParts[3]);
+                } catch (NumberFormatException e) {
+                    JsonObject errorResponse = new JsonObject();
+                    errorResponse.addProperty("Mensaje", "ID de relato inválido");
+                    errorResponse.addProperty("status", 400);
+                    ApiResponse.send(exchange, errorResponse.toString(), 400);
+                    return;
+                }
+                
+                // Parsear el JSON del body
+                ApiRequest request = new ApiRequest(exchange);
+                String body = request.readBody();
+                Gson gson = new Gson();
+                JsonObject storyData = gson.fromJson(body, JsonObject.class);
+                
+                // Extraer datos del JSON (todos opcionales para actualización parcial)
+                String titulo = storyData.has("titulo") ? storyData.get("titulo").getAsString() : null;
+                String modoOrigen = storyData.has("modoOrigen") ? storyData.get("modoOrigen").getAsString() : null;
+                String descripcion = storyData.has("descripcion") ? storyData.get("descripcion").getAsString() : null;
+                Integer estanteriaId = storyData.has("estanteriaId") && !storyData.get("estanteriaId").isJsonNull() ? 
+                    storyData.get("estanteriaId").getAsInt() : null;
+                Integer modeloUsadoId = storyData.has("modeloUsadoId") && !storyData.get("modeloUsadoId").isJsonNull() ? 
+                    storyData.get("modeloUsadoId").getAsInt() : null;
+                
+                // Obtener usuarioId del token JWT
+                int usuarioId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
+                
+                if (usuarioId <= 0) {
+                    JsonObject errorResponse = new JsonObject();
+                    errorResponse.addProperty("Mensaje", "Usuario no autenticado");
+                    errorResponse.addProperty("status", 401);
+                    ApiResponse.send(exchange, errorResponse.toString(), 401);
+                    return;
+                }
+                
+                // Actualizar relato
+                JsonObject response = StoryService.updateStory(relatoId, usuarioId, titulo, modoOrigen, 
+                    descripcion, estanteriaId, modeloUsadoId);
+                int statusCode = response.get("status").getAsInt();
+                
+                ApiResponse.send(exchange, response.toString(), statusCode);
+                
+            } catch (Exception e) {
+                JsonObject errorResponse = new JsonObject();
+                errorResponse.addProperty("Mensaje", "Error al actualizar relato: " + e.getMessage());
+                errorResponse.addProperty("status", 500);
+                ApiResponse.send(exchange, errorResponse.toString(), 500);
+            }
+        };
+    }
+    
+    /**
+     * Handler para eliminar un relato.
+     * Espera el ID como parámetro en la URL: /api/v1/stories/{id}
+     */
+    public static HttpHandler deleteStory() {
         return exchange -> {
             String path = exchange.getRequestURI().getPath();
             String[] pathParts = path.split("/");
@@ -130,7 +240,7 @@ public class ChatController {
             
             try {
                 // Extraer ID del relato de la URL
-                if (pathParts.length < 5) {
+                if (pathParts.length < 4) {
                     JsonObject errorResponse = new JsonObject();
                     errorResponse.addProperty("Mensaje", "ID de relato no proporcionado");
                     errorResponse.addProperty("status", 400);
@@ -160,15 +270,15 @@ public class ChatController {
                     return;
                 }
                 
-                // Limpiar historial
-                JsonObject response = ChatService.clearChatHistory(relatoId, usuarioId);
+                // Eliminar relato
+                JsonObject response = StoryService.deleteStory(relatoId, usuarioId);
                 int statusCode = response.get("status").getAsInt();
                 
                 ApiResponse.send(exchange, response.toString(), statusCode);
                 
             } catch (Exception e) {
                 JsonObject errorResponse = new JsonObject();
-                errorResponse.addProperty("Mensaje", "Error al limpiar historial: " + e.getMessage());
+                errorResponse.addProperty("Mensaje", "Error al eliminar relato: " + e.getMessage());
                 errorResponse.addProperty("status", 500);
                 ApiResponse.send(exchange, errorResponse.toString(), 500);
             }
@@ -176,37 +286,13 @@ public class ChatController {
     }
     
     /**
-     * Handler para obtener estadísticas del chat de un relato.
-     * Espera el relatoId como parámetro en la URL: /api/v1/chat/{relatoId}/stats
+     * Handler para obtener estadísticas de relatos del usuario.
      */
-    public static HttpHandler getChatStats() {
+    public static HttpHandler getUserStoryStats() {
         return exchange -> {
-            String path = exchange.getRequestURI().getPath();
-            String[] pathParts = path.split("/");
-            
-            System.out.println("Petición GET " + path + " recibida");
+            System.out.println("Petición GET /api/v1/stories/stats recibida");
             
             try {
-                // Extraer ID del relato de la URL
-                if (pathParts.length < 5) {
-                    JsonObject errorResponse = new JsonObject();
-                    errorResponse.addProperty("Mensaje", "ID de relato no proporcionado");
-                    errorResponse.addProperty("status", 400);
-                    ApiResponse.send(exchange, errorResponse.toString(), 400);
-                    return;
-                }
-                
-                int relatoId;
-                try {
-                    relatoId = Integer.parseInt(pathParts[3]);
-                } catch (NumberFormatException e) {
-                    JsonObject errorResponse = new JsonObject();
-                    errorResponse.addProperty("Mensaje", "ID de relato inválido");
-                    errorResponse.addProperty("status", 400);
-                    ApiResponse.send(exchange, errorResponse.toString(), 400);
-                    return;
-                }
-                
                 // Obtener usuarioId del token JWT
                 int usuarioId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
                 
@@ -219,7 +305,7 @@ public class ChatController {
                 }
                 
                 // Obtener estadísticas
-                JsonObject response = ChatService.getChatStats(relatoId, usuarioId);
+                JsonObject response = StoryService.getUserStoryStats(usuarioId);
                 int statusCode = response.get("status").getAsInt();
                 
                 ApiResponse.send(exchange, response.toString(), statusCode);
