@@ -1,7 +1,6 @@
 package com.libraryai.backend.server;
 
 import java.io.*;
-import java.net.URI;
 import java.nio.file.*;
 
 import com.sun.net.httpserver.HttpHandler;
