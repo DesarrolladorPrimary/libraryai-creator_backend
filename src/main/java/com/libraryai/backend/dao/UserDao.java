@@ -413,4 +413,25 @@ public class UserDao {
         return json;
     }
 
+    /**
+     * Marca el correo del usuario como verificado.
+     * 
+     * @param usuarioId ID del usuario.
+     * @return true si se actualizó correctamente.
+     */
+    public static boolean verificarCorreo(int usuarioId) {
+        String sql = "UPDATE Usuario SET CorreoVerificado = TRUE, FechaVerificacion = NOW() WHERE PK_UsuarioID = ?";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, usuarioId);
+            return pstmt.executeUpdate() > 0;
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 }

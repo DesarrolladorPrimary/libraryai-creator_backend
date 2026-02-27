@@ -2,12 +2,15 @@ package com.libraryai.backend.service;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 import org.mindrot.jbcrypt.BCrypt;
 
 import com.google.gson.JsonObject;
 import com.libraryai.backend.dao.UserRoleDao;
 import com.libraryai.backend.dao.UserDao;
+import com.libraryai.backend.dao.auth.RecuperacionDao;
 import com.libraryai.backend.models.User;
 
 /**
@@ -52,9 +55,17 @@ public class UserService {
 
                         if (id != 0) {
                             UserRoleDao.assignRole(id);
+                            
+                            // Generar token de verificación de correo
+                            String tokenVerificacion = UUID.randomUUID().toString();
+                            LocalDateTime expiracion = LocalDateTime.now().plusHours(24);
+                            RecuperacionDao.guardarToken(id, tokenVerificacion, expiracion, "Verificacion_Registro");
+                            
+                            // Enviar correo de verificación
+                            EmailService.enviarCorreoVerificacion(correo, tokenVerificacion);
 
                             // Preparamos respuesta de éxito
-                            rJsonObject.addProperty("Mensaje", "Usuario creado correctamente");
+                            rJsonObject.addProperty("Mensaje", "Usuario creado correctamente. Verifica tu correo.");
                             rJsonObject.addProperty("status", 201); // Created
                         } else {
                             rJsonObject.addProperty("Mensaje", "Error del servidor");

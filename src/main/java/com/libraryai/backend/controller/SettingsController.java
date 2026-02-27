@@ -15,6 +15,9 @@ import com.sun.net.httpserver.HttpHandler;
  * - GET /api/v1/settings/instruccion-ia?id=X  → obtiene instrucción permanente de Poly
  * - PUT /api/v1/settings/instruccion-ia?id=X  → actualiza instrucción permanente de Poly
  * - GET /api/v1/settings/suscripcion?id=X     → obtiene suscripción activa + datos del plan
+ * - GET /api/v1/settings/version-ia?id=X      → obtiene versión actual del modelo IA (RF_32)
+ * - GET /api/v1/settings/modelo-disponible?id=X → obtiene modelos disponibles según plan (RF_32)
+ * - GET /api/v1/settings/sistema?id=X        → obtiene información completa del sistema (RF_32)
  */
 public class SettingsController {
 
@@ -123,6 +126,93 @@ public class SettingsController {
 
             int id = idJson.get("id").getAsInt();
             JsonObject response = SettingsService.getSuscripcion(id);
+
+            int statusCode = response.get("status").getAsInt();
+            response.remove("status");
+            ApiResponse.send(exchange, response.toString(), statusCode);
+        };
+    }
+
+    /**
+     * GET /api/v1/settings/version-ia?id=X
+     * Retorna la versión actual del modelo IA y changelog (RF_32)
+     */
+    public static HttpHandler getVersionIA() {
+        return exchange -> {
+            System.out.println("Peticion de tipo: " + exchange.getRequestMethod() + " recibido\n");
+
+            String parametros = exchange.getRequestURI().getQuery();
+            if (parametros == null || parametros.isEmpty()) {
+                ApiResponse.error(exchange, 400, "Se requiere el ID del usuario");
+                return;
+            }
+
+            JsonObject idJson = QueryParams.parseId(parametros);
+            if (idJson.get("status").getAsInt() != 200) {
+                ApiResponse.error(exchange, 400, "ID inválido");
+                return;
+            }
+
+            int id = idJson.get("id").getAsInt();
+            JsonObject response = SettingsService.getVersionIA(id);
+
+            int statusCode = response.get("status").getAsInt();
+            response.remove("status");
+            ApiResponse.send(exchange, response.toString(), statusCode);
+        };
+    }
+
+    /**
+     * GET /api/v1/settings/modelo-disponible?id=X
+     * Retorna modelos disponibles según plan del usuario (RF_32)
+     */
+    public static HttpHandler getModeloDisponible() {
+        return exchange -> {
+            System.out.println("Peticion de tipo: " + exchange.getRequestMethod() + " recibido\n");
+
+            String parametros = exchange.getRequestURI().getQuery();
+            if (parametros == null || parametros.isEmpty()) {
+                ApiResponse.error(exchange, 400, "Se requiere el ID del usuario");
+                return;
+            }
+
+            JsonObject idJson = QueryParams.parseId(parametros);
+            if (idJson.get("status").getAsInt() != 200) {
+                ApiResponse.error(exchange, 400, "ID inválido");
+                return;
+            }
+
+            int id = idJson.get("id").getAsInt();
+            JsonObject response = SettingsService.getModeloDisponible(id);
+
+            int statusCode = response.get("status").getAsInt();
+            response.remove("status");
+            ApiResponse.send(exchange, response.toString(), statusCode);
+        };
+    }
+
+    /**
+     * GET /api/v1/settings/sistema?id=X
+     * Retorna información completa del sistema (RF_32)
+     */
+    public static HttpHandler getInfoSistema() {
+        return exchange -> {
+            System.out.println("Peticion de tipo: " + exchange.getRequestMethod() + " recibido\n");
+
+            String parametros = exchange.getRequestURI().getQuery();
+            if (parametros == null || parametros.isEmpty()) {
+                ApiResponse.error(exchange, 400, "Se requiere el ID del usuario");
+                return;
+            }
+
+            JsonObject idJson = QueryParams.parseId(parametros);
+            if (idJson.get("status").getAsInt() != 200) {
+                ApiResponse.error(exchange, 400, "ID inválido");
+                return;
+            }
+
+            int id = idJson.get("id").getAsInt();
+            JsonObject response = SettingsService.getInfoSistema(id);
 
             int statusCode = response.get("status").getAsInt();
             response.remove("status");

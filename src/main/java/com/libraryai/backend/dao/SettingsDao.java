@@ -133,4 +133,84 @@ public class SettingsDao {
 
         return response;
     }
+
+    /**
+     * Obtiene la versión actual del modelo IA (RF_32).
+     */
+    public static JsonObject getVersionActual() {
+        JsonObject response = new JsonObject();
+        String sql = "SELECT NombreModelo, Version, Descripcion, NotasVersion, Estado FROM ModeloIA WHERE Estado = 'Activo' LIMIT 1";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                response.addProperty("status", 200);
+                response.addProperty("version", rs.getString("Version"));
+                response.addProperty("nombre", rs.getString("NombreModelo"));
+                response.addProperty("descripcion", rs.getString("Descripcion"));
+                response.addProperty("changelog", rs.getString("NotasVersion") != null ? rs.getString("NotasVersion") : "");
+                response.addProperty("activo", rs.getString("NombreModelo"));
+            } else {
+                response.addProperty("status", 404);
+                response.addProperty("Mensaje", "No hay modelo activo");
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error en getVersionActual: " + e.getMessage());
+            response.addProperty("status", 500);
+            response.addProperty("Mensaje", "Error interno al obtener versión");
+        }
+
+        return response;
+    }
+
+    /**
+     * Obtiene modelos disponibles según el plan del usuario (RF_32).
+     */
+    public static JsonObject getModelosPorPlan(String plan) {
+        JsonObject response = new JsonObject();
+        
+        // Según el RF, los modelos disponibles dependen del plan
+        String sql;
+        if ("Premium".equals(plan)) {
+            // Premium tiene acceso a todos los modelos
+            sql = "SELECT NombreModelo, Version, EsGratuito FROM ModeloIA WHERE Estado = 'Activo'";
+        } else {
+            // Gratuito solo tiene acceso a modelos gratuitos
+            sql = "SELECT NombreModelo, Version, EsGratuito FROM ModeloIA WHERE Estado = 'Activo' AND EsGratuito = TRUE";
+        }
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            ResultSet rs = stmt.executeQuery();
+            
+            // Convertir resultados a JSON array
+            java.util.List<JsonObject> modelos = new java.util.ArrayList<>();
+            
+            while (rs.next()) {
+                JsonObject modelo = new JsonObject();
+                modelo.addProperty("nombre", rs.getString("NombreModelo"));
+                modelo.addProperty("version", rs.getString("Version"));
+                modelo.addProperty("gratuito", rs.getBoolean("EsGratuito"));
+                modelos.add(modelo);
+            }
+
+            response.addProperty("status", 200);
+            
+            // Convertir lista a JSON string
+            com.google.gson.Gson gson = new com.google.gson.Gson();
+            response.addProperty("modelos", gson.toJson(modelos));
+
+        } catch (Exception e) {
+            System.out.println("Error en getModelosPorPlan: " + e.getMessage());
+            response.addProperty("status", 500);
+            response.addProperty("Mensaje", "Error interno al obtener modelos");
+        }
+
+        return response;
+    }
 }

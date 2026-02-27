@@ -16,6 +16,46 @@ import com.libraryai.backend.service.EmailService;
 public class RecuperacionService {
 
     /**
+     * Genera y envía un nuevo token de verificación cuando el usuario intenta hacer login.
+     * 
+     * @param correo Correo del usuario.
+     * @param usuarioId ID del usuario.
+     * @return JsonObject con el resultado de la operación.
+     */
+    public static JsonObject generarTokenVerificacionLogin(String correo, int usuarioId) {
+        JsonObject response = new JsonObject();
+        
+        try {
+            // Generar token único
+            String token = UUID.randomUUID().toString();
+            
+            // Define la expiración del token (1 hora desde ahora)
+            LocalDateTime expiracion = LocalDateTime.now().plusHours(1);
+            
+            // Guardar token en la base de datos
+            RecuperacionDao.guardarToken(usuarioId, token, expiracion, "Verificacion_Registro");
+            
+            // Enviar correo con diseño mejorado
+            boolean correoEnviado = EmailService.enviarCorreoVerificacionMejorado(correo, token);
+            
+            if (correoEnviado) {
+                response.addProperty("status", 200);
+                response.addProperty("Mensaje", "Correo de verificación enviado");
+            } else {
+                response.addProperty("status", 500);
+                response.addProperty("Mensaje", "Error al enviar correo");
+            }
+            
+        } catch (Exception e) {
+            response.addProperty("status", 500);
+            response.addProperty("Mensaje", "Error del servidor");
+            e.printStackTrace();
+        }
+        
+        return response;
+    }
+
+    /**
      * Solicitar recuperación de contraseña.
      * Busca usuario por correo, genera token y lo guarda en la DB.
      * Por ahora, el link se muestra en la consola del servidor.
@@ -80,6 +120,42 @@ public class RecuperacionService {
     public static JsonObject validarToken(String token) {
         // Delega la validación al DAO
         return RecuperacionDao.validarToken(token);
+    }
+
+    /**
+     * Verifica el correo del usuario con el token de verificación.
+     * 
+     * @param token Token de verificación.
+     * @return JsonObject con el resultado.
+     */
+    public static JsonObject verificarCorreo(String token) {
+        JsonObject response = new JsonObject();
+        
+        // Validar el token
+        JsonObject validacion = RecuperacionDao.validarTokenVerificacion(token);
+        
+        if (validacion.has("status") && validacion.get("status").getAsInt() != 200) {
+            return validacion;
+        }
+        
+        int usuarioId = validacion.get("usuarioId").getAsInt();
+        int tokenId = validacion.get("tokenId").getAsInt();
+        
+        // Actualizar el campo CorreoVerificado en Usuario
+        boolean actualizado = com.libraryai.backend.dao.UserDao.verificarCorreo(usuarioId);
+        
+        if (actualizado) {
+            // Marcar token como usado
+            RecuperacionDao.marcarTokenUsado(tokenId);
+            
+            response.addProperty("Mensaje", "Correo verificado correctamente. Ya puedes iniciar sesión.");
+            response.addProperty("status", 200);
+        } else {
+            response.addProperty("Mensaje", "Error al verificar correo");
+            response.addProperty("status", 500);
+        }
+        
+        return response;
     }
 
     /**

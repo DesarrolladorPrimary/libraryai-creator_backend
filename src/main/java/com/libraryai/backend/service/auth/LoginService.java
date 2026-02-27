@@ -38,6 +38,23 @@ public class LoginService {
                 String contraseñaDB = user.get("contraseña").getAsString();
                 String rol = user.get("rol").getAsString();
                 int id = user.get("id").getAsInt();
+                boolean correoVerificado = user.get("correoVerificado").getAsBoolean();
+
+                // Verificar si el correo está verificado
+                if (!correoVerificado) {
+                    // Generar nuevo token de verificación al momento del login
+                    JsonObject resultado = com.libraryai.backend.service.auth.RecuperacionService.generarTokenVerificacionLogin(correo, id);
+                    
+                    if (resultado.get("status").getAsInt() == 200) {
+                        response.addProperty("Mensaje", "📧 Te enviamos un nuevo enlace de verificación. Revisa tu correo (incluida carpeta de spam). El enlace expira en 1 hora.");
+                        response.addProperty("correoEnviado", true);
+                    } else {
+                        response.addProperty("Mensaje", "⚠️ No pudimos enviarte el correo. Intenta nuevamente más tarde.");
+                        response.addProperty("correoEnviado", false);
+                    }
+                    response.addProperty("status", 403);
+                    return response;
+                }
 
                 if (!BCrypt.checkpw(contraseña, contraseñaDB)) {
                     response.addProperty("Mensaje", "La contraseña no coincide con la registrada");

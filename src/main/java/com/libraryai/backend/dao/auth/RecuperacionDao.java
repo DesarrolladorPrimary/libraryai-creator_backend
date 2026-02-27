@@ -11,17 +11,24 @@ import com.libraryai.backend.config.DatabaseConnection;
  */
 public class RecuperacionDao {
 
-    // Query para guardar un nuevo token de recuperación
+    // Query para guardar un nuevo token (el tipo se pasa como parámetro)
     static String SQL_INSERT = """
             INSERT INTO TokenAcceso (FK_UsuarioID, TipoToken, Token, FechaExpiracion) 
-            VALUES (?, 'recuperacion', ?, ?)
+            VALUES (?, ?, ?, ?)
             """;
 
-    // Query para buscar y validar un token
-    static String SQL_SELECT_TOKEN = """
+    // Query para buscar token de recuperación
+    static String SQL_SELECT_TOKEN_RECUPERACION = """
             SELECT PK_TokenID, FK_UsuarioID, Token, FechaExpiracion, Usado 
             FROM TokenAcceso 
-            WHERE Token = ? AND TipoToken = 'recuperacion' AND Usado = FALSE
+            WHERE Token = ? AND TipoToken = 'Recuperacion_Password' AND Usado = FALSE
+            """;
+    
+    // Query para buscar token de verificación
+    static String SQL_SELECT_TOKEN_VERIFICACION = """
+            SELECT PK_TokenID, FK_UsuarioID, Token, FechaExpiracion, Usado 
+            FROM TokenAcceso 
+            WHERE Token = ? AND TipoToken = 'Verificacion_Registro' AND Usado = FALSE
             """;
 
     // Query para marcar un token como usado
@@ -35,22 +42,22 @@ public class RecuperacionDao {
             """;
 
     /**
-     * Guarda un token de recuperación en la base de datos.
+     * Guarda un token en la base de datos.
      * 
-     * @param usuarioId ID del usuario que solicita recuperación.
-     * @param token Token único de recuperación.
+     * @param usuarioId ID del usuario.
+     * @param token Token único.
      * @param expiracion Fecha y hora cuando expira el token.
+     * @param tipoToken Tipo de token (Verificacion_Registro o Recuperacion_Password).
      */
-    public static void guardarToken(int usuarioId, String token, LocalDateTime expiracion) {
+    public static void guardarToken(int usuarioId, String token, LocalDateTime expiracion, String tipoToken) {
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT)) {
             
-            // Asigna los parámetros a la query
             pstmt.setInt(1, usuarioId);
-            pstmt.setString(2, token);
-            pstmt.setTimestamp(3, Timestamp.valueOf(expiracion));
+            pstmt.setString(2, tipoToken);
+            pstmt.setString(3, token);
+            pstmt.setTimestamp(4, Timestamp.valueOf(expiracion));
             
-            // Ejecuta la inserción
             pstmt.executeUpdate();
             
         } catch (SQLException e) {
@@ -59,40 +66,54 @@ public class RecuperacionDao {
     }
 
     /**
-     * Valida un token de recuperación.
-     * Verifica que exista, no haya sido usado y no haya expirado.
-     * 
-     * @param token Token a validar.
-     * @return JsonObject con status 200 si es válido, o error si es inválido/expirado.
+     * Guarda un token de recuperación (para compatibilidad).
+     */
+    public static void guardarToken(int usuarioId, String token, LocalDateTime expiracion) {
+        guardarToken(usuarioId, token, expiracion, "Recuperacion_Password");
+    }
+
+    /**
+     * Valida un token de recuperación de contraseña.
      */
     public static JsonObject validarToken(String token) {
-        // Objeto para la respuesta
+        return validarTokenPorTipo(token, "Recuperacion_Password");
+    }
+    
+    /**
+     * Valida un token de verificación de registro.
+     */
+    public static JsonObject validarTokenVerificacion(String token) {
+        return validarTokenPorTipo(token, "Verificacion_Registro");
+    }
+    
+    /**
+     * Valida un token según su tipo.
+     */
+    private static JsonObject validarTokenPorTipo(String token, String tipoToken) {
         JsonObject response = new JsonObject();
         
+        String sql = tipoToken.equals("Verificacion_Registro") 
+            ? SQL_SELECT_TOKEN_VERIFICACION 
+            : SQL_SELECT_TOKEN_RECUPERACION;
+        
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT_TOKEN)) {
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-            // Asigna el token a la query
             pstmt.setString(1, token);
             ResultSet rs = pstmt.executeQuery();
             
-            // Si encuentra el token
             if (rs.next()) {
-                // Obtiene la fecha de expiración
                 LocalDateTime expiracion = rs.getTimestamp("FechaExpiracion").toLocalDateTime();
                 
-                // Verifica si el token ha expirado
                 if (expiracion.isBefore(LocalDateTime.now())) {
                     response.addProperty("status", 400);
                     response.addProperty("Mensaje", "Token expirado");
                 } else {
-                    // Token válido, retorna los datos necesarios
                     response.addProperty("status", 200);
                     response.addProperty("usuarioId", rs.getInt("FK_UsuarioID"));
                     response.addProperty("tokenId", rs.getInt("PK_TokenID"));
                 }
             } else {
-                // Token no encontrado o ya usado
                 response.addProperty("status", 404);
                 response.addProperty("Mensaje", "Token inválido o ya usado");
             }

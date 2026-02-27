@@ -7,6 +7,7 @@ import com.libraryai.backend.controller.ai.AiController;
 import com.libraryai.backend.controller.auth.LoginController;
 import com.libraryai.backend.controller.auth.RecuperacionController;
 import com.libraryai.backend.controller.UploadController;
+import com.libraryai.backend.controller.ShelfController;
 import com.libraryai.backend.middleware.AuthMiddleware;
 // Importamos nuestro Router personalizado
 import com.libraryai.backend.server.Router;
@@ -49,6 +50,9 @@ public class Routes {
         router.get("/api/v1/recuperar/validar", RecuperacionController.validarToken());
         router.put("/api/v1/recuperar/nueva", RecuperacionController.nuevaPassword());
 
+        // Ruta de verificación de correo (sin auth)
+        router.get("/api/v1/verificar", RecuperacionController.verificarCorreo());
+
         // ========== RUTAS DE USUARIOS ==========
         router.get("/api/v1/usuarios",
                 auth.proteger(UserController.listUsers(), "Admin"));
@@ -83,9 +87,32 @@ public class Routes {
         router.get("/api/v1/settings/suscripcion",
                 auth.proteger(SettingsController.getSuscripcion(), "Gratuito", "Premium"));
 
+        // NUEVAS RUTAS SEGÚN RF_32
+        router.get("/api/v1/settings/version-ia",
+                auth.proteger(SettingsController.getVersionIA(), "Gratuito", "Premium"));
+
+        router.get("/api/v1/settings/modelo-disponible",
+                auth.proteger(SettingsController.getModeloDisponible(), "Gratuito", "Premium"));
+
+        router.get("/api/v1/settings/sistema",
+                auth.proteger(SettingsController.getInfoSistema(), "Gratuito", "Premium"));
+
         // ========== RUTAS DE ARCHIVOS ==========
         router.post("/api/v1/upload/perfil",
                 auth.proteger(UploadController.subirFotoPerfil(), "Gratuito", "Premium"));
+
+        // ========== RUTAS DE ESTANTERÍAS ==========
+        router.get("/api/v1/estanterias",
+                auth.proteger(ShelfController.listShelves(), "Gratuito", "Premium"));
+        
+        router.post("/api/v1/estanterias",
+                auth.proteger(ShelfController.createShelf(), "Gratuito", "Premium"));
+        
+        router.put("/api/v1/estanterias",
+                auth.proteger(ShelfController.updateShelf(), "Gratuito", "Premium"));
+        
+        router.delete("/api/v1/estanterias",
+                auth.proteger(ShelfController.deleteShelf(), "Gratuito", "Premium"));
 
         // ========== AQUÍ PUEDES AGREGAR MÁS RUTAS ==========
         // Ejemplo:

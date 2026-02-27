@@ -15,7 +15,7 @@ public class LoginDao {
 
     // language=sql
     final static String SQL_SELECT_WHERE = """
-            SELECT u.Correo, u.Passwordhash, r.NombreRol, u.PK_UsuarioID
+            SELECT u.Correo, u.Passwordhash, u.CorreoVerificado, r.NombreRol, u.PK_UsuarioID
             FROM Usuario u
             INNER JOIN UsuarioRol ur ON u.PK_UsuarioID = ur.FK_UsuarioID
             INNER JOIN Rol r ON ur.FK_RolID = r.PK_RolID
@@ -23,7 +23,7 @@ public class LoginDao {
                         """;
 
     /**
-     * Busca un usuario por correo y devuelve hash, rol e id.
+     * Busca un usuario por correo y devuelve hash, rol, id y estado de verificación.
      * Retorna status 200 si encuentra, 404 si no existe.
      */
     public static JsonObject findUserByEmail(String correo) {
@@ -44,10 +44,13 @@ public class LoginDao {
                 String contraseñaDB = rs.getString("Passwordhash");
                 String rolUsuario = rs.getString("NombreRol");
                 int idUsuario = rs.getInt("PK_UsuarioID");
+                boolean correoVerificado = rs.getBoolean("CorreoVerificado");
+                
                 user.addProperty("status", 200);
                 user.addProperty("contraseña", contraseñaDB);
                 user.addProperty("rol", rolUsuario);
                 user.addProperty("id", idUsuario);
+                user.addProperty("correoVerificado", correoVerificado);
             }
 
         } catch (SQLException e) {

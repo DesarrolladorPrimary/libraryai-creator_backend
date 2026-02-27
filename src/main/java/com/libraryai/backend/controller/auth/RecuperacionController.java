@@ -112,4 +112,26 @@ public class RecuperacionController {
             ApiResponse.send(exchange, response.toString(), status);
         };
     }
+
+    /**
+     * Handler para verificar correo de registro.
+     * Ruta: GET /api/v1/verificar?token=xxx
+     */
+    public static HttpHandler verificarCorreo() {
+        return exchange -> {
+            String query = exchange.getRequestURI().getQuery();
+            String token = "";
+
+            if (query != null && query.contains("token=")) {
+                token = query.split("token=")[1];
+            }
+
+            JsonObject response = RecuperacionService.verificarCorreo(token);
+
+            int status = response.get("status").getAsInt();
+            response.remove("status");
+
+            ApiResponse.send(exchange, response.toString(), status);
+        };
+    }
 }

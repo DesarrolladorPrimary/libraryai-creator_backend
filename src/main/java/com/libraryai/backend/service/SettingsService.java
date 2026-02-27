@@ -45,4 +45,56 @@ public class SettingsService {
     public static JsonObject getSuscripcion(int userId) {
         return SettingsDao.getSuscripcionActiva(userId);
     }
+
+    /**
+     * Obtiene la versión actual del modelo IA y changelog (RF_32).
+     */
+    public static JsonObject getVersionIA(int userId) {
+        return SettingsDao.getVersionActual();
+    }
+
+    /**
+     * Obtiene modelos disponibles según plan del usuario (RF_32).
+     */
+    public static JsonObject getModeloDisponible(int userId) {
+        // Primero obtener el plan del usuario
+        JsonObject suscripcion = SettingsDao.getSuscripcionActiva(userId);
+        
+        if (suscripcion.get("status").getAsInt() != 200) {
+            JsonObject response = new JsonObject();
+            response.addProperty("status", 404);
+            response.addProperty("Mensaje", "Usuario sin suscripción activa");
+            return response;
+        }
+        
+        String plan = suscripcion.get("plan").getAsString();
+        return SettingsDao.getModelosPorPlan(plan);
+    }
+
+    /**
+     * Obtiene información completa del sistema (RF_32).
+     */
+    public static JsonObject getInfoSistema(int userId) {
+        JsonObject response = new JsonObject();
+        
+        // Obtener versión actual del modelo
+        JsonObject versionInfo = SettingsDao.getVersionActual();
+        
+        // Obtener suscripción del usuario
+        JsonObject suscripcion = SettingsDao.getSuscripcionActiva(userId);
+        
+        if (versionInfo.get("status").getAsInt() == 200 && suscripcion.get("status").getAsInt() == 200) {
+            response.addProperty("status", 200);
+            response.addProperty("versionModelo", versionInfo.get("version").getAsString());
+            response.addProperty("nombreModelo", versionInfo.get("nombre").getAsString());
+            response.addProperty("changelog", versionInfo.get("changelog").getAsString());
+            response.addProperty("planUsuario", suscripcion.get("plan").getAsString());
+            response.addProperty("modeloActivo", versionInfo.get("activo").getAsString());
+        } else {
+            response.addProperty("status", 500);
+            response.addProperty("Mensaje", "Error al obtener información del sistema");
+        }
+        
+        return response;
+    }
 }
