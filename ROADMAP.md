@@ -1,8 +1,23 @@
-# 🗺️ ROADMAP - Library Creator Backend
+# 🗺️ ROADMAP - Library Creator (Proyecto Completo)
 
-> **Estado Actual:** Desarrollo activo  
+> **Estado Actual:** Desarrollo activo (frontend + backend)  
 > **Última Actualización:** 1 Marzo 2026  
-> **Versión:** v2.1 - Alineado con el estado real del backend
+> **Versión:** v3.0 - Roadmap unificado del proyecto
+
+---
+
+## 📌 Alcance del Roadmap
+
+Este documento ahora funciona como **roadmap único del proyecto completo**.
+
+Incluye:
+- Backend (API, seguridad, datos, IA y servicios)
+- Frontend (auth, feed, settings, biblioteca y experiencia de usuario)
+
+Su objetivo es dejar claro:
+- qué ya existe y está funcional,
+- qué está en estado MVP o prototipo,
+- y qué sigue pendiente por implementar.
 
 ---
 
@@ -17,6 +32,9 @@
 | 🤖 IA (Gemini) | ✅ Completado | 100% | Ene 2026 |
 | 📚 Relatos | 🔄 MVP Funcional | 85% | Mar 2026 |
 | 💬 Chat | 🔄 MVP Funcional | 80% | Mar 2026 |
+| 🖥️ Frontend Base (Auth/UI) | 🔄 MVP Funcional | 85% | Mar 2026 |
+| ⚙️ Frontend App (Feed/Settings/Biblioteca) | 🔄 MVP Funcional | 80% | Mar 2026 |
+| ✍️ Frontend Creativo/Admin | 🔄 En Prototipo | 35% | Mar 2026 |
 | 📁 Archivos | ⏳ Planeado | 0% | - |
 | 💳 Suscripciones | ⏳ Planeado | 0% | - |
 | 🔒 Roles Avanzados | ✅ Completado | 100% | Feb 2026 |
@@ -297,22 +315,114 @@
 
 ---
 
+### 🖥️ MÓDULO 11: FRONTEND BASE (AUTH/UI) 🔄
+
+**Estado:** `MVP FUNCIONAL`  
+**Responsable:** Frontend Team  
+**Fecha de Inicio:** 10 Feb 2026  
+**Fecha Estimada de Finalización:** 10 Mar 2026
+
+#### ✅ Tareas Completadas:
+- [x] **FE-001:** Pantallas base de inicio, login y registro
+- [x] **FE-002:** Integración de login con JWT real
+- [x] **FE-003:** Flujo de recuperación de contraseña
+- [x] **FE-004:** Verificación de correo desde la UI
+- [x] **FE-005:** Guard de acceso para pantallas protegidas
+- [x] **FE-006:** Manejo defensivo de sesión y token inválido
+- [x] **FE-007:** Base URL unificada para la API
+- [x] **FE-008:** Sistema base de idiomas en la interfaz
+
+#### ⏳ Tareas Pendientes:
+- [ ] **FE-009:** Traducir todos los mensajes dinámicos y notificaciones
+- [ ] **FE-010:** Cerrar validaciones visuales finas y estados de error
+
+#### 📁 Áreas Cubiertas:
+- `public/index.html`
+- `public/auth/*`
+- `src/scripts/utils/*`
+- `src/scripts/pages/login.js`
+- `src/scripts/pages/regist.js`
+- `src/scripts/pages/recuperar.js`
+
+---
+
+### ⚙️ MÓDULO 12: FRONTEND APP (FEED / SETTINGS / BIBLIOTECA) 🔄
+
+**Estado:** `MVP FUNCIONAL`  
+**Responsable:** Frontend Team  
+**Fecha de Inicio:** 15 Feb 2026  
+**Fecha Estimada de Finalización:** 20 Mar 2026
+
+#### ✅ Tareas Completadas:
+- [x] **APP-001:** Feed principal navegable
+- [x] **APP-002:** Perfil de usuario conectado al backend
+- [x] **APP-003:** Cambio de contraseña y eliminación de cuenta
+- [x] **APP-004:** Instrucciones persistentes para Poly
+- [x] **APP-005:** Visualización del plan actual
+- [x] **APP-006:** Subida de foto de perfil
+- [x] **APP-007:** Estanterías con crear, listar, renombrar y eliminar
+- [x] **APP-008:** Selector de idioma en settings generales
+
+#### ⏳ Tareas Pendientes:
+- [ ] **APP-009:** Pulir UX de biblioteca y navegación entre estanterías
+- [ ] **APP-010:** Unificar traducciones de texto dinámico restante
+- [ ] **APP-011:** Validación manual completa de flujos en navegador
+
+#### 📁 Áreas Cubiertas:
+- `public/feed/feed-main.html`
+- `public/feed/settings/*`
+- `public/feed/biblioteca/*`
+- `src/scripts/pages/feed.js`
+- `src/scripts/pages/settings/*`
+- `src/scripts/pages/biblioteca/*`
+
+---
+
+### ✍️ MÓDULO 13: FRONTEND CREATIVO / POLY / ADMIN 🔄
+
+**Estado:** `EN PROTOTIPO`  
+**Responsable:** Frontend Team  
+**Fecha de Inicio:** 20 Feb 2026  
+**Fecha Estimada de Finalización:** 30 Abr 2026
+
+#### ✅ Tareas Completadas:
+- [x] **UX-001:** Maquetas visuales de Poly y creador creativo
+- [x] **UX-002:** Maquetas visuales del panel admin
+- [x] **UX-003:** Navegación básica hacia módulos futuros
+
+#### ⏳ Tareas Pendientes:
+- [ ] **UX-004:** Integración real del chat de Poly con backend
+- [ ] **UX-005:** Integración real del creador manual
+- [ ] **UX-006:** Historial y gestión visual de relatos
+- [ ] **UX-007:** Login admin real con control por rol
+- [ ] **UX-008:** Dashboard admin con datos reales
+
+#### 📁 Áreas Cubiertas:
+- `public/feed/poly/*`
+- `public/feed/creative/*`
+- `public/admin/*`
+
+---
+
 ## 🚀 PRÓXIMAS TAREAS PRIORITARIAS
 
 ### 📅 Semana del 1-7 Marzo 2026:
 1. **REL-007:** Iniciar versionamiento de relatos
 2. **REL-008:** Definir búsqueda y filtrado
 3. **CHAT-008:** Completar historial de conversación
+4. **APP-009:** Pulir UX de biblioteca y navegación entre estanterías
 
 ### 📅 Semana del 8-14 Marzo 2026:
 1. **REL-009:** Categorización y metadatos
 2. **CHAT-009:** Contexto de conversación
 3. **CHAT-010:** Mejorar integración con Gemini
+4. **FE-009:** Traducir mensajes dinámicos y notificaciones
 
 ### 📅 Semana del 15-21 Marzo 2026:
 1. **REL-010:** Cerrar contratos para frontend
 2. **CHAT-011:** Cerrar contratos para frontend
-3. **FILE-001:** Iniciar módulo de archivos
+3. **UX-004:** Integrar Poly con backend real
+4. **FILE-001:** Iniciar módulo de archivos
 
 ---
 
@@ -320,24 +430,25 @@
 
 | Hito | Fecha Estimada | Estado | Descripción |
 |------|----------------|---------|-------------|
-| 🎯 MVP Básico | 1 Mar 2026 | ✅ | Usuarios + Login + IA + Relatos/Chat base |
-| 🎯 Versión 1.0 | 30 Abr 2026 | 🔄 | Relatos + Chat refinados |
-| 🎯 Versión 2.0 | 30 Jun 2026 | ⏳ | Archivos + Exportación |
-| 🎯 Versión 3.0 | 30 Sep 2026 | ⏳ | Suscripciones + Pagos |
+| 🎯 MVP Básico | 1 Mar 2026 | ✅ | Auth + Feed + Settings + Biblioteca + Backend base |
+| 🎯 Versión 1.0 | 30 Abr 2026 | 🔄 | Relatos + Chat + Poly conectados de punta a punta |
+| 🎯 Versión 2.0 | 30 Jun 2026 | ⏳ | Archivos + Exportación + mejora UX |
+| 🎯 Versión 3.0 | 30 Sep 2026 | ⏳ | Suscripciones + Pagos + Admin funcional |
 
 ---
 
 ## 📊 MÉTRICAS DE PROGRESO
 
 ### 📈 Estadísticas Actuales:
-- **Total de Módulos:** 10
-- **Módulos Completados:** 6 (60%)
-- **Módulos en Progreso:** 2 (20%)
-- **Módulos Planeados:** 2 (20%)
-- **Total de Tareas:** 80+
-- **Tareas Completadas:** 56 (70%)
+- **Total de Módulos:** 13
+- **Módulos Completados:** 6 (46%)
+- **Módulos en Progreso / Prototipo:** 5 (39%)
+- **Módulos Planeados:** 2 (15%)
+- **Total de Tareas:** 100+
+- **Tareas Completadas:** 67 (67%)
 
 ### 🏆 Logros Recientes:
+- ✅ **1 Mar 2026:** Frontend base y settings quedaron integrados con el backend
 - ✅ **1 Mar 2026:** Relatos y chat quedaron en estado MVP funcional
 - ✅ **1 Mar 2026:** Router actualizado con soporte de rutas dinámicas
 - ✅ **1 Mar 2026:** Seguridad por usuario reforzada con JWT en controladores
@@ -393,12 +504,18 @@
 - **Prioridad:** Media
 - **Descripción:** API alineada para consumo frontend en autenticación, settings y estanterías
 
+### 🖥️ Frontend de Producto:
+- **Estado:** En progreso
+- **Prioridad:** Alta
+- **Descripción:** Falta cerrar Poly, creador creativo, panel admin y pruebas de UX completas
+
 ---
 
 ## 📝 NOTAS Y DECISIONES
 
 ### 🏗️ Arquitectura:
 - **Patrón:** Controller → Service → DAO
+- **Frontend:** HTML + CSS + JavaScript modular por pantallas
 - **Respuestas:** JSON consistentes con ApiResponse
 - **Autenticación:** JWT con roles integrados
 - **Base de datos:** MySQL con relaciones completas
@@ -437,7 +554,7 @@
 ## 🔄 ACTUALIZACIÓN DEL ROADMAP
 
 **Frecuencia:** Semanal  
-**Responsable:** Backend Lead  
+**Responsable:** Tech Lead  
 **Formato:** Markdown en Git  
 **Ubicación:** `./ROADMAP.md`
 
@@ -450,4 +567,4 @@
 
 ---
 
-*Última actualización: 27 Febrero 2026 por Backend Team*
+*Última actualización: 1 Marzo 2026 por el equipo del proyecto*
