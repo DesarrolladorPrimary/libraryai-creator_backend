@@ -10,6 +10,8 @@ import org.mindrot.jbcrypt.BCrypt;
  */
 public class LoginService {
 
+    private static final String EMAIL_PATTERN = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,100}";
+
     /**
      * Valida formato de correo, verifica credenciales y genera token JWT.
      */
@@ -19,7 +21,7 @@ public class LoginService {
         try {
 
 
-            if (!correo.matches("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9._%+-]+\\.[a-zA-Z]{2,100}")) {
+            if (!correo.matches(EMAIL_PATTERN)) {
                 response.addProperty("Mensaje", "El correo no es valido");
                 response.addProperty("status", 400);
 
@@ -46,10 +48,10 @@ public class LoginService {
                     JsonObject resultado = com.libraryai.backend.service.auth.RecuperacionService.generarTokenVerificacionLogin(correo, id);
                     
                     if (resultado.get("status").getAsInt() == 200) {
-                        response.addProperty("Mensaje", "📧 Te enviamos un nuevo enlace de verificación. Revisa tu correo (incluida carpeta de spam). El enlace expira en 1 hora.");
+                        response.addProperty("Mensaje", "Debe verificar su correo. Te enviamos un nuevo enlace de verificación.");
                         response.addProperty("correoEnviado", true);
                     } else {
-                        response.addProperty("Mensaje", "⚠️ No pudimos enviarte el correo. Intenta nuevamente más tarde.");
+                        response.addProperty("Mensaje", "Debe verificar su correo. No pudimos reenviar el enlace en este momento.");
                         response.addProperty("correoEnviado", false);
                     }
                     response.addProperty("status", 403);
@@ -64,7 +66,7 @@ public class LoginService {
 
                 // Genera JWT con correo, rol e id.
                 String token = JwtUtil.generateUserToken(correo, rol, id);
-                response.addProperty("Mensaje", "Usuario logueado correctamente");
+                response.addProperty("Mensaje", "Inicio de sesión correcto");
                 response.addProperty("Token", token);
                 response.addProperty("status", 200);
 
@@ -75,7 +77,7 @@ public class LoginService {
         } catch (Throwable e) {
             e.printStackTrace();
 
-            response.addProperty("Error" , "Servidor ha fallado");
+            response.addProperty("Mensaje" , "Servidor ha fallado");
             response.addProperty("status", 500);
             return response;
         }

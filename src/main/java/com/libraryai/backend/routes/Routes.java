@@ -8,6 +8,8 @@ import com.libraryai.backend.controller.auth.LoginController;
 import com.libraryai.backend.controller.auth.RecuperacionController;
 import com.libraryai.backend.controller.UploadController;
 import com.libraryai.backend.controller.ShelfController;
+import com.libraryai.backend.controller.StoryController;
+import com.libraryai.backend.controller.chats.ChatController;
 import com.libraryai.backend.middleware.AuthMiddleware;
 // Importamos nuestro Router personalizado
 import com.libraryai.backend.server.Router;
@@ -113,6 +115,38 @@ public class Routes {
         
         router.delete("/api/v1/estanterias",
                 auth.proteger(ShelfController.deleteShelf(), "Gratuito", "Premium"));
+
+        // ========== RUTAS DE RELATOS ========== 
+        router.post("/api/v1/stories",
+                auth.proteger(StoryController.createStory(), "Gratuito", "Premium"));
+        
+        router.get("/api/v1/stories",
+                auth.proteger(StoryController.getUserStories(), "Gratuito", "Premium"));
+        
+        router.get("/api/v1/stories/stats",
+                auth.proteger(StoryController.getUserStoryStats(), "Gratuito", "Premium"));
+        
+        router.get("/api/v1/stories/{id}",
+                auth.proteger(StoryController.getStoryById(), "Gratuito", "Premium"));
+        
+        router.put("/api/v1/stories/{id}",
+                auth.proteger(StoryController.updateStory(), "Gratuito", "Premium"));
+        
+        router.delete("/api/v1/stories/{id}",
+                auth.proteger(StoryController.deleteStory(), "Gratuito", "Premium"));
+
+        // ========== RUTAS DE CHAT ==========
+        router.post("/api/v1/chat/message",
+                auth.proteger(ChatController.sendMessage(), "Gratuito", "Premium"));
+        
+        router.get("/api/v1/chat/{relatoId}",
+                auth.proteger(ChatController.getChatHistory(), "Gratuito", "Premium"));
+        
+        router.get("/api/v1/chat/{relatoId}/stats",
+                auth.proteger(ChatController.getChatStats(), "Gratuito", "Premium"));
+        
+        router.delete("/api/v1/chat/{relatoId}/clear",
+                auth.proteger(ChatController.clearChatHistory(), "Gratuito", "Premium"));
 
         // ========== AQUÍ PUEDES AGREGAR MÁS RUTAS ==========
         // Ejemplo:

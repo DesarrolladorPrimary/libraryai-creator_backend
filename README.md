@@ -141,14 +141,41 @@ GEMINI_MODEL="gemini-2.0-flash-exp"
 ### IA y Chat
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| `POST` | `/api/v1/ai/chat` | Enviar mensaje a Poly (IA) |
-| `GET` | `/api/v1/ai/models` | Listar modelos disponibles |
+| `POST` | `/api/v1/generar-historias` | Generar contenido con Poly |
+| `POST` | `/api/v1/chat/message` | Enviar mensaje a un chat de relato |
+| `GET` | `/api/v1/chat/{relatoId}` | Obtener historial del chat |
+| `GET` | `/api/v1/chat/{relatoId}/stats` | Obtener estadísticas del chat |
+| `DELETE` | `/api/v1/chat/{relatoId}/clear` | Limpiar historial del chat |
 
 ### Archivos
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| `POST` | `/api/v1/upload` | Subir archivos |
-| `GET` | `/api/v1/files` | Listar archivos del usuario |
+| `POST` | `/api/v1/upload/perfil` | Subir foto de perfil |
+
+### Configuraciones
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/v1/settings/instruccion-ia` | Leer instrucción permanente de Poly |
+| `PUT` | `/api/v1/settings/instruccion-ia` | Actualizar instrucción permanente de Poly |
+| `GET` | `/api/v1/settings/suscripcion` | Consultar plan y límites del usuario |
+
+### Estanterías
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `GET` | `/api/v1/estanterias` | Listar estanterías del usuario |
+| `POST` | `/api/v1/estanterias` | Crear estantería |
+| `PUT` | `/api/v1/estanterias` | Renombrar estantería |
+| `DELETE` | `/api/v1/estanterias` | Eliminar estantería |
+
+### Relatos
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `POST` | `/api/v1/stories` | Crear relato |
+| `GET` | `/api/v1/stories` | Listar relatos del usuario |
+| `GET` | `/api/v1/stories/stats` | Obtener estadísticas de relatos |
+| `GET` | `/api/v1/stories/{id}` | Obtener relato por ID |
+| `PUT` | `/api/v1/stories/{id}` | Actualizar relato |
+| `DELETE` | `/api/v1/stories/{id}` | Eliminar relato |
 
 ---
 
