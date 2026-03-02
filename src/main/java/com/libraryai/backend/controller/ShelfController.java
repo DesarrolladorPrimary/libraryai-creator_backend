@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.libraryai.backend.server.http.ApiRequest;
 import com.libraryai.backend.server.http.ApiResponse;
 import com.libraryai.backend.service.ShelfService;
+import com.libraryai.backend.util.JwtUtil;
 import com.libraryai.backend.util.QueryParams;
 import com.sun.net.httpserver.HttpHandler;
 
@@ -35,6 +36,12 @@ public class ShelfController {
             }
             int usuarioId = idJson.get("id").getAsInt();
 
+            int tokenUserId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
+            if (tokenUserId <= 0 || tokenUserId != usuarioId) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
+
             JsonArray response = ShelfService.obtenerEstanterias(usuarioId);
             ApiResponse.send(exchange, response.toString(), 200);
         };
@@ -62,10 +69,16 @@ public class ShelfController {
             int usuarioId = json.get("usuarioId").getAsInt();
             String nombre = json.get("nombre").getAsString();
 
+            int tokenUserId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
+            if (tokenUserId <= 0 || tokenUserId != usuarioId) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
+
             JsonObject response = ShelfService.crearEstanteria(usuarioId, nombre);
 
-            int status = response.has("Status") ? response.get("Status").getAsInt() : 200;
-            response.remove("Status");
+            int status = response.has("status") ? response.get("status").getAsInt() : 200;
+            response.remove("status");
 
             ApiResponse.send(exchange, response.toString(), status);
         };
@@ -92,6 +105,12 @@ public class ShelfController {
             }
             int estanteriaId = idJson.get("id").getAsInt();
 
+            int tokenUserId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
+            if (!userOwnsShelf(tokenUserId, estanteriaId)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
+
             ApiRequest request = new ApiRequest(exchange);
             String body = request.readBody();
 
@@ -106,8 +125,8 @@ public class ShelfController {
 
             JsonObject response = ShelfService.actualizarEstanteria(nombre, estanteriaId);
 
-            int status = response.has("Status") ? response.get("Status").getAsInt() : 200;
-            response.remove("Status");
+            int status = response.has("status") ? response.get("status").getAsInt() : 200;
+            response.remove("status");
 
             ApiResponse.send(exchange, response.toString(), status);
         };
@@ -133,12 +152,51 @@ public class ShelfController {
             }
             int estanteriaId = idJson.get("id").getAsInt();
 
+            int tokenUserId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
+            if (!userOwnsShelf(tokenUserId, estanteriaId)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
+
             JsonObject response = ShelfService.eliminarEstanteria(estanteriaId);
 
-            int status = response.has("Status") ? response.get("Status").getAsInt() : 200;
-            response.remove("Status");
+            int status = response.has("status") ? response.get("status").getAsInt() : 200;
+            response.remove("status");
 
             ApiResponse.send(exchange, response.toString(), status);
         };
+    }
+
+    private static int getUserIdFromToken(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return -1;
+        }
+
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+        JsonObject tokenInfo = JwtUtil.validateToken(token);
+
+        if (tokenInfo.has("Mensaje") || !tokenInfo.has("Id")) {
+            return -1;
+        }
+
+        return tokenInfo.get("Id").getAsInt();
+    }
+
+    private static boolean userOwnsShelf(int userId, int shelfId) {
+        if (userId <= 0) {
+            return false;
+        }
+
+        JsonArray userShelves = ShelfService.obtenerEstanterias(userId);
+
+        for (int index = 0; index < userShelves.size(); index++) {
+            JsonObject shelf = userShelves.get(index).getAsJsonObject();
+
+            if (shelf.has("id") && shelf.get("id").getAsInt() == shelfId) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

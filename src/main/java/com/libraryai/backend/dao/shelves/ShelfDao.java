@@ -37,7 +37,7 @@ public class ShelfDao {
                 JsonObject responseJson = new JsonObject();
                 try (
                                 Connection conn = DatabaseConnection.getConnection();
-                                PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT);) {
+                                PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT, Statement.RETURN_GENERATED_KEYS);) {
                         pstmt.setInt(1, idUser);
                         pstmt.setString(2, nombreEstanteria);
 
@@ -45,54 +45,47 @@ public class ShelfDao {
 
                         try (ResultSet generateKeys = pstmt.getGeneratedKeys()) {
                                 if (generateKeys.next()) {
-                                        responseJson.addProperty("Estanteria_id", generateKeys.getInt(1));
+                                        responseJson.addProperty("id", generateKeys.getInt(1));
                                 }
                         }
                         if (filasAfect > 0) {
-                                responseJson.addProperty("Status", 201);
+                                responseJson.addProperty("Mensaje", "Estantería creada correctamente");
+                                responseJson.addProperty("status", 201);
                         }
 
                         return responseJson;
                 } catch (SQLException e) {
                         e.printStackTrace();
-                        responseJson.addProperty("Status", 500);
+                        responseJson.addProperty("status", 500);
                         responseJson.addProperty("Mensaje", "Error al crear estantería: " + e.getMessage());
                         return responseJson;
                 }
         }
 
         public static JsonArray getShelvesByUserId(int idUser) {
-    JsonArray estanteriasArray = new JsonArray();
-    
-    try (Connection conn = DatabaseConnection.getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT)) {
-        
-        pstmt.setInt(1, idUser);
-        ResultSet rs = pstmt.executeQuery();
-        
-        if (!rs.next()) {
-            JsonObject vacioResponse = new JsonObject();
-            vacioResponse.addProperty("Mensaje", "No hay estanterías creadas");
-            vacioResponse.addProperty("Status", 200);  // 200 = OK
-            estanteriasArray.add(vacioResponse);
-            return estanteriasArray;
-        }
-        
-        do {
-            JsonObject estanteriaJson = new JsonObject();
-            estanteriaJson.addProperty("PK_EstanteriaID", rs.getInt("PK_EstanteriaID"));
-            estanteriaJson.addProperty("NombreCategoria", rs.getString("NombreCategoria"));
-            estanteriasArray.add(estanteriaJson);
-        } while (rs.next());
-        
-    } catch (SQLException e) {
-        JsonObject errorResponse = new JsonObject();
-        errorResponse.addProperty("Mensaje", "Error: " + e.getMessage());
-        errorResponse.addProperty("Status", 500);
-        estanteriasArray.add(errorResponse);
-    }
-    
-    return estanteriasArray;
+                JsonArray estanteriasArray = new JsonArray();
+                
+                try (Connection conn = DatabaseConnection.getConnection();
+                     PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT)) {
+                    
+                    pstmt.setInt(1, idUser);
+                    ResultSet rs = pstmt.executeQuery();
+                    
+                    while (rs.next()) {
+                        JsonObject estanteriaJson = new JsonObject();
+                        estanteriaJson.addProperty("id", rs.getInt("PK_EstanteriaID"));
+                        estanteriaJson.addProperty("nombre", rs.getString("NombreCategoria"));
+                        estanteriasArray.add(estanteriaJson);
+                    }
+                    
+                } catch (SQLException e) {
+                    JsonObject errorResponse = new JsonObject();
+                    errorResponse.addProperty("Mensaje", "Error: " + e.getMessage());
+                    errorResponse.addProperty("status", 500);
+                    estanteriasArray.add(errorResponse);
+                }
+                
+                return estanteriasArray;
 
         }
 
@@ -111,11 +104,11 @@ public class ShelfDao {
 
                         if (filasAfect > 0) {
                                 response.addProperty("Mensaje", "Actualizado correctamente");
-                                response.addProperty("Status", 200);
+                                response.addProperty("status", 200);
                         }
                         else{
                                 response.addProperty("Mensaje", "No se pudo actualizar la estanteria");
-                                response.addProperty("Status", 404);
+                                response.addProperty("status", 404);
                         }
 
                         return response;
@@ -126,7 +119,7 @@ public class ShelfDao {
                         e.printStackTrace();
 
                         response.addProperty("Mensaje", "Se produjo un error al actualizar el nombre de la estanteria. " + e.getMessage());
-                        response.addProperty("Status", 500);
+                        response.addProperty("status", 500);
                         return response;
                 }
         }
@@ -145,11 +138,11 @@ public class ShelfDao {
 
                         if (filasAfect > 0) {
                                 response.addProperty("Mensaje", "Se elimino correctamente");
-                                response.addProperty("Status", 200);
+                                response.addProperty("status", 200);
                         }
                         else{
                                 response.addProperty("Mensaje", "No se pudo eliminar la estanteria");
-                                response.addProperty("Status", 404);
+                                response.addProperty("status", 404);
                         }
 
                         return response;
@@ -160,7 +153,7 @@ public class ShelfDao {
                         e.printStackTrace();
 
                         response.addProperty("Mensaje", "Se produjo un error al eliminar la estanteria. " + e.getMessage());
-                        response.addProperty("Status", 500);
+                        response.addProperty("status", 500);
                         return response;
                 }
         }

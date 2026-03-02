@@ -2,8 +2,10 @@ package com.libraryai.backend.server;
 
 // Importamos IOException para manejar errores de entrada/salida
 import java.io.IOException;
+import java.util.ArrayList;
 // HashMap es la implementación de Map que usaremos para almacenar rutas
 import java.util.HashMap;
+import java.util.List;
 // Map es la interfaz para estructuras clave-valor
 import java.util.Map;
 
@@ -121,9 +123,11 @@ public class Router implements HttpHandler {
 
         // Verificamos si encontramos rutas para este método
         if (metodos != null) {
-            // Buscamos el handler específico para este path
-            // Ejemplo: buscamos el handler para "/api/v1/usuarios"
             HttpHandler handler = metodos.get(path);
+
+            if (handler == null) {
+                handler = findDynamicHandler(metodos, path);
+            }
 
             // Si encontramos el handler, lo ejecutamos
             if (handler != null) {
@@ -141,6 +145,60 @@ public class Router implements HttpHandler {
             ApiResponse.error(exchange, 404, error);
         }
 
+    }
+
+    private HttpHandler findDynamicHandler(Map<String, HttpHandler> routes, String path) {
+        for (Map.Entry<String, HttpHandler> route : routes.entrySet()) {
+            if (matchesDynamicRoute(route.getKey(), path)) {
+                return route.getValue();
+            }
+        }
+
+        return null;
+    }
+
+    private boolean matchesDynamicRoute(String routePattern, String path) {
+        if (!routePattern.contains("{")) {
+            return false;
+        }
+
+        List<String> patternSegments = splitSegments(routePattern);
+        List<String> pathSegments = splitSegments(path);
+
+        if (patternSegments.size() != pathSegments.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < patternSegments.size(); i++) {
+            String patternSegment = patternSegments.get(i);
+            String pathSegment = pathSegments.get(i);
+
+            if (patternSegment.startsWith("{") && patternSegment.endsWith("}")) {
+                if (pathSegment.isBlank()) {
+                    return false;
+                }
+                continue;
+            }
+
+            if (!patternSegment.equals(pathSegment)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private List<String> splitSegments(String path) {
+        String[] rawSegments = path.split("/");
+        List<String> segments = new ArrayList<>();
+
+        for (String segment : rawSegments) {
+            if (!segment.isBlank()) {
+                segments.add(segment);
+            }
+        }
+
+        return segments;
     }
 
 }

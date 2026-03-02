@@ -104,9 +104,12 @@ public class SettingsDao {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
+                int almacenamientoMax = rs.getInt("AlmacenamientoMaxMB");
                 response.addProperty("status", 200);
                 response.addProperty("plan", rs.getString("NombrePlan"));
-                response.addProperty("almacenamiento", rs.getInt("AlmacenamientoMaxMB"));
+                response.addProperty("limiteAlmacenamientoMb", almacenamientoMax);
+                response.addProperty("almacenamientoUsadoMb", 0);
+                response.addProperty("almacenamiento", almacenamientoMax);
                 response.addProperty("precio", rs.getDouble("Precio"));
                 response.addProperty("estado", rs.getString("Estado"));
                 response.addProperty("fechaInicio", rs.getString("FechaInicio"));
@@ -116,7 +119,9 @@ public class SettingsDao {
             } else {
                 // Sin suscripción activa: valores por defecto
                 response.addProperty("status", 200);
-                response.addProperty("plan", "Sin Plan");
+                response.addProperty("plan", "Gratuito");
+                response.addProperty("limiteAlmacenamientoMb", 500);
+                response.addProperty("almacenamientoUsadoMb", 0);
                 response.addProperty("almacenamiento", 0);
                 response.addProperty("precio", 0.0);
                 response.addProperty("estado", "Inactiva");

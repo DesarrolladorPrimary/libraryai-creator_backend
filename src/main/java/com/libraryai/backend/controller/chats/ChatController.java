@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.libraryai.backend.server.http.ApiRequest;
 import com.libraryai.backend.server.http.ApiResponse;
 import com.libraryai.backend.service.ChatService;
+import com.libraryai.backend.util.JwtUtil;
 import com.sun.net.httpserver.HttpHandler;
 
 /**
@@ -72,7 +73,7 @@ public class ChatController {
             
             try {
                 // Extraer ID del relato de la URL
-                if (pathParts.length < 4) {
+                if (pathParts.length < 5) {
                     JsonObject errorResponse = new JsonObject();
                     errorResponse.addProperty("Mensaje", "ID de relato no proporcionado");
                     errorResponse.addProperty("status", 400);
@@ -82,7 +83,7 @@ public class ChatController {
                 
                 int relatoId;
                 try {
-                    relatoId = Integer.parseInt(pathParts[3]);
+                    relatoId = Integer.parseInt(pathParts[4]);
                 } catch (NumberFormatException e) {
                     JsonObject errorResponse = new JsonObject();
                     errorResponse.addProperty("Mensaje", "ID de relato inválido");
@@ -130,7 +131,7 @@ public class ChatController {
             
             try {
                 // Extraer ID del relato de la URL
-                if (pathParts.length < 5) {
+                if (pathParts.length < 6) {
                     JsonObject errorResponse = new JsonObject();
                     errorResponse.addProperty("Mensaje", "ID de relato no proporcionado");
                     errorResponse.addProperty("status", 400);
@@ -140,7 +141,7 @@ public class ChatController {
                 
                 int relatoId;
                 try {
-                    relatoId = Integer.parseInt(pathParts[3]);
+                    relatoId = Integer.parseInt(pathParts[4]);
                 } catch (NumberFormatException e) {
                     JsonObject errorResponse = new JsonObject();
                     errorResponse.addProperty("Mensaje", "ID de relato inválido");
@@ -188,7 +189,7 @@ public class ChatController {
             
             try {
                 // Extraer ID del relato de la URL
-                if (pathParts.length < 5) {
+                if (pathParts.length < 6) {
                     JsonObject errorResponse = new JsonObject();
                     errorResponse.addProperty("Mensaje", "ID de relato no proporcionado");
                     errorResponse.addProperty("status", 400);
@@ -198,7 +199,7 @@ public class ChatController {
                 
                 int relatoId;
                 try {
-                    relatoId = Integer.parseInt(pathParts[3]);
+                    relatoId = Integer.parseInt(pathParts[4]);
                 } catch (NumberFormatException e) {
                     JsonObject errorResponse = new JsonObject();
                     errorResponse.addProperty("Mensaje", "ID de relato inválido");
@@ -233,18 +234,18 @@ public class ChatController {
         };
     }
     
-    /**
-     * Método helper para extraer el ID de usuario del token JWT.
-     * TODO: Implementar la lógica real de extracción del JWT
-     */
     private static int getUserIdFromToken(String authorizationHeader) {
-        // Por ahora, devolvemos un ID de ejemplo
-        // TODO: Implementar validación real del token JWT
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            // Aquí debería ir la lógica para validar el token y extraer el usuarioId
-            // Por ahora, simulamos que extraemos el ID 1
-            return 1; // ID de usuario de ejemplo
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return -1;
         }
-        return -1; // No autenticado
+
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+        JsonObject tokenInfo = JwtUtil.validateToken(token);
+
+        if (tokenInfo.has("Mensaje") || !tokenInfo.has("Id")) {
+            return -1;
+        }
+
+        return tokenInfo.get("Id").getAsInt();
     }
 }

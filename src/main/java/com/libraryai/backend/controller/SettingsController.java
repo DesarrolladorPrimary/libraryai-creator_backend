@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.libraryai.backend.server.http.ApiRequest;
 import com.libraryai.backend.server.http.ApiResponse;
 import com.libraryai.backend.service.SettingsService;
+import com.libraryai.backend.util.JwtUtil;
 import com.libraryai.backend.util.QueryParams;
 import com.sun.net.httpserver.HttpHandler;
 
@@ -45,6 +46,10 @@ public class SettingsController {
             }
 
             int id = idJson.get("id").getAsInt();
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
             JsonObject response = SettingsService.getInstruccionIA(id);
 
             int statusCode = response.get("status").getAsInt();
@@ -86,6 +91,10 @@ public class SettingsController {
             }
 
             int id = idJson.get("id").getAsInt();
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
 
             Gson gson = new Gson();
             JsonObject json = gson.fromJson(body, JsonObject.class);
@@ -125,6 +134,10 @@ public class SettingsController {
             }
 
             int id = idJson.get("id").getAsInt();
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
             JsonObject response = SettingsService.getSuscripcion(id);
 
             int statusCode = response.get("status").getAsInt();
@@ -154,6 +167,10 @@ public class SettingsController {
             }
 
             int id = idJson.get("id").getAsInt();
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
             JsonObject response = SettingsService.getVersionIA(id);
 
             int statusCode = response.get("status").getAsInt();
@@ -183,6 +200,10 @@ public class SettingsController {
             }
 
             int id = idJson.get("id").getAsInt();
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
             JsonObject response = SettingsService.getModeloDisponible(id);
 
             int statusCode = response.get("status").getAsInt();
@@ -212,11 +233,33 @@ public class SettingsController {
             }
 
             int id = idJson.get("id").getAsInt();
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
             JsonObject response = SettingsService.getInfoSistema(id);
 
             int statusCode = response.get("status").getAsInt();
             response.remove("status");
             ApiResponse.send(exchange, response.toString(), statusCode);
         };
+    }
+
+    private static boolean hasUserAccess(String authorizationHeader, int requestedUserId) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return false;
+        }
+
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+        JsonObject tokenInfo = JwtUtil.validateToken(token);
+
+        if (tokenInfo.has("Mensaje")) {
+            return false;
+        }
+
+        int tokenUserId = tokenInfo.get("Id").getAsInt();
+        String role = tokenInfo.get("Rol").getAsString();
+
+        return tokenUserId == requestedUserId || role.equalsIgnoreCase("Admin");
     }
 }

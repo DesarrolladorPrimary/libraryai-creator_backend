@@ -18,6 +18,10 @@ import com.libraryai.backend.models.User;
  */
 public class UserService {
 
+    private static final String EMAIL_PATTERN = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,100}";
+    private static final String NAME_PATTERN = "[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+";
+    private static final String PASSWORD_COMPLEXITY_PATTERN = ".*[\\d\\W_].*";
+
     /**
      * Valida los datos del usuario y coordina la creación si todo es correcto.
      *
@@ -34,14 +38,24 @@ public class UserService {
         boolean correoDB = UserDao.existsByEmail(correo);
 
         // Validamos que los datos básicos no sean null y la contraseña sea positiva
-        if (!(nombre == null) && !(correo == null) && !(contraseña.isBlank())) {
+        if (nombre != null && correo != null && contraseña != null && !contraseña.isBlank()) {
 
-            if (nombre.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+") && nombre.length() > 2 && !(nombre.matches("@-$"))) {
+            if (nombre.matches(NAME_PATTERN) && nombre.trim().length() > 2) {
                 // Si el correo NO existe en la base de datos...
                 if (correoDB == false) { 
 
-                    // Validación simple de formato de correo (debe tener @)
-                    if (correo.matches("[a-zA-Z]+\\d*@[a-zA-Z]+\\.[a-zA-Z]{2,6}")) {
+                    if (correo.matches(EMAIL_PATTERN)) {
+                        if (contraseña.length() < 8) {
+                            rJsonObject.addProperty("Mensaje", "La contraseña debe tener mínimo 8 caracteres");
+                            rJsonObject.addProperty("status", 400);
+                            return rJsonObject;
+                        }
+
+                        if (!contraseña.matches(PASSWORD_COMPLEXITY_PATTERN)) {
+                            rJsonObject.addProperty("Mensaje", "La contraseña debe incluir un número o símbolo");
+                            rJsonObject.addProperty("status", 400);
+                            return rJsonObject;
+                        }
 
 
                         // Hasheamos la contraseña
@@ -65,7 +79,7 @@ public class UserService {
                             EmailService.enviarCorreoVerificacion(correo, tokenVerificacion);
 
                             // Preparamos respuesta de éxito
-                            rJsonObject.addProperty("Mensaje", "Usuario creado correctamente. Verifica tu correo.");
+                            rJsonObject.addProperty("Mensaje", "Usuario registrado correctamente. Verifica tu correo.");
                             rJsonObject.addProperty("status", 201); // Created
                         } else {
                             rJsonObject.addProperty("Mensaje", "Error del servidor");
@@ -142,7 +156,7 @@ public class UserService {
                 contraseña = BCrypt.hashpw(contraseña, BCrypt.gensalt());
             }
 
-            if (correo.matches("[a-zA-Z]+@[a-zA-Z]+\\.[a-zA-Z]{2,6}")) {
+            if (correo.matches(EMAIL_PATTERN)) {
 
                 response = UserDao.updateUser(nombre, correo, contraseña, id);
             }
@@ -169,7 +183,7 @@ public class UserService {
         
         // Validaciones según el campo
         if (campo.equalsIgnoreCase("correo")) {
-            if (!valor.matches("[a-zA-Z]+@[a-zA-Z]+\\.[a-zA-Z]{2,6}")) {
+            if (!valor.matches(EMAIL_PATTERN)) {
                 response.addProperty("Mensaje", "Correo no válido");
                 response.addProperty("status", 400);
                 return response;
@@ -177,6 +191,18 @@ public class UserService {
         }
         
         if (campo.equalsIgnoreCase("contraseña")) {
+            if (valor == null || valor.length() < 8) {
+                response.addProperty("Mensaje", "La contraseña debe tener mínimo 8 caracteres");
+                response.addProperty("status", 400);
+                return response;
+            }
+
+            if (!valor.matches(PASSWORD_COMPLEXITY_PATTERN)) {
+                response.addProperty("Mensaje", "La contraseña debe incluir un número o símbolo");
+                response.addProperty("status", 400);
+                return response;
+            }
+
             valor = BCrypt.hashpw(valor, BCrypt.gensalt());
         }
         

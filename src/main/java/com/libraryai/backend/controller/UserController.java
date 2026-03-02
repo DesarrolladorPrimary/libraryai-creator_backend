@@ -14,6 +14,7 @@ import com.libraryai.backend.server.http.ApiRequest;
 import com.libraryai.backend.server.http.ApiResponse;
 // Servicio para lógica de negocio de usuarios
 import com.libraryai.backend.service.UserService;
+import com.libraryai.backend.util.JwtUtil;
 import com.libraryai.backend.util.QueryParams;
 // HttpHandler es la interfaz que retornamos para el Router
 import com.sun.net.httpserver.HttpHandler;
@@ -73,6 +74,11 @@ public class UserController {
 
             idJson.remove("status");
             id = idJson.get("id").getAsInt();
+
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
             // Llamamos al DAO para buscar el usuario en la base de datos
             response = UserDao.findById(id);
 
@@ -83,7 +89,7 @@ public class UserController {
             if (response.has("status")) {
                 statusCode = response.get("status").getAsInt();
                 // Removemos el status del JSON para no mostrarlo al cliente
-                // response.remove("status");
+                response.remove("status");
             }
 
             response.remove("contraseña");
@@ -239,6 +245,11 @@ public class UserController {
             idJson.remove("status");
             id = idJson.get("id").getAsInt();
 
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
+
 
             // Parseo del JSON con los campos a actualizar.
             Gson gson = new Gson();
@@ -311,6 +322,11 @@ public class UserController {
 
             int id = idJson.get("id").getAsInt();
 
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
+
             // Parsea el JSON con campo y valor.
             Gson gson = new Gson();
             JsonObject json = gson.fromJson(body, JsonObject.class);
@@ -377,6 +393,11 @@ public class UserController {
             idJson.remove("status");
             id = idJson.get("id").getAsInt();
 
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
+
             // ========== ELIMINACIÓN EN BD ==========
 
             // Llamamos al DAO para eliminar el usuario
@@ -396,6 +417,24 @@ public class UserController {
             String responseString = responseJson.toString();
             ApiResponse.send(exchange, responseString, statusCode);
         };
+    }
+
+    private static boolean hasUserAccess(String authorizationHeader, int requestedUserId) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return false;
+        }
+
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+        JsonObject tokenInfo = JwtUtil.validateToken(token);
+
+        if (tokenInfo.has("Mensaje")) {
+            return false;
+        }
+
+        int tokenUserId = tokenInfo.get("Id").getAsInt();
+        String role = tokenInfo.get("Rol").getAsString();
+
+        return tokenUserId == requestedUserId || role.equalsIgnoreCase("Admin");
     }
 
 }

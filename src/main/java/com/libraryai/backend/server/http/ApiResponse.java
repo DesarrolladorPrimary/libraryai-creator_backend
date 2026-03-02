@@ -118,8 +118,8 @@ public class ApiResponse {
         // Creamos un objeto JSON para la respuesta de error
         JsonObject response = new JsonObject();
 
-        // Agregamos la propiedad "Error" con el mensaje
-        response.addProperty("Error", message);
+        // Mantenemos la misma clave del resto de la API para evitar contratos mixtos.
+        response.addProperty("Mensaje", message);
 
         // Convertimos a String
         String body = response.toString();
