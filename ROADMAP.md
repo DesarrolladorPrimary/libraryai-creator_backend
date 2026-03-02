@@ -1,8 +1,8 @@
 # 🗺️ ROADMAP - Library Creator Backend
 
 > **Estado Actual:** Desarrollo activo  
-> **Última Actualización:** 27 Febrero 2026  
-> **Versión:** v2.0 - Actualizado con estado real del proyecto
+> **Última Actualización:** 1 Marzo 2026  
+> **Versión:** v2.1 - Alineado con el estado real del backend
 
 ---
 
@@ -15,8 +15,8 @@
 | 🔐 Autenticación | ✅ Completado | 100% | Feb 2026 |
 | 📧 Correo/Verificación | ✅ Completado | 100% | Feb 2026 |
 | 🤖 IA (Gemini) | ✅ Completado | 100% | Ene 2026 |
-| 📚 Relatos | 🔄 En Progreso | 60% | Feb 2026 |
-| 💬 Chat | 🔄 En Progreso | 40% | Feb 2026 |
+| 📚 Relatos | 🔄 MVP Funcional | 85% | Mar 2026 |
+| 💬 Chat | 🔄 MVP Funcional | 80% | Mar 2026 |
 | 📁 Archivos | ⏳ Planeado | 0% | - |
 | 💳 Suscripciones | ⏳ Planeado | 0% | - |
 | 🔒 Roles Avanzados | ✅ Completado | 100% | Feb 2026 |
@@ -40,6 +40,7 @@
 - [x] **SER-005:** Variables de entorno con dotenv
 - [x] **SER-006:** Middleware básico de logging
 - [x] **SER-007:** Manejo de errores centralizado
+- [x] **SER-008:** Soporte para rutas dinámicas en el router
 
 #### 📁 Archivos Clave:
 - `server/ServerMain.java`
@@ -73,10 +74,11 @@
 
 #### 🌐 Endpoints Implementados:
 - `GET /api/v1/usuarios` - Listar usuarios
-- `GET /api/v1/usuarios/{id}` - Obtener usuario
+- `GET /api/v1/usuarios/id?id={id}` - Obtener usuario
 - `POST /api/v1/usuarios` - Crear usuario
-- `PUT /api/v1/usuarios` - Actualizar usuario
-- `DELETE /api/v1/usuarios/{id}` - Eliminar usuario
+- `PUT /api/v1/usuarios?id={id}` - Actualizar usuario
+- `PUT /api/v1/usuarios/campo?id={id}` - Actualizar un campo específico
+- `DELETE /api/v1/usuarios/id?id={id}` - Eliminar usuario
 
 ---
 
@@ -98,6 +100,7 @@
 - [x] **AUTH-008:** Sistema de recuperación de contraseña
 - [x] **AUTH-009:** Tokens de acceso con expiración
 - [x] **AUTH-010:** Manejo de sesiones seguras
+- [x] **AUTH-011:** Validaciones reforzadas de credenciales y contraseñas
 
 #### 📁 Archivos Clave:
 - `controller/auth/LoginController.java`
@@ -187,61 +190,67 @@
 - `controller/ai/AiController.java`
 
 #### 🌐 Endpoints Implementados:
-- `POST /api/v1/ai/chat` - Chat con Poly
-- `GET /api/v1/ai/models` - Listar modelos
+- `POST /api/v1/generar-historias` - Generación de historias con Gemini
 
 ---
 
 ### 📚 MÓDULO 7: RELATOS Y CONTENIDO 🔄
 
-**Estado:** `EN PROGRESO`  
+**Estado:** `MVP FUNCIONAL`  
 **Responsable:** Backend Team  
 **Fecha de Inicio:** 20 Feb 2026  
-**Fecha Estimada de Finalización:** 15 Mar 2026
+**Fecha Estimada de Finalización:** 20 Mar 2026
 
 #### ✅ Tareas Completadas:
 - [x] **REL-001:** Modelo Relato
-- [x] **REL-002:** RelatoDao básico
+- [x] **REL-002:** RelatoDao con CRUD operativo
 - [x] **REL-003:** Estructura de base de datos
+- [x] **REL-004:** RelatoService - Lógica de negocio
+- [x] **REL-005:** RelatoController - Endpoints REST
+- [x] **REL-006:** Seguridad por usuario vía JWT en operaciones críticas
 
 #### ⏳ Tareas Pendientes:
-- [ ] **REL-004:** RelatoService - Lógica de negocio
-- [ ] **REL-005:** RelatoController - Endpoints REST
-- [ ] **REL-006:** Versionamiento de relatos
-- [ ] **REL-007:** Estanterías virtuales
+- [ ] **REL-007:** Versionamiento de relatos
 - [ ] **REL-008:** Búsqueda y filtrado
 - [ ] **REL-009:** Categorización
+- [ ] **REL-010:** Refinar contratos para frontend y documentación final
 
 #### 📁 Archivos Clave:
 - `models/Relato.java`
-- `dao/RelatoDao.java` (parcial)
+- `dao/RelatoDao.java`
+- `service/StoryService.java`
+- `controller/StoryController.java`
 - `models/RelatoVersion.java` (pendiente)
 
 ---
 
 ### 💬 MÓDULO 8: CHAT Y MENSAJES 🔄
 
-**Estado:** `EN PROGRESO`  
+**Estado:** `MVP FUNCIONAL`  
 **Responsable:** Backend Team  
 **Fecha de Inicio:** 25 Feb 2026  
-**Fecha Estimada de Finalización:** 20 Mar 2026
+**Fecha Estimada de Finalización:** 25 Mar 2026
 
 #### ✅ Tareas Completadas:
 - [x] **CHAT-001:** Estructura de base de datos
 - [x] **CHAT-002:** Modelo MensajeChat
-- [x] **CHAT-003:** ChatDao básico
+- [x] **CHAT-003:** ChatDao operativo
+- [x] **CHAT-004:** ChatService - Gestión de conversaciones
+- [x] **CHAT-005:** ChatController - Endpoints REST
+- [x] **CHAT-006:** Persistencia básica de conversaciones
+- [x] **CHAT-007:** Seguridad por usuario vía JWT en operaciones críticas
 
 #### ⏳ Tareas Pendientes:
-- [ ] **CHAT-004:** ChatService - Gestión de conversaciones
-- [ ] **CHAT-005:** ChatController - Endpoints
-- [ ] **CHAT-006:** Persistencia de conversaciones
-- [ ] **CHAT-007:** Historial de chat
-- [ ] **CHAT-008:** Contexto de conversación
-- [ ] **CHAT-009:** Integración con Gemini
+- [ ] **CHAT-008:** Historial de chat más completo
+- [ ] **CHAT-009:** Contexto de conversación extendido
+- [ ] **CHAT-010:** Integración más profunda con Gemini
+- [ ] **CHAT-011:** Refinar contratos para frontend y documentación final
 
 #### 📁 Archivos Clave:
 - `models/MensajeChat.java`
-- `dao/chats/ChatDao.java` (parcial)
+- `dao/chats/ChatDao.java`
+- `service/chats/ChatService.java`
+- `controller/chats/ChatController.java`
 
 ---
 
@@ -291,18 +300,18 @@
 ## 🚀 PRÓXIMAS TAREAS PRIORITARIAS
 
 ### 📅 Semana del 1-7 Marzo 2026:
-1. **REL-004:** Completar RelatoService
-2. **REL-005:** Implementar RelatoController
-3. **CHAT-004:** Desarrollar ChatService
+1. **REL-007:** Iniciar versionamiento de relatos
+2. **REL-008:** Definir búsqueda y filtrado
+3. **CHAT-008:** Completar historial de conversación
 
 ### 📅 Semana del 8-14 Marzo 2026:
-1. **REL-006:** Implementar versionamiento
-2. **REL-007:** Desarrollar estanterías
-3. **CHAT-005:** Crear ChatController
+1. **REL-009:** Categorización y metadatos
+2. **CHAT-009:** Contexto de conversación
+3. **CHAT-010:** Mejorar integración con Gemini
 
 ### 📅 Semana del 15-21 Marzo 2026:
-1. **REL-008:** Búsqueda y filtrado
-2. **CHAT-006:** Persistencia de conversaciones
+1. **REL-010:** Cerrar contratos para frontend
+2. **CHAT-011:** Cerrar contratos para frontend
 3. **FILE-001:** Iniciar módulo de archivos
 
 ---
@@ -311,8 +320,8 @@
 
 | Hito | Fecha Estimada | Estado | Descripción |
 |------|----------------|---------|-------------|
-| 🎯 MVP Básico | 15 Mar 2026 | 🔄 | Usuarios + Login + IA básica |
-| 🎯 Versión 1.0 | 30 Abr 2026 | ⏳ | Relatos + Chat completo |
+| 🎯 MVP Básico | 1 Mar 2026 | ✅ | Usuarios + Login + IA + Relatos/Chat base |
+| 🎯 Versión 1.0 | 30 Abr 2026 | 🔄 | Relatos + Chat refinados |
 | 🎯 Versión 2.0 | 30 Jun 2026 | ⏳ | Archivos + Exportación |
 | 🎯 Versión 3.0 | 30 Sep 2026 | ⏳ | Suscripciones + Pagos |
 
@@ -326,12 +335,13 @@
 - **Módulos en Progreso:** 2 (20%)
 - **Módulos Planeados:** 2 (20%)
 - **Total de Tareas:** 80+
-- **Tareas Completadas:** 45 (56%)
+- **Tareas Completadas:** 56 (70%)
 
 ### 🏆 Logros Recientes:
+- ✅ **1 Mar 2026:** Relatos y chat quedaron en estado MVP funcional
+- ✅ **1 Mar 2026:** Router actualizado con soporte de rutas dinámicas
+- ✅ **1 Mar 2026:** Seguridad por usuario reforzada con JWT en controladores
 - ✅ **27 Feb 2026:** Completado sistema de verificación de correo
-- ✅ **25 Feb 2026:** Implementado sistema de roles y permisos
-- ✅ **20 Feb 2026:** Integración completa con Gemini API
 
 ---
 
@@ -379,9 +389,9 @@
 - **Descripción:** Documentación completa con Swagger/OpenAPI
 
 ### 🌐 Frontend Integration:
-- **Estado:** Planeado
+- **Estado:** En progreso
 - **Prioridad:** Media
-- **Descripción:** API optimizada para consumo frontend
+- **Descripción:** API alineada para consumo frontend en autenticación, settings y estanterías
 
 ---
 
@@ -392,6 +402,7 @@
 - **Respuestas:** JSON consistentes con ApiResponse
 - **Autenticación:** JWT con roles integrados
 - **Base de datos:** MySQL con relaciones completas
+- **Routing:** Soporte para rutas estáticas y dinámicas
 
 ### 🔧 Tecnologías:
 - **Backend:** Java 25 puro (sin frameworks)
