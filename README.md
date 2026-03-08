@@ -115,6 +115,9 @@ EMAIL_PASS="tu_contraseña_de_app_gmail"
 # Inteligencia Artificial (Google Gemini)
 GEMINI_API_KEY="tu_api_key_de_gemini"
 GEMINI_MODEL="gemini-2.0-flash-exp"
+
+# Frontend público usado en correos de verificación y recuperación
+FRONTEND_BASE_URL="http://localhost:5500/public"
 ```
 
 ---
@@ -126,6 +129,7 @@ GEMINI_MODEL="gemini-2.0-flash-exp"
 |--------|----------|-------------|
 | `POST` | `/api/v1/login` | Login de usuarios |
 | `POST` | `/api/v1/usuarios` | Registro de nuevos usuarios |
+| `GET` | `/api/v1/verificar` | Verificar correo por token |
 | `POST` | `/api/v1/recuperar` | Solicitar recuperación de contraseña |
 | `GET` | `/api/v1/recuperar/validar` | Validar token de recuperación |
 | `PUT` | `/api/v1/recuperar/nueva` | Establecer nueva contraseña |
@@ -134,9 +138,10 @@ GEMINI_MODEL="gemini-2.0-flash-exp"
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
 | `GET` | `/api/v1/usuarios` | Listar usuarios (Admin) |
-| `GET` | `/api/v1/usuarios/id` | Obtener usuario por ID |
-| `PUT` | `/api/v1/usuarios` | Actualizar usuario |
-| `DELETE` | `/api/v1/usuarios` | Eliminar usuario |
+| `GET` | `/api/v1/usuarios/id?id={id}` | Obtener usuario por ID |
+| `PUT` | `/api/v1/usuarios/id?id={id}` | Actualizar usuario |
+| `PUT` | `/api/v1/usuarios/campo?id={id}` | Actualizar un campo específico |
+| `DELETE` | `/api/v1/usuarios/id?id={id}` | Eliminar usuario |
 
 ### IA y Chat
 | Método | Endpoint | Descripción |
@@ -150,22 +155,25 @@ GEMINI_MODEL="gemini-2.0-flash-exp"
 ### Archivos
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| `POST` | `/api/v1/upload/perfil` | Subir foto de perfil |
+| `POST` | `/api/v1/upload/perfil?id={id}` | Subir foto de perfil |
 
 ### Configuraciones
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| `GET` | `/api/v1/settings/instruccion-ia` | Leer instrucción permanente de Poly |
-| `PUT` | `/api/v1/settings/instruccion-ia` | Actualizar instrucción permanente de Poly |
-| `GET` | `/api/v1/settings/suscripcion` | Consultar plan y límites del usuario |
+| `GET` | `/api/v1/settings/instruccion-ia?id={id}` | Leer instrucción permanente de Poly |
+| `PUT` | `/api/v1/settings/instruccion-ia?id={id}` | Actualizar instrucción permanente de Poly |
+| `GET` | `/api/v1/settings/suscripcion?id={id}` | Consultar plan y límites del usuario |
+| `GET` | `/api/v1/settings/version-ia?id={id}` | Consultar versión de IA asignada |
+| `GET` | `/api/v1/settings/modelo-disponible?id={id}` | Consultar modelos disponibles |
+| `GET` | `/api/v1/settings/sistema?id={id}` | Consultar información del sistema |
 
 ### Estanterías
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| `GET` | `/api/v1/estanterias` | Listar estanterías del usuario |
+| `GET` | `/api/v1/estanterias?id={usuarioId}` | Listar estanterías del usuario |
 | `POST` | `/api/v1/estanterias` | Crear estantería |
-| `PUT` | `/api/v1/estanterias` | Renombrar estantería |
-| `DELETE` | `/api/v1/estanterias` | Eliminar estantería |
+| `PUT` | `/api/v1/estanterias?id={estanteriaId}` | Renombrar estantería |
+| `DELETE` | `/api/v1/estanterias?id={estanteriaId}` | Eliminar estantería |
 
 ### Relatos
 | Método | Endpoint | Descripción |
@@ -208,7 +216,7 @@ POST /api/v1/login
 
 ### 3. Verificación de Correo
 ```bash
-GET /api/v1/recuperar/validar?token=UUID-GENERADO
+GET /api/v1/verificar?token=UUID-GENERADO
 ```
 - ✅ Valida token único
 - ✅ Marca correo como verificado

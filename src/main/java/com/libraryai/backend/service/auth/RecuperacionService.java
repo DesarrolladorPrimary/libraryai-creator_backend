@@ -98,7 +98,7 @@ public class RecuperacionService {
             response.addProperty("status", 200);
         } else {
             // Si falla el correo, mostrar link en consola como respaldo
-            String link = "http://localhost:8080/auth/recovery_passwd_change.html?token=" + token;
+            String link = EmailService.buildFrontendUrl("/auth/recovery_passwd_change.html?token=" + token);
             System.out.println("\n========== LINK DE RECUPERACIÓN (FALLÓ CORREO) ==========");
             System.out.println("Para recuperar contraseña, ingresa a:");
             System.out.println(link);

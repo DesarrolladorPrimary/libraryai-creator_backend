@@ -14,8 +14,10 @@ public class EmailService {
 
     private static final String SMTP_HOST = "smtp.gmail.com";
     private static final String SMTP_PORT = "587";
-    private static final String CORREO_REMITENTE = Dotenv.load().get("EMAIL_USER");
-    private static final String CONTRASEÑA_APP = Dotenv.load().get("EMAIL_PASS");
+    private static final Dotenv ENV = Dotenv.load();
+    private static final String CORREO_REMITENTE = ENV.get("EMAIL_USER");
+    private static final String CONTRASEÑA_APP = ENV.get("EMAIL_PASS");
+    private static final String FRONTEND_BASE_URL = resolveFrontendBaseUrl();
 
     /**
      * Envía un correo electrónico.
@@ -76,7 +78,7 @@ public class EmailService {
      * @return true si se envió correctamente.
      */
     public static boolean enviarCorreoRecuperacion(String correoDestino, String token) {
-        String link = "http://localhost:5500/public/auth/recovery_passwd_change.html?token=" + token;
+        String link = buildFrontendUrl("/auth/recovery_passwd_change.html?token=" + token);
         
         String asunto = "Recuperación de contraseña - Library Creator";
         String cuerpo = """
@@ -113,7 +115,7 @@ public class EmailService {
      * @return true si se envió correctamente.
      */
     public static boolean enviarCorreoVerificacionMejorado(String correoDestino, String token) {
-        String link = "http://localhost:5500/public/auth/verificar.html?token=" + token;
+        String link = buildFrontendUrl("/auth/verificar.html?token=" + token);
         
         String asunto = "🔔 Verifica tu cuenta - Library Creator";
         String cuerpo = """
@@ -158,7 +160,7 @@ public class EmailService {
      * Envía correo de verificación de registro.
      */
     public static boolean enviarCorreoVerificacion(String correoDestino, String token) {
-        String link = "http://localhost:5500/public/auth/verificar.html?token=" + token;
+        String link = buildFrontendUrl("/auth/verificar.html?token=" + token);
         
         String asunto = "Verifica tu correo - Library Creator";
         String cuerpo = """
@@ -184,5 +186,22 @@ public class EmailService {
             """.formatted(link, link);
         
         return enviarCorreo(correoDestino, asunto, cuerpo);
+    }
+
+    public static String buildFrontendUrl(String path) {
+        String normalizedPath = path.startsWith("/") ? path : "/" + path;
+        return FRONTEND_BASE_URL + normalizedPath;
+    }
+
+    private static String resolveFrontendBaseUrl() {
+        String configuredUrl = ENV.get("FRONTEND_BASE_URL");
+
+        if (configuredUrl == null || configuredUrl.isBlank()) {
+            return "http://localhost:5500/public";
+        }
+
+        return configuredUrl.endsWith("/")
+                ? configuredUrl.substring(0, configuredUrl.length() - 1)
+                : configuredUrl;
     }
 }

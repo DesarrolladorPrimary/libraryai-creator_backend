@@ -59,6 +59,7 @@ public class UserController {
 
             if (parametrosId == null || parametrosId.isEmpty()) {
                 ApiResponse.error(exchange, 404, "no existe el id");
+                return;
             }
 
             JsonObject idJson = QueryParams.parseId(parametrosId);
@@ -70,6 +71,7 @@ public class UserController {
             if (code != 200) {
                 String mensaje = idJson.get("Mensaje").getAsString();
                 ApiResponse.error(exchange, code, mensaje );
+                return;
             }
 
             idJson.remove("status");
@@ -220,6 +222,7 @@ public class UserController {
 
             if (body.isEmpty()) {
                 ApiResponse.error(exchange, 400, "No hay cuerpo en la peticion");
+                return;
             }
 
             // Obtiene el id desde la query.
@@ -228,6 +231,7 @@ public class UserController {
 
             if (parametroId == null || parametroId.isEmpty()) {
                 ApiResponse.error(exchange, 404, "No existe el ID");
+                return;
             }
 
             // Valida y parsea el id.
@@ -240,6 +244,7 @@ public class UserController {
             if (codeQuery != 200) {
                 String mensaje = idJson.get("Mensaje").getAsString();
                 ApiResponse.error(exchange, codeQuery, mensaje );
+                return;
             }
 
             idJson.remove("status");
@@ -378,6 +383,11 @@ public class UserController {
 
             String parametrosId = rutaDinamica.getQuery();
 
+            if (parametrosId == null || parametrosId.isEmpty()) {
+                ApiResponse.error(exchange, 404, "No existe el ID");
+                return;
+            }
+
 
             JsonObject idJson = QueryParams.parseId(parametrosId);
 
@@ -388,6 +398,7 @@ public class UserController {
             if (code != 200) {
                 String mensaje = idJson.get("Mensaje").getAsString();
                 ApiResponse.error(exchange, code, mensaje );
+                return;
             }
 
             idJson.remove("status");

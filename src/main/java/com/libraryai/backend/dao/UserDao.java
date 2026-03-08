@@ -22,7 +22,7 @@ public class UserDao {
 
     // language=sql
     private final static String SQL_SELECT_WHERE = """
-            SELECT Correo FROM usuario WHERE Correo = ?;
+            SELECT Correo FROM Usuario WHERE Correo = ?;
             """;
 
     // language=sql
