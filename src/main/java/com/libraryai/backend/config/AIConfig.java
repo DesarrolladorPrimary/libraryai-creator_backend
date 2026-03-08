@@ -11,7 +11,7 @@ public class AIConfig {
     // API key para el SDK de Gemini.
     public static final String API_KEY = env.get("GEMINI_API_KEY");
     // Nombre o id del modelo a usar.
-    public static final String MODEL_AI = env.get("GEMINI_MODEL");
+    public static final String MODEL_AI = env.get("GEMINI_MODEL", "gemini-2.0-flash");
     // Configuracion opcional de limites (no usada en este archivo).
     public static final String AI_TIMEOUT_MS = env.get("AI_TIMEOUT_MS");
     public static final String AI_MAX_INPUT_CHARS = env.get("AI_MAX_INPUT_CHARS");

@@ -285,6 +285,165 @@ public class StoryController {
             }
         };
     }
+
+    /**
+     * Handler para obtener la configuración de IA de un relato.
+     * Ruta: GET /api/v1/stories/{id}/configuracion-ia
+     */
+    public static HttpHandler getAIConfiguration() {
+        return exchange -> {
+            String path = exchange.getRequestURI().getPath();
+
+            try {
+                int relatoId = extractStoryId(path, 6);
+                if (relatoId <= 0) {
+                    JsonObject errorResponse = new JsonObject();
+                    errorResponse.addProperty("Mensaje", "ID de relato inválido");
+                    errorResponse.addProperty("status", 400);
+                    ApiResponse.send(exchange, errorResponse.toString(), 400);
+                    return;
+                }
+
+                int usuarioId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
+                if (usuarioId <= 0) {
+                    JsonObject errorResponse = new JsonObject();
+                    errorResponse.addProperty("Mensaje", "Usuario no autenticado");
+                    errorResponse.addProperty("status", 401);
+                    ApiResponse.send(exchange, errorResponse.toString(), 401);
+                    return;
+                }
+
+                JsonObject response = StoryService.getAIConfiguration(relatoId, usuarioId);
+                ApiResponse.send(exchange, response.toString(), response.get("status").getAsInt());
+
+            } catch (Exception e) {
+                JsonObject errorResponse = new JsonObject();
+                errorResponse.addProperty("Mensaje", "Error al obtener configuración IA: " + e.getMessage());
+                errorResponse.addProperty("status", 500);
+                ApiResponse.send(exchange, errorResponse.toString(), 500);
+            }
+        };
+    }
+
+    /**
+     * Handler para actualizar la configuración de IA de un relato.
+     * Ruta: PUT /api/v1/stories/{id}/configuracion-ia
+     */
+    public static HttpHandler updateAIConfiguration() {
+        return exchange -> {
+            String path = exchange.getRequestURI().getPath();
+
+            try {
+                int relatoId = extractStoryId(path, 6);
+                if (relatoId <= 0) {
+                    JsonObject errorResponse = new JsonObject();
+                    errorResponse.addProperty("Mensaje", "ID de relato inválido");
+                    errorResponse.addProperty("status", 400);
+                    ApiResponse.send(exchange, errorResponse.toString(), 400);
+                    return;
+                }
+
+                int usuarioId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
+                if (usuarioId <= 0) {
+                    JsonObject errorResponse = new JsonObject();
+                    errorResponse.addProperty("Mensaje", "Usuario no autenticado");
+                    errorResponse.addProperty("status", 401);
+                    ApiResponse.send(exchange, errorResponse.toString(), 401);
+                    return;
+                }
+
+                ApiRequest request = new ApiRequest(exchange);
+                String body = request.readBody();
+                JsonObject payload = new Gson().fromJson(body, JsonObject.class);
+
+                String writingStyle = payload != null && payload.has("estiloEscritura")
+                        ? payload.get("estiloEscritura").getAsString()
+                        : null;
+                String creativityLevel = payload != null && payload.has("nivelCreatividad")
+                        ? payload.get("nivelCreatividad").getAsString()
+                        : null;
+                String responseLength = payload != null && payload.has("longitudRespuesta")
+                        ? payload.get("longitudRespuesta").getAsString()
+                        : null;
+                String emotionalTone = payload != null && payload.has("tonoEmocional")
+                        ? payload.get("tonoEmocional").getAsString()
+                        : null;
+
+                JsonObject response = StoryService.updateAIConfiguration(relatoId, usuarioId, writingStyle,
+                        creativityLevel, responseLength, emotionalTone);
+                ApiResponse.send(exchange, response.toString(), response.get("status").getAsInt());
+
+            } catch (Exception e) {
+                JsonObject errorResponse = new JsonObject();
+                errorResponse.addProperty("Mensaje", "Error al actualizar configuración IA: " + e.getMessage());
+                errorResponse.addProperty("status", 500);
+                ApiResponse.send(exchange, errorResponse.toString(), 500);
+            }
+        };
+    }
+
+    /**
+     * Handler para exportar un relato y guardar snapshot en DB.
+     * Ruta: POST /api/v1/stories/{id}/export
+     */
+    public static HttpHandler exportStory() {
+        return exchange -> {
+            String path = exchange.getRequestURI().getPath();
+
+            try {
+                int relatoId = extractStoryId(path, 6);
+                if (relatoId <= 0) {
+                    JsonObject errorResponse = new JsonObject();
+                    errorResponse.addProperty("Mensaje", "ID de relato inválido");
+                    errorResponse.addProperty("status", 400);
+                    ApiResponse.send(exchange, errorResponse.toString(), 400);
+                    return;
+                }
+
+                int usuarioId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
+                if (usuarioId <= 0) {
+                    JsonObject errorResponse = new JsonObject();
+                    errorResponse.addProperty("Mensaje", "Usuario no autenticado");
+                    errorResponse.addProperty("status", 401);
+                    ApiResponse.send(exchange, errorResponse.toString(), 401);
+                    return;
+                }
+
+                ApiRequest request = new ApiRequest(exchange);
+                String body = request.readBody();
+                JsonObject payload = new Gson().fromJson(body, JsonObject.class);
+
+                String title = payload != null && payload.has("titulo")
+                        ? payload.get("titulo").getAsString()
+                        : null;
+                String content = payload != null && payload.has("contenido")
+                        ? payload.get("contenido").getAsString()
+                        : null;
+                String format = payload != null && payload.has("formato")
+                        ? payload.get("formato").getAsString()
+                        : null;
+                String fileName = payload != null && payload.has("nombreArchivo") && !payload.get("nombreArchivo").isJsonNull()
+                        ? payload.get("nombreArchivo").getAsString()
+                        : null;
+                String fileType = payload != null && payload.has("tipoArchivo") && !payload.get("tipoArchivo").isJsonNull()
+                        ? payload.get("tipoArchivo").getAsString()
+                        : null;
+                String fileBase64 = payload != null && payload.has("archivoBase64") && !payload.get("archivoBase64").isJsonNull()
+                        ? payload.get("archivoBase64").getAsString()
+                        : null;
+
+                JsonObject response = StoryService.exportStory(relatoId, usuarioId, title, content, format,
+                        fileName, fileType, fileBase64);
+                ApiResponse.send(exchange, response.toString(), response.get("status").getAsInt());
+
+            } catch (Exception e) {
+                JsonObject errorResponse = new JsonObject();
+                errorResponse.addProperty("Mensaje", "Error al exportar relato: " + e.getMessage());
+                errorResponse.addProperty("status", 500);
+                ApiResponse.send(exchange, errorResponse.toString(), 500);
+            }
+        };
+    }
     
     /**
      * Handler para obtener estadísticas de relatos del usuario.
@@ -318,6 +477,19 @@ public class StoryController {
                 ApiResponse.send(exchange, errorResponse.toString(), 500);
             }
         };
+    }
+
+    private static int extractStoryId(String path, int minSegments) {
+        String[] pathParts = path.split("/");
+        if (pathParts.length < minSegments) {
+            return -1;
+        }
+
+        try {
+            return Integer.parseInt(pathParts[4]);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
     
     private static int getUserIdFromToken(String authorizationHeader) {

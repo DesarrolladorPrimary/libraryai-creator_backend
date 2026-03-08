@@ -103,6 +103,12 @@ public class Routes {
         router.post("/api/v1/upload/perfil",
                 auth.proteger(UploadController.subirFotoPerfil(), "Gratuito", "Premium"));
 
+        router.post("/api/v1/upload/relato",
+                auth.proteger(UploadController.subirArchivoRelato(), "Gratuito", "Premium"));
+
+        router.delete("/api/v1/upload/relato",
+                auth.proteger(UploadController.eliminarArchivoRelato(), "Gratuito", "Premium"));
+
         // ========== RUTAS DE ESTANTERÍAS ==========
         router.get("/api/v1/estanterias",
                 auth.proteger(ShelfController.listShelves(), "Gratuito", "Premium"));
@@ -128,9 +134,18 @@ public class Routes {
         
         router.get("/api/v1/stories/{id}",
                 auth.proteger(StoryController.getStoryById(), "Gratuito", "Premium"));
+
+        router.get("/api/v1/stories/{id}/configuracion-ia",
+                auth.proteger(StoryController.getAIConfiguration(), "Gratuito", "Premium"));
         
         router.put("/api/v1/stories/{id}",
                 auth.proteger(StoryController.updateStory(), "Gratuito", "Premium"));
+
+        router.put("/api/v1/stories/{id}/configuracion-ia",
+                auth.proteger(StoryController.updateAIConfiguration(), "Gratuito", "Premium"));
+
+        router.post("/api/v1/stories/{id}/export",
+                auth.proteger(StoryController.exportStory(), "Gratuito", "Premium"));
         
         router.delete("/api/v1/stories/{id}",
                 auth.proteger(StoryController.deleteStory(), "Gratuito", "Premium"));

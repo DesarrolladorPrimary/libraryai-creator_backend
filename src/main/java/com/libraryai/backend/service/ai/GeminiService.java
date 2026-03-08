@@ -13,19 +13,21 @@ public class GeminiService {
      */
     public static JsonObject generateText(String mensaje, String instrucciones){
         JsonObject responseAI = new JsonObject();
+        String prompt = mensaje != null ? mensaje.trim() : "";
+        String systemInstructions = instrucciones != null ? instrucciones.trim() : "";
         
         // No se puede generar respuesta sin prompt.
-        if (mensaje.isEmpty()) {
-            responseAI.addProperty("mensaje", "El mensaje esta vacio"); 
-            responseAI.addProperty("status", 404);
+        if (prompt.isEmpty()) {
+            responseAI.addProperty("Mensaje", "El mensaje esta vacio");
+            responseAI.addProperty("status", 400);
             return responseAI;
         }
 
         // Llama al cliente de IA con el prompt e instrucciones.
-        String response = GeminiAI.generateText(mensaje, instrucciones);
+        String response = GeminiAI.generateText(prompt, systemInstructions);
         // Si la IA no responde, devolvemos error.
         if (response == null || response.isBlank()) {
-            responseAI.addProperty("mensaje", "No se obtuvo respuesta de la IA");
+            responseAI.addProperty("Mensaje", "No se obtuvo respuesta de la IA");
             responseAI.addProperty("status", 500);
             return responseAI;
         }

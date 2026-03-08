@@ -3,12 +3,22 @@ package com.libraryai.backend.service;
 import java.time.LocalDateTime;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.libraryai.backend.dao.AIConfigurationDao;
+import com.libraryai.backend.dao.SettingsDao;
+import com.libraryai.backend.dao.StoryDao;
+import com.libraryai.backend.dao.UploadedFileDao;
 import com.libraryai.backend.dao.chats.ChatDao;
+import com.libraryai.backend.service.ai.GeminiService;
+import com.libraryai.backend.util.DocumentTextExtractor;
 
 /**
  * Servicio para la lógica de negocio de chat.
  */
 public class ChatService {
+
+    private static final int MAX_SOURCE_FILES_IN_PROMPT = 2;
 
     /**
      * Envía un mensaje en el chat de un relato.
@@ -19,7 +29,13 @@ public class ChatService {
      * @param contenido Contenido del mensaje
      * @return JsonObject con el resultado de la operación
      */
-    public static JsonObject sendMessage(int relatoId, int usuarioId, String emisor, String contenido) {
+    public static JsonObject sendMessage(
+            int relatoId,
+            int usuarioId,
+            String emisor,
+            String contenido,
+            JsonObject parametrosIA,
+            JsonObject archivoContexto) {
         // Validaciones básicas
         if (relatoId <= 0 || usuarioId <= 0) {
             JsonObject response = new JsonObject();
@@ -58,7 +74,10 @@ public class ChatService {
             return response;
         }
         
-        // TODO: Validar que el usuario tenga permisos para enviar mensajes en este relato
+        JsonObject accessValidation = validateStoryOwnership(relatoId, usuarioId);
+        if (accessValidation != null) {
+            return accessValidation;
+        }
         
         try {
             // Obtener el siguiente orden para el mensaje
@@ -69,7 +88,7 @@ public class ChatService {
             
             // Si el mensaje es del usuario, generar respuesta de Poly
             if (emisor.equals("Usuario")) {
-                generarRespuestaPoly(relatoId, contenido);
+                generarRespuestaPoly(relatoId, usuarioId, contenido, parametrosIA, archivoContexto);
             }
             
             JsonObject response = new JsonObject();
@@ -100,7 +119,10 @@ public class ChatService {
             return response;
         }
         
-        // TODO: Validar que el usuario tenga permisos para ver este relato
+        JsonObject accessValidation = validateStoryOwnership(relatoId, usuarioId);
+        if (accessValidation != null) {
+            return accessValidation;
+        }
         
         try {
             JsonObject result = ChatDao.listByStory(relatoId);
@@ -132,12 +154,22 @@ public class ChatService {
      * @param relatoId ID del relato
      * @param mensajeUsuario Mensaje del usuario al que responder
      */
-    private static void generarRespuestaPoly(int relatoId, String mensajeUsuario) {
+    private static void generarRespuestaPoly(
+            int relatoId,
+            int usuarioId,
+            String mensajeUsuario,
+            JsonObject parametrosIA,
+            JsonObject archivoContexto) {
         try {
-            // TODO: Implementar la lógica real con Gemini API
-            // Por ahora, generamos una respuesta simple
-            
             String respuestaPoly = generarRespuestaSimple(mensajeUsuario);
+            String prompt = buildGeminiPrompt(relatoId, mensajeUsuario, archivoContexto);
+            String instrucciones = buildGeminiInstructions(relatoId, usuarioId, parametrosIA);
+            JsonObject geminiResponse = GeminiService.generateText(prompt, instrucciones);
+
+            if (geminiResponse.has("status") && geminiResponse.get("status").getAsInt() == 200
+                    && geminiResponse.has("AI")) {
+                respuestaPoly = geminiResponse.get("AI").getAsString();
+            }
             
             // Obtener el siguiente orden para la respuesta
             int siguienteOrden = getSiguienteOrden(relatoId);
@@ -160,10 +192,179 @@ public class ChatService {
         }
     }
 
+    private static String buildGeminiPrompt(int relatoId, String mensajeUsuario, JsonObject archivoContexto) {
+        StringBuilder prompt = new StringBuilder();
+        JsonObject storyResponse = StoryDao.findById(relatoId);
+
+        if (storyResponse.has("status") && storyResponse.get("status").getAsInt() == 200
+                && storyResponse.has("relato")) {
+            JsonObject relato = storyResponse.getAsJsonObject("relato");
+            prompt.append("Contexto del relato actual:\n");
+            prompt.append("Titulo: ")
+                    .append(relato.has("titulo") ? relato.get("titulo").getAsString() : "Sin titulo")
+                    .append("\n");
+            prompt.append("Modo: ")
+                    .append(relato.has("modoOrigen") ? relato.get("modoOrigen").getAsString() : "Sin modo")
+                    .append("\n");
+
+            String descripcion = relato.has("descripcion") ? relato.get("descripcion").getAsString() : "";
+            if (!descripcion.isBlank()) {
+                prompt.append("Borrador actual:\n").append(descripcion).append("\n\n");
+            }
+        }
+
+        JsonObject historyResponse = ChatDao.listByStory(relatoId);
+        if (historyResponse.has("status") && historyResponse.get("status").getAsInt() == 200
+                && historyResponse.has("mensajes")) {
+            JsonArray mensajes = historyResponse.getAsJsonArray("mensajes");
+            int fromIndex = Math.max(0, mensajes.size() - 6);
+            prompt.append("Historial reciente:\n");
+
+            for (int index = fromIndex; index < mensajes.size(); index++) {
+                JsonElement item = mensajes.get(index);
+                if (!item.isJsonObject()) {
+                    continue;
+                }
+
+                JsonObject mensaje = item.getAsJsonObject();
+                prompt.append("- ")
+                        .append(mensaje.has("emisor") ? mensaje.get("emisor").getAsString() : "Sistema")
+                        .append(": ")
+                        .append(mensaje.has("contenido") ? mensaje.get("contenido").getAsString() : "")
+                        .append("\n");
+            }
+        }
+
+        if (archivoContexto != null && archivoContexto.has("contenido")) {
+            String nombreArchivo = archivoContexto.has("nombre")
+                    ? archivoContexto.get("nombre").getAsString()
+                    : "archivo adjunto";
+            String contenidoArchivo = archivoContexto.get("contenido").getAsString().trim();
+
+            if (!contenidoArchivo.isBlank()) {
+                prompt.append("\nArchivo adjunto del usuario (")
+                        .append(nombreArchivo)
+                        .append("):\n")
+                        .append(contenidoArchivo)
+                        .append("\n");
+            }
+        }
+
+        JsonObject filesResponse = UploadedFileDao.listByStory(relatoId);
+        if (filesResponse.has("status") && filesResponse.get("status").getAsInt() == 200
+                && filesResponse.has("archivos")) {
+            JsonArray files = filesResponse.getAsJsonArray("archivos");
+            if (files.size() > 0) {
+                prompt.append("\nArchivos fuente asociados al relato:\n");
+                int addedFiles = 0;
+
+                for (JsonElement item : files) {
+                    if (!item.isJsonObject()) {
+                        continue;
+                    }
+
+                    JsonObject file = item.getAsJsonObject();
+                    String fileName = file.has("nombreArchivo") ? file.get("nombreArchivo").getAsString() : "Archivo";
+                    String fileType = file.has("tipoArchivo") ? file.get("tipoArchivo").getAsString() : "Desconocido";
+                    String storagePath = file.has("rutaAlmacenamiento")
+                            ? file.get("rutaAlmacenamiento").getAsString()
+                            : "";
+
+                    prompt.append("- ")
+                            .append(fileName)
+                            .append(" [")
+                            .append(fileType)
+                            .append("]\n");
+
+                    String extractedText = DocumentTextExtractor.extractText(storagePath, fileType);
+                    if (!extractedText.isBlank()) {
+                        prompt.append("Contenido extraído de ")
+                                .append(fileName)
+                                .append(":\n")
+                                .append(extractedText)
+                                .append("\n\n");
+                    }
+
+                    addedFiles++;
+                    if (addedFiles >= MAX_SOURCE_FILES_IN_PROMPT) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        prompt.append("\nUltimo mensaje del usuario:\n").append(mensajeUsuario).append("\n\n");
+        prompt.append("Responde como Poly. Si ya hay suficiente contexto, desarrolla directamente el borrador de la historia en texto narrativo util para el canvas. ");
+        prompt.append("Si aun falta contexto, guia al usuario con una respuesta breve pero orientada a construir el relato final.");
+
+        return prompt.toString();
+    }
+
+    private static String buildGeminiInstructions(int relatoId, int usuarioId, JsonObject parametrosIA) {
+        StringBuilder instrucciones = new StringBuilder();
+        instrucciones.append("Eres Poly, un asistente de escritura creativa. ");
+        instrucciones.append("Debes ayudar a construir relatos listos para convertirse en borrador final. ");
+        instrucciones.append("Entrega texto claro, coherente y util para ser mostrado en CanvasAI. ");
+        instrucciones.append("Evita meta-explicaciones innecesarias y prioriza contenido narrativo cuando el usuario ya haya dado suficiente contexto.");
+
+        JsonObject effectiveSettings = new JsonObject();
+        JsonObject savedSettings = AIConfigurationDao.findByStoryId(relatoId);
+        if (savedSettings.has("status") && savedSettings.get("status").getAsInt() == 200
+                && savedSettings.has("configuracionIA")) {
+            JsonObject storedConfig = savedSettings.getAsJsonObject("configuracionIA");
+            for (String key : new String[] { "estiloEscritura", "nivelCreatividad", "longitudRespuesta", "tonoEmocional" }) {
+                if (storedConfig.has(key)) {
+                    effectiveSettings.add(key, storedConfig.get(key));
+                }
+            }
+        }
+
+        if (parametrosIA != null) {
+            for (String key : new String[] { "estiloEscritura", "nivelCreatividad", "longitudRespuesta", "tonoEmocional" }) {
+                if (parametrosIA.has(key)) {
+                    effectiveSettings.add(key, parametrosIA.get(key));
+                }
+            }
+        }
+
+        if (effectiveSettings.has("estiloEscritura")) {
+            instrucciones.append("\nEstilo de escritura: ")
+                    .append(effectiveSettings.get("estiloEscritura").getAsString())
+                    .append(".");
+        }
+
+        if (effectiveSettings.has("nivelCreatividad")) {
+            instrucciones.append("\nNivel de creatividad: ")
+                    .append(effectiveSettings.get("nivelCreatividad").getAsString())
+                    .append(".");
+        }
+
+        if (effectiveSettings.has("longitudRespuesta")) {
+            instrucciones.append("\nLongitud de respuesta: ")
+                    .append(effectiveSettings.get("longitudRespuesta").getAsString())
+                    .append(".");
+        }
+
+        if (effectiveSettings.has("tonoEmocional")) {
+            instrucciones.append("\nTono emocional: ")
+                    .append(effectiveSettings.get("tonoEmocional").getAsString())
+                    .append(".");
+        }
+
+        JsonObject userInstructions = SettingsDao.getInstruccionIA(usuarioId);
+        if (userInstructions.has("status") && userInstructions.get("status").getAsInt() == 200
+                && userInstructions.has("instruccion")) {
+            String instruccion = userInstructions.get("instruccion").getAsString().trim();
+            if (!instruccion.isBlank()) {
+                instrucciones.append("\n\nInstruccion permanente del usuario:\n").append(instruccion);
+            }
+        }
+
+        return instrucciones.toString();
+    }
+
     /**
      * Genera una respuesta simple basada en el mensaje del usuario.
-     * TODO: Reemplazar con la integración real a Gemini API
-     * 
      * @param mensajeUsuario Mensaje del usuario
      * @return Respuesta generada
      */
@@ -236,13 +437,12 @@ public class ChatService {
             return response;
         }
         
-        // TODO: Validar que el usuario tenga permisos para limpiar este relato
-        // TODO: Implementar método en ChatDao para eliminar mensajes por relato
-        
-        JsonObject response = new JsonObject();
-        response.addProperty("Mensaje", "Funcionalidad no implementada aún");
-        response.addProperty("status", 501);
-        return response;
+        JsonObject accessValidation = validateStoryOwnership(relatoId, usuarioId);
+        if (accessValidation != null) {
+            return accessValidation;
+        }
+
+        return ChatDao.deleteByStory(relatoId);
     }
 
     /**
@@ -258,6 +458,11 @@ public class ChatService {
             response.addProperty("Mensaje", "IDs inválidos");
             response.addProperty("status", 400);
             return response;
+        }
+
+        JsonObject accessValidation = validateStoryOwnership(relatoId, usuarioId);
+        if (accessValidation != null) {
+            return accessValidation;
         }
         
         try {
@@ -309,5 +514,36 @@ public class ChatService {
             response.addProperty("status", 500);
             return response;
         }
+    }
+
+    private static JsonObject validateStoryOwnership(int relatoId, int usuarioId) {
+        JsonObject storyResult = StoryDao.findById(relatoId);
+
+        if (!storyResult.has("status")) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "No fue posible validar el relato");
+            response.addProperty("status", 500);
+            return response;
+        }
+
+        int storyStatus = storyResult.get("status").getAsInt();
+        if (storyStatus != 200) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", storyResult.has("Mensaje")
+                    ? storyResult.get("Mensaje").getAsString()
+                    : "Relato no encontrado");
+            response.addProperty("status", storyStatus);
+            return response;
+        }
+
+        JsonObject relato = storyResult.getAsJsonObject("relato");
+        if (relato.get("usuarioId").getAsInt() != usuarioId) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "No tienes permisos para acceder a este relato");
+            response.addProperty("status", 403);
+            return response;
+        }
+
+        return null;
     }
 }

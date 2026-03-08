@@ -21,6 +21,11 @@ public class ChatDao {
             ORDER BY Orden ASC
             """;
 
+    static String SQL_DELETE_BY_RELATO = """
+            DELETE FROM MensajeChat
+            WHERE FK_RelatoID = ?
+            """;
+
     public static void save(int idRelato, String emisor, String mensaje, int orden){
         try (
             Connection conn = DatabaseConnection.getConnection();
@@ -71,6 +76,30 @@ public class ChatDao {
             response.addProperty("status", 500);
         }
         
+        return response;
+    }
+
+    public static JsonObject deleteByStory(int idRelato) {
+        JsonObject response = new JsonObject();
+
+        try (
+            Connection conn = DatabaseConnection.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(SQL_DELETE_BY_RELATO);
+        ) {
+            pstmt.setInt(1, idRelato);
+            int deletedRows = pstmt.executeUpdate();
+
+            response.addProperty("Mensaje", deletedRows > 0
+                    ? "Historial eliminado correctamente"
+                    : "No había mensajes para eliminar");
+            response.addProperty("filasAfectadas", deletedRows);
+            response.addProperty("status", 200);
+
+        } catch (SQLException e) {
+            response.addProperty("Mensaje", "Error al eliminar mensajes: " + e.getMessage());
+            response.addProperty("status", 500);
+        }
+
         return response;
     }
 }

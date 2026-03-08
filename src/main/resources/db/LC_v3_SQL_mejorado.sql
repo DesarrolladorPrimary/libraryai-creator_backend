@@ -59,7 +59,7 @@ CREATE TABLE TokenAcceso (
     PK_TokenID INT AUTO_INCREMENT PRIMARY KEY,
     FK_UsuarioID INT NOT NULL,
     TipoToken ENUM('Verificacion_Registro', 'Recuperacion_Password') NOT NULL,
-    Token VARCHAR(255) NOT NULL,
+    Token VARCHAR(255) NOT NULL UNIQUE,
     FechaCreacion DATETIME DEFAULT CURRENT_TIMESTAMP,
     FechaExpiracion DATETIME NOT NULL,
     Usado BOOLEAN DEFAULT FALSE,
@@ -71,7 +71,7 @@ CREATE TABLE Estanteria (
     FK_UsuarioID INT NOT NULL,
     NombreCategoria VARCHAR(150) NOT NULL,
     FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE,
-    UNIQUE (FK_UsuarioID, NombreCategoria) -- Evita categorías duplicadas por usuario
+    UNIQUE (FK_UsuarioID, NombreCategoria)
 );
 
 CREATE TABLE Suscripcion (
@@ -83,19 +83,21 @@ CREATE TABLE Suscripcion (
     Estado ENUM('Activa', 'Cancelada', 'Vencida') DEFAULT 'Activa',
     RenovacionAutomatica BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE,
-    FOREIGN KEY (FK_PlanID) REFERENCES PlanSuscripcion(PK_PlanID)
+    FOREIGN KEY (FK_PlanID) REFERENCES PlanSuscripcion(PK_PlanID),
+    CHECK (FechaFin IS NULL OR FechaFin >= FechaInicio)
 );
 
 CREATE TABLE ArchivoSubido (
     PK_ArchivoID INT AUTO_INCREMENT PRIMARY KEY,
     FK_UsuarioID INT NOT NULL,
     NombreArchivo VARCHAR(255) NOT NULL,
-    TipoArchivo VARCHAR(50), -- ej: 'application/pdf', 'application/msword'
-    Origen ENUM('Subido', 'Exportado') NOT NULL DEFAULT 'Subido', -- RF_04 vs RF_09
+    TipoArchivo ENUM('PDF', 'DOC', 'DOCX') NOT NULL,
+    Origen ENUM('Subido', 'Exportado') NOT NULL DEFAULT 'Subido',
     RutaAlmacenamiento TEXT NOT NULL,
-    TamanoBytes BIGINT NOT NULL, -- Soporta archivos masivos sin overflow
+    TamanoBytes BIGINT NOT NULL,
     FechaSubida DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE
+    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE,
+    CHECK (TamanoBytes > 0)
 );
 
 CREATE TABLE UsuarioRol (
@@ -151,12 +153,13 @@ CREATE TABLE Relato (
 CREATE TABLE RelatoVersion (
     PK_VersionID INT AUTO_INCREMENT PRIMARY KEY,
     FK_RelatoID INT NOT NULL,
-    NumeroVersion DECIMAL(5,2) NOT NULL, -- Ej: 1.00, 1.10, 2.05
+    NumeroVersion INT NOT NULL,
     Contenido TEXT,
     Notas TEXT,
     EsPublicada BOOLEAN DEFAULT FALSE,
     FechaVersion DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE CASCADE
+    FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE CASCADE,
+    UNIQUE (FK_RelatoID, NumeroVersion)
 );
 
 CREATE TABLE ConfiguracionIA (
@@ -187,6 +190,18 @@ CREATE TABLE Relato_ArchivoFuente (
     FOREIGN KEY (FK_ArchivoID) REFERENCES ArchivoSubido(PK_ArchivoID) ON DELETE CASCADE
 );
 
+-- Tabla nueva para auditoria basica de cambio de roles
+CREATE TABLE AuditoriaRolUsuario (
+    PK_AuditoriaID INT AUTO_INCREMENT PRIMARY KEY,
+    FK_UsuarioAfectadoID INT NOT NULL,
+    FK_AdminID INT NOT NULL,
+    RolAnterior VARCHAR(50),
+    RolNuevo VARCHAR(50) NOT NULL,
+    FechaCambio DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (FK_UsuarioAfectadoID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE,
+    FOREIGN KEY (FK_AdminID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE
+);
+
 -- Tablas nuevas para cumplir el RF_05 (Filtro NSFW)
 CREATE TABLE PalabraProhibida (
     PK_PalabraID INT AUTO_INCREMENT PRIMARY KEY,
@@ -197,7 +212,7 @@ CREATE TABLE LogModeracion (
     PK_LogID INT AUTO_INCREMENT PRIMARY KEY,
     FK_UsuarioID INT NOT NULL,
     Motivo VARCHAR(255) NOT NULL,
-    ContenidoBloqueadoHash VARCHAR(255), -- Hash del texto ofensivo por si hay auditorias
+    ContenidoBloqueadoHash VARCHAR(255),
     Fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE
 );
@@ -213,7 +228,9 @@ CREATE INDEX idx_fk_suscripcion_usuario ON Suscripcion(FK_UsuarioID);
 CREATE INDEX idx_fk_relato_usuario ON Relato(FK_UsuarioID);
 CREATE INDEX idx_fk_mensaje_relato ON MensajeChat(FK_RelatoID);
 CREATE INDEX idx_fk_version_relato ON RelatoVersion(FK_RelatoID);
-CREATE INDEX idx_mensaje_fecha ON MensajeChat(FechaEnvio); -- Util para reportes mensuales
+CREATE INDEX idx_mensaje_fecha ON MensajeChat(FechaEnvio);
+CREATE INDEX idx_token_unico ON TokenAcceso(Token);
+CREATE INDEX idx_auditoria_usuario ON AuditoriaRolUsuario(FK_UsuarioAfectadoID);
 
 -- Vistas
 CREATE VIEW V_UsuarioSuscripcion AS
@@ -246,7 +263,6 @@ FROM Relato_ArchivoFuente raf
 JOIN Relato r ON raf.FK_RelatoID = r.PK_RelatoID
 JOIN ArchivoSubido a ON raf.FK_ArchivoID = a.PK_ArchivoID;
 
--- Vista actualizada para incluir RF_22 (Solicitudes mensuales)
 CREATE VIEW V_EstadisticasSistema AS
 SELECT 
     (SELECT COUNT(*) FROM Usuario WHERE Activo = TRUE) AS UsuariosActivos,

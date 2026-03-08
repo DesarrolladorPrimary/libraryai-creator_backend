@@ -16,6 +16,11 @@ public class GeminiAI {
      * Llama al SDK de Gemini para generar texto a partir de un prompt.
      */
     public static String generateText(String responseUser, String instruccionesUser) {
+        if (AIConfig.API_KEY == null || AIConfig.API_KEY.isBlank()) {
+            System.out.println("GEMINI_API_KEY no está configurada");
+            return null;
+        }
+
         try (
             // Crea el cliente con la API key configurada.
             Client client = Client.builder().apiKey(AIConfig.API_KEY).build();

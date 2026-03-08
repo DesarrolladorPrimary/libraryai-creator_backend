@@ -33,6 +33,13 @@ public class ChatController {
                 int relatoId = messageData.get("relatoId").getAsInt();
                 String emisor = messageData.get("emisor").getAsString();
                 String contenido = messageData.get("contenido").getAsString();
+                JsonObject parametrosIA = messageData.has("parametrosIA") && messageData.get("parametrosIA").isJsonObject()
+                        ? messageData.getAsJsonObject("parametrosIA")
+                        : null;
+                JsonObject archivoContexto = messageData.has("archivoContexto")
+                        && messageData.get("archivoContexto").isJsonObject()
+                                ? messageData.getAsJsonObject("archivoContexto")
+                                : null;
                 
                 // Obtener usuarioId del token JWT
                 int usuarioId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
@@ -46,7 +53,13 @@ public class ChatController {
                 }
                 
                 // Enviar mensaje
-                JsonObject response = ChatService.sendMessage(relatoId, usuarioId, emisor, contenido);
+                JsonObject response = ChatService.sendMessage(
+                        relatoId,
+                        usuarioId,
+                        emisor,
+                        contenido,
+                        parametrosIA,
+                        archivoContexto);
                 int statusCode = response.get("status").getAsInt();
                 
                 ApiResponse.send(exchange, response.toString(), statusCode);

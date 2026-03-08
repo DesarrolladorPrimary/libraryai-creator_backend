@@ -1,15 +1,32 @@
 package com.libraryai.backend.service;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.UUID;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.libraryai.backend.dao.AIConfigurationDao;
 import com.libraryai.backend.dao.StoryDao;
+import com.libraryai.backend.dao.StoryVersionDao;
+import com.libraryai.backend.dao.UploadedFileDao;
+import com.libraryai.backend.dao.chats.ChatDao;
 import com.libraryai.backend.models.Story;
+import com.libraryai.backend.util.DocumentExportBuilder;
 
 /**
  * Servicio para la lógica de negocio de relatos.
  */
 public class StoryService {
+
+    private static final String DEFAULT_WRITING_STYLE = "Narrativo";
+    private static final String DEFAULT_CREATIVITY_LEVEL = "Medio";
+    private static final String DEFAULT_RESPONSE_LENGTH = "Media";
+    private static final String DEFAULT_EMOTIONAL_TONE = "Neutral";
+    private static final String EXPORT_UPLOAD_DIR = "uploads/exportados/";
 
     /**
      * Crea un nuevo relato con validaciones.
@@ -118,6 +135,22 @@ public class StoryService {
                 response.addProperty("Mensaje", "No tienes permisos para acceder a este relato");
                 response.addProperty("status", 403);
                 return response;
+            }
+
+            JsonObject configResult = AIConfigurationDao.findByStoryId(relatoId);
+            if (configResult.has("status") && configResult.get("status").getAsInt() == 200
+                    && configResult.has("configuracionIA")) {
+                result.add("configuracionIA", configResult.getAsJsonObject("configuracionIA"));
+            } else {
+                result.add("configuracionIA", buildDefaultAIConfig(relatoId));
+            }
+
+            JsonObject filesResult = UploadedFileDao.listByStory(relatoId);
+            if (filesResult.has("status") && filesResult.get("status").getAsInt() == 200
+                    && filesResult.has("archivos")) {
+                result.add("archivosFuente", filesResult.getAsJsonArray("archivos"));
+            } else {
+                result.add("archivosFuente", new JsonArray());
             }
         }
         
@@ -235,10 +268,154 @@ public class StoryService {
             return response;
         }
         
-        // TODO: Antes de eliminar, deberíamos eliminar los mensajes de chat asociados
-        // Esto se implementará cuando tengamos el servicio de chat completo
-        
+        JsonObject deleteMessages = ChatDao.deleteByStory(relatoId);
+        if (deleteMessages.has("status") && deleteMessages.get("status").getAsInt() != 200) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", deleteMessages.get("Mensaje").getAsString());
+            response.addProperty("status", deleteMessages.get("status").getAsInt());
+            return response;
+        }
+
         return StoryDao.delete(relatoId);
+    }
+
+    public static JsonObject getAIConfiguration(int relatoId, int usuarioId) {
+        JsonObject accessValidation = validateStoryOwnership(relatoId, usuarioId);
+        if (accessValidation != null) {
+            return accessValidation;
+        }
+
+        JsonObject result = AIConfigurationDao.findByStoryId(relatoId);
+        if (result.has("status") && result.get("status").getAsInt() == 200) {
+            return result;
+        }
+
+        JsonObject response = new JsonObject();
+        response.add("configuracionIA", buildDefaultAIConfig(relatoId));
+        response.addProperty("status", 200);
+        return response;
+    }
+
+    public static JsonObject updateAIConfiguration(int relatoId, int usuarioId, String writingStyle,
+            String creativityLevel, String responseLength, String emotionalTone) {
+        JsonObject accessValidation = validateStoryOwnership(relatoId, usuarioId);
+        if (accessValidation != null) {
+            return accessValidation;
+        }
+
+        String nextWritingStyle = normalizeOrDefault(writingStyle, DEFAULT_WRITING_STYLE);
+        String nextCreativityLevel = normalizeOrDefault(creativityLevel, DEFAULT_CREATIVITY_LEVEL);
+        String nextResponseLength = normalizeOrDefault(responseLength, DEFAULT_RESPONSE_LENGTH);
+        String nextEmotionalTone = normalizeOrDefault(emotionalTone, DEFAULT_EMOTIONAL_TONE);
+
+        if (!nextCreativityLevel.equals("Bajo") && !nextCreativityLevel.equals("Medio")
+                && !nextCreativityLevel.equals("Alto") && !nextCreativityLevel.equals("Extremo")) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "Nivel de creatividad inválido");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        if (!nextResponseLength.equals("Corta") && !nextResponseLength.equals("Media")
+                && !nextResponseLength.equals("Larga")) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "Longitud de respuesta inválida");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        JsonObject result = AIConfigurationDao.upsert(relatoId, nextWritingStyle, nextCreativityLevel,
+                nextResponseLength, nextEmotionalTone);
+
+        if (result.has("status") && result.get("status").getAsInt() == 200) {
+            result.add("configuracionIA", buildAIConfig(relatoId, nextWritingStyle, nextCreativityLevel,
+                    nextResponseLength, nextEmotionalTone));
+        }
+
+        return result;
+    }
+
+    public static JsonObject exportStory(int relatoId, int usuarioId, String titulo, String contenido, String formato,
+            String exportFileName, String exportFileType, String exportFileBase64) {
+        JsonObject accessValidation = validateStoryOwnership(relatoId, usuarioId);
+        if (accessValidation != null) {
+            return accessValidation;
+        }
+
+        String normalizedTitle = titulo == null ? "" : titulo.trim();
+        String normalizedContent = contenido == null ? "" : contenido.trim();
+        String normalizedFormat = formato == null ? "" : formato.trim();
+
+        if (normalizedTitle.isEmpty()) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "El título del libro es obligatorio");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        if (normalizedContent.isEmpty()) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "No hay contenido para exportar");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        if (!normalizedFormat.equalsIgnoreCase("word") && !normalizedFormat.equalsIgnoreCase("pdf")) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "Formato de exportación inválido");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        JsonObject currentStory = StoryDao.findById(relatoId);
+        if (currentStory.get("status").getAsInt() != 200) {
+            return currentStory;
+        }
+
+        JsonObject storyData = currentStory.getAsJsonObject("relato");
+        Story story = new Story(
+                relatoId,
+                usuarioId,
+                storyData.has("estanteriaId") ? storyData.get("estanteriaId").getAsInt() : null,
+                storyData.has("modeloUsadoId") ? storyData.get("modeloUsadoId").getAsInt() : null,
+                normalizedTitle,
+                storyData.get("modoOrigen").getAsString(),
+                normalizedContent,
+                LocalDateTime.parse(storyData.get("fechaCreacion").getAsString().replace(" ", "T")),
+                LocalDateTime.now());
+
+        JsonObject updateStory = StoryDao.update(story);
+        if (updateStory.get("status").getAsInt() != 200) {
+            return updateStory;
+        }
+
+        JsonObject createVersion = StoryVersionDao.createVersion(
+                relatoId,
+                normalizedContent,
+                "Exportación en formato " + normalizedFormat.toUpperCase(),
+                true);
+
+        JsonObject response = new JsonObject();
+        response.addProperty("Mensaje", "Relato exportado y versionado correctamente");
+        response.addProperty("status", createVersion.get("status").getAsInt() == 201 ? 200 : createVersion.get("status").getAsInt());
+        if (createVersion.has("version")) {
+            response.addProperty("version", createVersion.get("version").getAsInt());
+        }
+
+        JsonObject exportFileResult = persistExportedFile(relatoId, usuarioId, normalizedTitle, normalizedContent,
+                normalizedFormat, exportFileName, exportFileType, exportFileBase64);
+        if (exportFileResult != null) {
+            if (exportFileResult.get("status").getAsInt() == 201) {
+                response.addProperty("archivoExportadoId", exportFileResult.get("id").getAsInt());
+                response.addProperty("Mensaje", "Relato exportado, versionado y archivo registrado correctamente");
+            } else {
+                response.addProperty("Mensaje",
+                        "Relato exportado y versionado, pero no se pudo registrar el archivo exportado");
+                response.add("detalleArchivo", exportFileResult);
+            }
+        }
+
+        return response;
     }
 
     /**
@@ -277,5 +454,165 @@ public class StoryService {
         }
         
         return response;
+    }
+
+    public static JsonObject validateStoryOwnership(int relatoId, int usuarioId) {
+        if (relatoId <= 0 || usuarioId <= 0) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "IDs inválidos");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        JsonObject existingStory = StoryDao.findById(relatoId);
+        if (existingStory.get("status").getAsInt() != 200) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "El relato no existe");
+            response.addProperty("status", 404);
+            return response;
+        }
+
+        JsonObject storyData = existingStory.getAsJsonObject("relato");
+        if (storyData.get("usuarioId").getAsInt() != usuarioId) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "No tienes permisos para acceder a este relato");
+            response.addProperty("status", 403);
+            return response;
+        }
+
+        return null;
+    }
+
+    private static JsonObject buildDefaultAIConfig(int storyId) {
+        return buildAIConfig(storyId, DEFAULT_WRITING_STYLE, DEFAULT_CREATIVITY_LEVEL,
+                DEFAULT_RESPONSE_LENGTH, DEFAULT_EMOTIONAL_TONE);
+    }
+
+    private static JsonObject buildAIConfig(int storyId, String writingStyle, String creativityLevel,
+            String responseLength, String emotionalTone) {
+        JsonObject config = new JsonObject();
+        config.addProperty("relatoId", storyId);
+        config.addProperty("estiloEscritura", writingStyle);
+        config.addProperty("nivelCreatividad", creativityLevel);
+        config.addProperty("longitudRespuesta", responseLength);
+        config.addProperty("tonoEmocional", emotionalTone);
+        return config;
+    }
+
+    private static String normalizeOrDefault(String value, String defaultValue) {
+        if (value == null || value.trim().isEmpty()) {
+            return defaultValue;
+        }
+
+        return value.trim();
+    }
+
+    private static JsonObject persistExportedFile(int storyId, int userId, String title, String content, String format,
+            String fileName, String fileType, String fileBase64) {
+        String normalizedFormat = format == null ? "" : format.trim().toLowerCase();
+        if (!normalizedFormat.equals("word") && !normalizedFormat.equals("pdf")) {
+            return null;
+        }
+
+        try {
+            String normalizedType;
+            String sanitizedName;
+            byte[] fileBytes;
+
+            boolean hasClientFile = fileName != null && !fileName.trim().isEmpty()
+                    && fileType != null && !fileType.trim().isEmpty()
+                    && fileBase64 != null && !fileBase64.trim().isEmpty();
+
+            if (hasClientFile) {
+                normalizedType = fileType.trim().toUpperCase();
+                if (!normalizedType.equals("DOC") && !normalizedType.equals("DOCX") && !normalizedType.equals("PDF")) {
+                    JsonObject response = new JsonObject();
+                    response.addProperty("Mensaje", "Tipo de archivo exportado inválido");
+                    response.addProperty("status", 400);
+                    return response;
+                }
+
+                String rawBase64 = fileBase64.contains(",") ? fileBase64.split(",")[1] : fileBase64;
+                fileBytes = Base64.getDecoder().decode(rawBase64);
+                sanitizedName = sanitizeExportFileName(fileName, normalizedType);
+            } else {
+                normalizedType = normalizedFormat.equals("pdf") ? "PDF" : "DOC";
+                sanitizedName = sanitizeExportFileName(title, normalizedType);
+                fileBytes = normalizedType.equals("PDF")
+                        ? DocumentExportBuilder.buildPdfDocument(title, content)
+                        : DocumentExportBuilder.buildWordDocument(title, content);
+            }
+
+            if (fileBytes.length <= 0) {
+                JsonObject response = new JsonObject();
+                response.addProperty("Mensaje", "Archivo exportado inválido");
+                response.addProperty("status", 400);
+                return response;
+            }
+
+            Path exportPath = Paths.get(EXPORT_UPLOAD_DIR);
+            if (!Files.exists(exportPath)) {
+                Files.createDirectories(exportPath);
+            }
+
+            String extension = sanitizedName.substring(sanitizedName.lastIndexOf(".")).toLowerCase();
+            String storedName = "export_" + storyId + "_" + UUID.randomUUID() + extension;
+            Path filePath = exportPath.resolve(storedName);
+            Files.write(filePath, fileBytes);
+
+            String relativePath = EXPORT_UPLOAD_DIR + storedName;
+            JsonObject createdFile = UploadedFileDao.create(userId, sanitizedName, normalizedType, "Exportado",
+                    relativePath, fileBytes.length);
+
+            if (!createdFile.has("status") || createdFile.get("status").getAsInt() != 201 || !createdFile.has("id")) {
+                Files.deleteIfExists(filePath);
+                return createdFile;
+            }
+
+            JsonObject linkFile = UploadedFileDao.linkToStory(storyId, createdFile.get("id").getAsInt());
+            if (!linkFile.has("status") || linkFile.get("status").getAsInt() != 200) {
+                UploadedFileDao.deleteByUser(createdFile.get("id").getAsInt(), userId);
+                Files.deleteIfExists(filePath);
+                return linkFile;
+            }
+
+            return createdFile;
+        } catch (IllegalArgumentException e) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "Archivo exportado base64 inválido");
+            response.addProperty("status", 400);
+            return response;
+        } catch (Exception e) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "Error al registrar archivo exportado: " + e.getMessage());
+            response.addProperty("status", 500);
+            return response;
+        }
+    }
+
+    private static String sanitizeExportFileName(String fileName, String normalizedType) {
+        String sanitizedName = String.valueOf(fileName == null ? "" : fileName).trim()
+                .replaceAll("[\\\\/:*?\"<>|]+", "-")
+                .replaceAll("\\s+", " ");
+
+        if (sanitizedName.isBlank()) {
+            sanitizedName = "historia-exportada";
+        }
+
+        String expectedExtension = switch (normalizedType) {
+            case "PDF" -> ".pdf";
+            case "DOCX" -> ".docx";
+            default -> ".doc";
+        };
+
+        if (!sanitizedName.toLowerCase().endsWith(expectedExtension)) {
+            int dotIndex = sanitizedName.lastIndexOf('.');
+            if (dotIndex > 0) {
+                sanitizedName = sanitizedName.substring(0, dotIndex);
+            }
+            sanitizedName = sanitizedName + expectedExtension;
+        }
+
+        return sanitizedName;
     }
 }
