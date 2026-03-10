@@ -1,4 +1,4 @@
-﻿package com.libraryai.backend;
+package com.libraryai.backend;
 
 import com.libraryai.backend.config.AIConfig;
 import com.libraryai.backend.seeders.SeedRoles;
@@ -22,7 +22,12 @@ public class App {
             SeedRoles.insertRoles();
             ServerMain.startServer();
         } catch (ExceptionInInitializerError e) {
-            System.err.println(e.getMessage());
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            System.err.println("Error de inicialización: " + cause.getMessage());
+            throw e;
+        } catch (Exception e) {
+            System.err.println("Error al iniciar la aplicación: " + e.getMessage());
+            throw e;
         }
     }
 }

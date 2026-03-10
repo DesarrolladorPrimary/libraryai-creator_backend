@@ -740,7 +740,7 @@ public class StoryService {
             storageLimitMb = 500d;
         }
 
-        long usedBytes = UploadedFileDao.sumBytesByUserAndOrigin(userId, "Exportado");
+        long usedBytes = UploadedFileDao.sumBytesByUser(userId);
         double nextUsageMb = (usedBytes + newFileBytes) / 1024d / 1024d;
         if (nextUsageMb <= storageLimitMb) {
             return null;

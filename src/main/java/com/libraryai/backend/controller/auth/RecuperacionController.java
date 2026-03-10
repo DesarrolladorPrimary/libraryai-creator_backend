@@ -19,7 +19,7 @@ public class RecuperacionController {
      */
     public static HttpHandler solicitarRecuperacion() {
         return exchange -> {
-            // Lee el body de la peticion
+            // Lee el body de la petición
             ApiRequest request = new ApiRequest(exchange);
             String body = request.readBody();
 
@@ -41,7 +41,7 @@ public class RecuperacionController {
             // Remueve el status del JSON para no enviarlo al cliente
             response.remove("status");
 
-            // Envia la respuesta al cliente
+            // Envía la respuesta al cliente
             ApiResponse.send(exchange, response.toString(), status);
         };
     }
@@ -69,7 +69,7 @@ public class RecuperacionController {
             // Remueve el status del JSON
             response.remove("status");
 
-            // Envia la respuesta
+            // Envía la respuesta
             ApiResponse.send(exchange, response.toString(), status);
         };
     }
@@ -81,7 +81,7 @@ public class RecuperacionController {
      */
     public static HttpHandler nuevaPassword() {
         return exchange -> {
-            // Lee el body de la peticion
+            // Lee el body de la petición
             ApiRequest request = new ApiRequest(exchange);
             String body = request.readBody();
 
@@ -108,7 +108,7 @@ public class RecuperacionController {
             // Remueve el status del JSON
             response.remove("status");
 
-            // Envia la respuesta al cliente
+            // Envía la respuesta al cliente
             ApiResponse.send(exchange, response.toString(), status);
         };
     }

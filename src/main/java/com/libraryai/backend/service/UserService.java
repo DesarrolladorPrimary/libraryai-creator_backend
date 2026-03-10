@@ -88,7 +88,7 @@ public class UserService {
 
                     } else {
                         // Error: correo sin @
-                        rJsonObject.addProperty("Mensaje", "Correo no valido");
+                        rJsonObject.addProperty("Mensaje", "Correo no válido");
                         rJsonObject.addProperty("status", 400); // Bad Request
 
                     }
@@ -105,7 +105,7 @@ public class UserService {
 
         } else {
             // Error: Algún dato venía nulo o incorrecto
-            rJsonObject.addProperty("Mensaje", "Datos vacios");
+            rJsonObject.addProperty("Mensaje", "Datos vacíos");
             rJsonObject.addProperty("status", 400); // Bad Request
 
         }
@@ -115,8 +115,8 @@ public class UserService {
     }
 
     /**
-     * Valida datos de actualizacion y delega al DAO.
-     * Completa campos vacios con valores actuales de la DB.
+     * Valida datos de actualización y delega al DAO.
+     * Completa campos vacíos con valores actuales de la DB.
      */
     public static JsonObject validateUpdateData(String nombre, String correo, String contraseña, int id)
             throws IOException {
@@ -162,7 +162,7 @@ public class UserService {
             }
 
             else {
-                response.addProperty("Mensaje", "Correo no valido");
+                response.addProperty("Mensaje", "Correo no válido");
                 response.addProperty("status", 400);
             }
         }

@@ -113,7 +113,7 @@ public class SettingsDao {
                 boolean almacenamientoIlimitado = (planName != null && planName.toLowerCase().contains("premium"))
                         || almacenamientoMax == null
                         || almacenamientoMax <= 0;
-                double usedStorageMb = bytesToMb(UploadedFileDao.sumBytesByUserAndOrigin(userId, "Exportado"));
+                double usedStorageMb = bytesToMb(UploadedFileDao.sumBytesByUser(userId));
                 response.addProperty("status", 200);
                 response.addProperty("plan", planName);
                 response.addProperty("limiteAlmacenamientoMb", almacenamientoIlimitado ? 0 : almacenamientoMax);
@@ -128,7 +128,7 @@ public class SettingsDao {
                 response.addProperty("renovacionAutomatica", rs.getBoolean("RenovacionAutomatica"));
             } else {
                 // Sin suscripción activa: valores por defecto
-                double usedStorageMb = bytesToMb(UploadedFileDao.sumBytesByUserAndOrigin(userId, "Exportado"));
+                double usedStorageMb = bytesToMb(UploadedFileDao.sumBytesByUser(userId));
                 response.addProperty("status", 200);
                 response.addProperty("plan", "Gratuito");
                 response.addProperty("limiteAlmacenamientoMb", 500);

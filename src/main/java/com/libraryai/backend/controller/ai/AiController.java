@@ -20,8 +20,8 @@ public class AiController {
     public static HttpHandler generateStory() {
         return exchange -> {
             try {
-                System.out.println("\n\nPeticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
-                // Lee el body de la peticion.
+                System.out.println("\n\nPetición de tipo: " + exchange.getRequestMethod() + " recibida del cliente\n");
+                // Lee el body de la petición.
                 ApiRequest request = new ApiRequest(exchange);
                 String body = request.readBody();
 
@@ -41,7 +41,7 @@ public class AiController {
                     instrucciones = json.get("instrucciones").getAsString();
                 }
 
-                // Ejecuta la generacion y obtiene respuesta.
+                // Ejecuta la generación y obtiene respuesta.
                 JsonObject responseJson = GeminiService.generateText(mensaje, instrucciones);
                 
                 // Usa status del servicio o 200 por defecto.

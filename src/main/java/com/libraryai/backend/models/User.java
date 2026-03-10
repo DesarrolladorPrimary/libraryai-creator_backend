@@ -33,7 +33,7 @@ public class User {
         return usuarioId;
     }
 
-    public void setUserId(int usuario_id) {
+    public void setUserId(int usuarioId) {
         this.usuarioId = usuarioId;
     }
 

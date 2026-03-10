@@ -55,6 +55,12 @@ public class UploadedFileDao {
             WHERE FK_UsuarioID = ? AND Origen = ?
             """;
 
+    private static final String SQL_SUM_BYTES_BY_USER = """
+            SELECT COALESCE(SUM(TamanoBytes), 0) AS totalBytes
+            FROM ArchivoSubido
+            WHERE FK_UsuarioID = ?
+            """;
+
     private static final String SQL_SELECT_EXPORTED_BY_USER = """
             SELECT a.PK_ArchivoID, a.FK_UsuarioID, a.NombreArchivo, a.TipoArchivo,
                    a.Origen, a.RutaAlmacenamiento, a.TamanoBytes, a.FechaSubida,
@@ -201,6 +207,27 @@ public class UploadedFileDao {
 
             pstmt.setInt(1, userId);
             pstmt.setString(2, origin);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getLong("totalBytes");
+            }
+        } catch (SQLException e) {
+            return 0L;
+        }
+
+        return 0L;
+    }
+
+    public static long sumBytesByUser(int userId) {
+        if (userId <= 0) {
+            return 0L;
+        }
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(SQL_SUM_BYTES_BY_USER)) {
+
+            pstmt.setInt(1, userId);
             ResultSet rs = pstmt.executeQuery();
 
             if (rs.next()) {

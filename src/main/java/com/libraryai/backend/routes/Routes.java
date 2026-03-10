@@ -1,4 +1,4 @@
-﻿package com.libraryai.backend.routes;
+package com.libraryai.backend.routes;
 
 // Importamos los controladores
 import com.libraryai.backend.controller.UserController;
@@ -19,7 +19,7 @@ import com.libraryai.backend.server.Router;
 import com.sun.net.httpserver.HttpHandler;
 
 /**
- * RUTAS - El archivo de configuracion de rutas
+ * RUTAS - El archivo de configuración de rutas
  */
 public class Routes {
 

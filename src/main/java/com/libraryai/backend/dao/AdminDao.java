@@ -1,4 +1,4 @@
-﻿package com.libraryai.backend.dao;
+package com.libraryai.backend.dao;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -11,7 +11,7 @@ import com.google.gson.JsonObject;
 import com.libraryai.backend.config.DatabaseConnection;
 
 /**
- * DAO para consultas del panel de administracion.
+ * DAO para consultas del panel de administración.
  */
 public class AdminDao {
 
@@ -149,7 +149,7 @@ public class AdminDao {
                 user.addProperty("NombrePlan", rs.getString("NombrePlan") == null ? "Sin plan" : rs.getString("NombrePlan"));
                 user.addProperty(
                         "EstadoSuscripcion",
-                        rs.getString("EstadoSuscripcion") == null ? "Sin suscripcion" : rs.getString("EstadoSuscripcion"));
+                        rs.getString("EstadoSuscripcion") == null ? "Sin suscripción" : rs.getString("EstadoSuscripcion"));
                 users.add(user);
             }
         } catch (SQLException e) {
@@ -235,7 +235,7 @@ public class AdminDao {
 
             if (insertedRole == 0) {
                 conn.rollback();
-                response.addProperty("Mensaje", "Rol no valido");
+                response.addProperty("Mensaje", "Rol no válido");
                 response.addProperty("status", 400);
                 return response;
             }

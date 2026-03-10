@@ -1,11 +1,11 @@
-﻿package com.libraryai.backend.service;
+package com.libraryai.backend.service;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.dao.AdminDao;
 
 /**
- * Logica de negocio del panel de administracion.
+ * Lógica de negocio del panel de administración.
  */
 public class AdminService {
 
@@ -16,7 +16,7 @@ public class AdminService {
     public static JsonObject updateUserStatus(int userId, boolean active) {
         if (userId <= 0) {
             JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "ID de usuario invalido");
+            response.addProperty("Mensaje", "ID de usuario inválido");
             response.addProperty("status", 400);
             return response;
         }
@@ -28,7 +28,7 @@ public class AdminService {
         JsonObject response = new JsonObject();
 
         if (userId <= 0) {
-            response.addProperty("Mensaje", "ID de usuario invalido");
+            response.addProperty("Mensaje", "ID de usuario inválido");
             response.addProperty("status", 400);
             return response;
         }
@@ -40,7 +40,7 @@ public class AdminService {
         }
 
         if (newRole == null || newRole.isBlank()) {
-            response.addProperty("Mensaje", "Debe enviar un rol valido");
+            response.addProperty("Mensaje", "Debe enviar un rol válido");
             response.addProperty("status", 400);
             return response;
         }

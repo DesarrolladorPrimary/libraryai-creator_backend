@@ -1,4 +1,4 @@
-﻿package com.libraryai.backend.controller;
+package com.libraryai.backend.controller;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -11,7 +11,7 @@ import com.libraryai.backend.util.QueryParams;
 import com.sun.net.httpserver.HttpHandler;
 
 /**
- * Controlador del modulo admin.
+ * Controlador del módulo admin.
  */
 public class AdminController {
 
@@ -44,7 +44,7 @@ public class AdminController {
             String body = request.readBody();
 
             if (body.isBlank()) {
-                ApiResponse.error(exchange, 400, "El cuerpo de la peticion esta vacio");
+                ApiResponse.error(exchange, 400, "El cuerpo de la petición está vacío");
                 return;
             }
 
@@ -86,14 +86,14 @@ public class AdminController {
             String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
             int adminId = extractAdminId(authHeader);
             if (adminId <= 0) {
-                ApiResponse.error(exchange, 401, "No fue posible validar la sesion del administrador");
+                ApiResponse.error(exchange, 401, "No fue posible validar la sesión del administrador");
                 return;
             }
 
             ApiRequest request = new ApiRequest(exchange);
             String body = request.readBody();
             if (body.isBlank()) {
-                ApiResponse.error(exchange, 400, "El cuerpo de la peticion esta vacio");
+                ApiResponse.error(exchange, 400, "El cuerpo de la petición está vacío");
                 return;
             }
 

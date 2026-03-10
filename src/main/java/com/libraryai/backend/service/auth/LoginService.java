@@ -22,7 +22,7 @@ public class LoginService {
 
 
             if (!correo.matches(EMAIL_PATTERN)) {
-                response.addProperty("Mensaje", "El correo no es valido");
+                response.addProperty("Mensaje", "El correo no es válido");
                 response.addProperty("status", 400);
 
             } else {
