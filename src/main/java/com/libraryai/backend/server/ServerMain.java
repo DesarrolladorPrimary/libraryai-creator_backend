@@ -1,75 +1,57 @@
-package com.libraryai.backend.server;
+﻿package com.libraryai.backend.server;
 
-// IOException para manejar errores de red/conexión
 import java.io.IOException;
-// InetSocketAddress para especificar IP y puerto del servidor
 import java.net.InetSocketAddress;
 
-// Importamos nuestra clase de rutas
 import com.libraryai.backend.routes.Routes;
-// Clases del servidor HTTP de Java
-import com.sun.net.httpserver.*;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+
+import io.github.cdimascio.dotenv.Dotenv;
 
 /**
- * SERVERMAIN - El punto de inicio del servidor HTTP
- *
- * Esta clase se encarga de:
- * 1. Crear el servidor HTTP en un puerto específico
- * 2. Conectar el Router para manejar las peticiones
- * 3. Iniciar el servidor para que escuche peticiones
+ * Punto de inicio del servidor HTTP.
  */
 public class ServerMain {
 
-    // Puerto donde escuchará el servidor (localhost:8080)
-    private static int port = 8080;
+    private static final Dotenv ENV = Dotenv.load();
+    private static final int DEFAULT_PORT = 8080;
+    private static final int port = resolvePort();
 
-    // Instancia del servidor HTTP (pública para acceder desde otros lugares si es
-    // necesario)
     public static HttpServer server;
 
-    /**
-     * MÉTODO PRINCIPAL QUE INICIA EL SERVIDOR
-     *
-     * Flujo:
-     * 1. Crea el servidor en el puerto 8080
-     * 2. Inicia el servidor
-     * 3. Configura las rutas
-     * 4. Conecta el Router al servidor
-     */
     public static void startServer() throws IOException {
         try {
             System.out.println("\nIniciando servidor...");
 
-            // Creamos el servidor HTTP
-            // InetSocketAddress(port) = escucha en todas las IPs en el puerto 8080
-            // El 0 es el backlog (cola de conexiones pendientes, 0 = valor por defecto)
             server = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
-
             System.out.println("Servidor iniciado correctamente en el puerto: " + port + "\n\n");
 
-            // Iniciamos el servidor (empieza a escuchar peticiones)
             server.start();
 
-            // ========== CONFIGURACIÓN DE RUTAS ==========
-
-            // Creamos una instancia de nuestra clase de Rutas
             Routes rutas = new Routes();
-
-            // Llamamos al método que registra todas las rutas
-            // y nos devuelve el Router configurado
             HttpHandler router = rutas.configureRoutes();
 
-            // Conectamos el Router al servidor
-            // "/" significa que el Router manejará TODAS las rutas que empiecen con /
-            // Es decir, todas las peticiones pasan por nuestro Router
             server.createContext("/", router);
-            
-            // Agregar handler para archivos estáticos (imágenes, uploads, etc.)
             server.createContext("/uploads/", new StaticFileHandler());
 
         } catch (IOException e) {
-            // Si hay error al crear el servidor, lo mostramos
             System.err.println("Error al iniciar el servidor: " + e.getMessage());
+        }
+    }
+
+    private static int resolvePort() {
+        String configuredPort = ENV.get("SERVER_PORT");
+
+        if (configuredPort == null || configuredPort.isBlank()) {
+            return DEFAULT_PORT;
+        }
+
+        try {
+            return Integer.parseInt(configuredPort.trim());
+        } catch (NumberFormatException error) {
+            System.err.println("SERVER_PORT inválido. Usando puerto por defecto: " + DEFAULT_PORT);
+            return DEFAULT_PORT;
         }
     }
 }
