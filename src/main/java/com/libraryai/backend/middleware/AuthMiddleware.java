@@ -23,7 +23,11 @@ public class AuthMiddleware {
                 String peticion = exchange.getRequestHeaders().getFirst("Authorization");
 
                 if (peticion == null || peticion.isEmpty()) {
-                    ApiResponse.error(exchange, 401, "No tienes autorizacion para esto");
+                    JsonObject response = new JsonObject();
+                    response.addProperty("Mensaje", "Debes iniciar sesion para continuar.");
+                    response.addProperty("status", 401);
+                    response.addProperty("code", "TOKEN_MISSING");
+                    ApiResponse.send(exchange, response.toString(), 401);
                     return;
                 }
                 // Espera el formato "Bearer <token>" y toma el token
@@ -34,7 +38,8 @@ public class AuthMiddleware {
                 JsonObject infoToken = JwtUtil.validateToken(token);
 
                 if (infoToken.has("Mensaje")) {
-                    ApiResponse.error(exchange, 401, infoToken.get("Mensaje").getAsString());
+                    int status = infoToken.has("status") ? infoToken.get("status").getAsInt() : 401;
+                    ApiResponse.send(exchange, infoToken.toString(), status);
                     return;
                 }
                 String rolToken = infoToken.get("Rol").getAsString();

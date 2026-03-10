@@ -11,6 +11,7 @@ import com.google.gson.JsonObject;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -81,11 +82,16 @@ public class JwtUtil {
                 very.addProperty("Usuario", usuario);
                 very.addProperty("Id", id);
             
-        } catch (JwtException e) {
-            e.printStackTrace();
-            // Marca el error con mensaje y codigo para que el caller responda 401.
-            very.addProperty("Mensaje", "El token expiro o ya no funciona");
-            very.addProperty("code", 401);
+        } catch (ExpiredJwtException e) {
+            // Marca especificamente la expiracion para que frontend y middleware la distingan.
+            very.addProperty("Mensaje", "Tu token de acceso expiro. Inicia sesion de nuevo.");
+            very.addProperty("status", 401);
+            very.addProperty("code", "TOKEN_EXPIRED");
+        } catch (JwtException | IllegalArgumentException e) {
+            // Token invalido, malformado o con firma incorrecta.
+            very.addProperty("Mensaje", "Tu token de acceso ya no es valido. Inicia sesion de nuevo.");
+            very.addProperty("status", 401);
+            very.addProperty("code", "TOKEN_INVALID");
         }
 
         return very;

@@ -7,9 +7,11 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.UUID;
 
-import com.google.gson.JsonObject;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.libraryai.backend.dao.AIConfigurationDao;
+import com.libraryai.backend.dao.SettingsDao;
 import com.libraryai.backend.dao.StoryDao;
 import com.libraryai.backend.dao.StoryVersionDao;
 import com.libraryai.backend.dao.UploadedFileDao;
@@ -72,6 +74,17 @@ public class StoryService {
             response.addProperty("status", 400);
             return response;
         }
+
+        Integer resolvedModelId = modeloUsadoId;
+        if ("Seccion_Artificial".equals(modoOrigen) || modeloUsadoId != null) {
+            JsonObject modelResolution = SettingsService.resolveModeloIA(usuarioId, modeloUsadoId, modeloUsadoId != null);
+            if (!modelResolution.has("status") || modelResolution.get("status").getAsInt() != 200) {
+                return modelResolution;
+            }
+
+            JsonObject resolvedModel = modelResolution.getAsJsonObject("modelo");
+            resolvedModelId = resolvedModel.has("id") ? resolvedModel.get("id").getAsInt() : null;
+        }
         
         // Crear el objeto Story
         LocalDateTime ahora = LocalDateTime.now();
@@ -79,7 +92,7 @@ public class StoryService {
             0, // ID se genera en la base de datos
             usuarioId,
             estanteriaId,
-            modeloUsadoId,
+            resolvedModelId,
             titulo.trim(),
             modoOrigen,
             descripcion != null ? descripcion.trim() : "",
@@ -145,13 +158,8 @@ public class StoryService {
                 result.add("configuracionIA", buildDefaultAIConfig(relatoId));
             }
 
-            JsonObject filesResult = UploadedFileDao.listByStory(relatoId);
-            if (filesResult.has("status") && filesResult.get("status").getAsInt() == 200
-                    && filesResult.has("archivos")) {
-                result.add("archivosFuente", filesResult.getAsJsonArray("archivos"));
-            } else {
-                result.add("archivosFuente", new JsonArray());
-            }
+            result.add("archivosFuente", extractFilesByOrigin(relatoId, "Subido"));
+            result.add("archivosExportados", extractFilesByOrigin(relatoId, "Exportado"));
         }
         
         return result;
@@ -217,15 +225,34 @@ public class StoryService {
             response.addProperty("status", 400);
             return response;
         }
+
+        String nextOriginMode = modoOrigen != null ? modoOrigen.trim() : relatoData.get("modoOrigen").getAsString();
+        Integer currentModelId = relatoData.has("modeloUsadoId")
+                ? relatoData.get("modeloUsadoId").getAsInt()
+                : null;
+        Integer nextModelId = modeloUsadoId != null ? modeloUsadoId : currentModelId;
+
+        if ("Seccion_Artificial".equals(nextOriginMode) || nextModelId != null) {
+            JsonObject modelResolution = SettingsService.resolveModeloIA(
+                    usuarioId,
+                    nextModelId,
+                    modeloUsadoId != null);
+            if (!modelResolution.has("status") || modelResolution.get("status").getAsInt() != 200) {
+                return modelResolution;
+            }
+
+            JsonObject resolvedModel = modelResolution.getAsJsonObject("modelo");
+            nextModelId = resolvedModel.has("id") ? resolvedModel.get("id").getAsInt() : null;
+        }
         
         // Crear objeto Story con los datos actualizados
         Story story = new Story(
             relatoId,
             usuarioId,
             estanteriaId,
-            modeloUsadoId,
+            nextModelId,
             titulo != null ? titulo.trim() : relatoData.get("titulo").getAsString(),
-            modoOrigen != null ? modoOrigen.trim() : relatoData.get("modoOrigen").getAsString(),
+            nextOriginMode,
             descripcion != null ? descripcion.trim() : relatoData.get("descripcion").getAsString(),
             LocalDateTime.parse(relatoData.get("fechaCreacion").getAsString().replace(" ", "T")),
             LocalDateTime.now() // Actualizar fecha de modificación
@@ -268,6 +295,11 @@ public class StoryService {
             return response;
         }
         
+        JsonObject cleanupFiles = deleteStoryFiles(relatoId, usuarioId);
+        if (cleanupFiles != null) {
+            return cleanupFiles;
+        }
+
         JsonObject deleteMessages = ChatDao.deleteByStory(relatoId);
         if (deleteMessages.has("status") && deleteMessages.get("status").getAsInt() != 200) {
             JsonObject response = new JsonObject();
@@ -365,6 +397,15 @@ public class StoryService {
             response.addProperty("Mensaje", "Formato de exportación inválido");
             response.addProperty("status", 400);
             return response;
+        }
+
+        JsonObject moderationResult = ModerationService.validateText(
+                normalizedContent,
+                usuarioId,
+                "No puedes exportar contenido con palabras indebidas o no aptas",
+                "Intento de exportacion bloqueada");
+        if (moderationResult != null) {
+            return moderationResult;
         }
 
         JsonObject currentStory = StoryDao.findById(relatoId);
@@ -550,6 +591,11 @@ public class StoryService {
                 return response;
             }
 
+            JsonObject quotaValidation = validateExportStorageQuota(userId, fileBytes.length);
+            if (quotaValidation != null) {
+                return quotaValidation;
+            }
+
             Path exportPath = Paths.get(EXPORT_UPLOAD_DIR);
             if (!Files.exists(exportPath)) {
                 Files.createDirectories(exportPath);
@@ -614,5 +660,97 @@ public class StoryService {
         }
 
         return sanitizedName;
+    }
+
+    private static JsonArray extractFilesByOrigin(int storyId, String origin) {
+        JsonObject filesResult = UploadedFileDao.listByStoryAndOrigin(storyId, origin);
+        if (filesResult.has("status") && filesResult.get("status").getAsInt() == 200
+                && filesResult.has("archivos")) {
+            return filesResult.getAsJsonArray("archivos");
+        }
+
+        return new JsonArray();
+    }
+
+    private static JsonObject deleteStoryFiles(int storyId, int userId) {
+        JsonObject filesResult = UploadedFileDao.listByStory(storyId);
+        if (!filesResult.has("status") || filesResult.get("status").getAsInt() != 200 || !filesResult.has("archivos")) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "No se pudieron obtener los archivos del relato");
+            response.addProperty("status", 500);
+            return response;
+        }
+
+        for (JsonElement element : filesResult.getAsJsonArray("archivos")) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+
+            JsonObject file = element.getAsJsonObject();
+            int fileId = file.get("id").getAsInt();
+
+            JsonObject unlinkFile = UploadedFileDao.unlinkFromStory(storyId, fileId);
+            if (!unlinkFile.has("status") || unlinkFile.get("status").getAsInt() != 200) {
+                return unlinkFile;
+            }
+
+            if (UploadedFileDao.countStoryLinks(fileId) > 0) {
+                continue;
+            }
+
+            JsonObject deleteFile = UploadedFileDao.deleteByUser(fileId, userId);
+            if (!deleteFile.has("status") || deleteFile.get("status").getAsInt() != 200) {
+                return deleteFile;
+            }
+
+            try {
+                if (file.has("rutaAlmacenamiento")) {
+                    Files.deleteIfExists(Paths.get(file.get("rutaAlmacenamiento").getAsString()));
+                }
+            } catch (Exception e) {
+                JsonObject response = new JsonObject();
+                response.addProperty("Mensaje", "Archivo eliminado de la base de datos, pero no del disco");
+                response.addProperty("status", 500);
+                return response;
+            }
+        }
+
+        return null;
+    }
+
+    private static JsonObject validateExportStorageQuota(int userId, long newFileBytes) {
+        JsonObject subscription = SettingsDao.getSuscripcionActiva(userId);
+        if (!subscription.has("status") || subscription.get("status").getAsInt() != 200) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "No fue posible validar el almacenamiento disponible");
+            response.addProperty("status", 500);
+            return response;
+        }
+
+        boolean unlimitedStorage = subscription.has("almacenamientoIlimitado")
+                && subscription.get("almacenamientoIlimitado").getAsBoolean();
+        if (unlimitedStorage) {
+            return null;
+        }
+
+        double storageLimitMb = subscription.has("limiteAlmacenamientoMb")
+                ? subscription.get("limiteAlmacenamientoMb").getAsDouble()
+                : 500d;
+        if (storageLimitMb <= 0) {
+            storageLimitMb = 500d;
+        }
+
+        long usedBytes = UploadedFileDao.sumBytesByUserAndOrigin(userId, "Exportado");
+        double nextUsageMb = (usedBytes + newFileBytes) / 1024d / 1024d;
+        if (nextUsageMb <= storageLimitMb) {
+            return null;
+        }
+
+        JsonObject response = new JsonObject();
+        response.addProperty("Mensaje", "Has superado la cuota disponible para guardar documentos en la biblioteca");
+        response.addProperty("status", 409);
+        response.addProperty("almacenamientoUsadoMb", Math.round(nextUsageMb * 100.0d) / 100.0d);
+        response.addProperty("limiteAlmacenamientoMb", storageLimitMb);
+        return response;
     }
 }

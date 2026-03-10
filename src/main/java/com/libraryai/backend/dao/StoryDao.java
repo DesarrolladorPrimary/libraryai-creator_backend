@@ -44,6 +44,12 @@ public class StoryDao {
             WHERE PK_RelatoID = ?
             """;
 
+    static String SQL_UPDATE_DESCRIPTION = """
+            UPDATE Relato
+            SET Descripcion = ?, FechaModificacion = ?
+            WHERE PK_RelatoID = ?
+            """;
+
     // Query para eliminar un relato
     static String SQL_DELETE = """
             DELETE FROM Relato WHERE PK_RelatoID = ?
@@ -257,6 +263,34 @@ public class StoryDao {
             response.addProperty("status", 500);
         }
         
+        return response;
+    }
+
+    public static JsonObject updateDescription(int relatoId, String descripcion) {
+        JsonObject response = new JsonObject();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(SQL_UPDATE_DESCRIPTION)) {
+
+            pstmt.setString(1, descripcion != null ? descripcion.trim() : "");
+            pstmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
+            pstmt.setInt(3, relatoId);
+
+            int filasAfectadas = pstmt.executeUpdate();
+
+            if (filasAfectadas > 0) {
+                response.addProperty("Mensaje", "Borrador del relato actualizado correctamente");
+                response.addProperty("status", 200);
+            } else {
+                response.addProperty("Mensaje", "No se pudo actualizar el borrador del relato");
+                response.addProperty("status", 400);
+            }
+
+        } catch (SQLException e) {
+            response.addProperty("Mensaje", "Error al actualizar borrador del relato: " + e.getMessage());
+            response.addProperty("status", 500);
+        }
+
         return response;
     }
 

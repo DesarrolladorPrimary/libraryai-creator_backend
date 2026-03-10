@@ -2,6 +2,7 @@ package com.libraryai.backend.routes;
 
 // Importamos los controladores
 import com.libraryai.backend.controller.UserController;
+import com.libraryai.backend.controller.LibraryController;
 import com.libraryai.backend.controller.SettingsController;
 import com.libraryai.backend.controller.ai.AiController;
 import com.libraryai.backend.controller.auth.LoginController;
@@ -108,6 +109,15 @@ public class Routes {
 
         router.delete("/api/v1/upload/relato",
                 auth.proteger(UploadController.eliminarArchivoRelato(), "Gratuito", "Premium"));
+
+        router.get("/api/v1/library/documents",
+                auth.proteger(LibraryController.listDocuments(), "Gratuito", "Premium"));
+
+        router.get("/api/v1/library/documents/download",
+                auth.proteger(LibraryController.downloadDocument(), "Gratuito", "Premium"));
+
+        router.delete("/api/v1/library/documents",
+                auth.proteger(LibraryController.deleteDocument(), "Gratuito", "Premium"));
 
         // ========== RUTAS DE ESTANTERÍAS ==========
         router.get("/api/v1/estanterias",

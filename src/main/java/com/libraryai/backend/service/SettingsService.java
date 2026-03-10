@@ -1,5 +1,7 @@
 package com.libraryai.backend.service;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.dao.SettingsDao;
 
@@ -36,6 +38,15 @@ public class SettingsService {
             return response;
         }
 
+        JsonObject moderationResult = ModerationService.validateText(
+                instruccion,
+                userId,
+                "La instrucción contiene contenido no permitido. Modifícala antes de guardarla.",
+                "Instrucción permanente bloqueada por moderación");
+        if (moderationResult != null) {
+            return moderationResult;
+        }
+
         return SettingsDao.updateInstruccionIA(userId, instruccion);
     }
 
@@ -69,6 +80,93 @@ public class SettingsService {
         
         String plan = suscripcion.get("plan").getAsString();
         return SettingsDao.getModelosPorPlan(plan);
+    }
+
+    /**
+     * Resuelve el modelo que Poly debe usar para el usuario.
+     * Si el modelo solicitado no está disponible y failIfUnavailable es false,
+     * cae al modelo activo permitido por plan.
+     */
+    public static JsonObject resolveModeloIA(int userId, Integer requestedModelId, boolean failIfUnavailable) {
+        JsonObject availableModels = getModeloDisponible(userId);
+        if (!availableModels.has("status") || availableModels.get("status").getAsInt() != 200) {
+            return availableModels;
+        }
+
+        JsonArray modelos = availableModels.has("modelos") && availableModels.get("modelos").isJsonArray()
+                ? availableModels.getAsJsonArray("modelos")
+                : new JsonArray();
+
+        if (modelos.size() == 0) {
+            JsonObject currentModel = SettingsDao.getVersionActual();
+            if (currentModel.has("status") && currentModel.get("status").getAsInt() == 200) {
+                JsonObject response = new JsonObject();
+                response.addProperty("status", 200);
+                response.add("modelo", currentModel);
+                response.add("modelos", modelos);
+                return response;
+            }
+
+            JsonObject response = new JsonObject();
+            response.addProperty("status", 404);
+            response.addProperty("Mensaje", "No hay modelos disponibles para tu plan");
+            return response;
+        }
+
+        JsonObject selectedModel = null;
+
+        if (requestedModelId != null) {
+            for (JsonElement item : modelos) {
+                if (!item.isJsonObject()) {
+                    continue;
+                }
+
+                JsonObject modelo = item.getAsJsonObject();
+                if (modelo.has("id") && modelo.get("id").getAsInt() == requestedModelId) {
+                    selectedModel = modelo;
+                    break;
+                }
+            }
+
+            if (selectedModel == null && failIfUnavailable) {
+                JsonObject response = new JsonObject();
+                response.addProperty("status", 403);
+                response.addProperty("Mensaje", "El modelo seleccionado no está disponible para tu plan");
+                return response;
+            }
+        }
+
+        if (selectedModel == null) {
+            JsonObject currentModel = SettingsDao.getVersionActual();
+            if (currentModel.has("status") && currentModel.get("status").getAsInt() == 200) {
+                if (currentModel.has("id")) {
+                    int currentModelId = currentModel.get("id").getAsInt();
+                    for (JsonElement item : modelos) {
+                        if (!item.isJsonObject()) {
+                            continue;
+                        }
+
+                        JsonObject modelo = item.getAsJsonObject();
+                        if (modelo.has("id") && modelo.get("id").getAsInt() == currentModelId) {
+                            selectedModel = modelo;
+                            break;
+                        }
+                    }
+                } else {
+                    selectedModel = currentModel;
+                }
+            }
+        }
+
+        if (selectedModel == null) {
+            selectedModel = modelos.get(0).getAsJsonObject();
+        }
+
+        JsonObject response = new JsonObject();
+        response.addProperty("status", 200);
+        response.add("modelo", selectedModel);
+        response.add("modelos", modelos);
+        return response;
     }
 
     /**

@@ -46,11 +46,9 @@ public class AiController {
                 
                 // Usa status del servicio o 200 por defecto.
                 int code = responseJson.has("status") ? responseJson.get("status").getAsInt() : 200;
-                if (code != 200 && code != 500) {
-                    code = 404;
+                if (code < 100 || code > 599) {
+                    code = 500;
                 }
-
-                responseJson.remove("status");
 
                 String response = responseJson.toString();
                 ApiResponse.send(exchange, response, code);

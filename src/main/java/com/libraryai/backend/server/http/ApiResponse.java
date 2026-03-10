@@ -59,6 +59,30 @@ public class ApiResponse {
     }
 
     /**
+     * Envía bytes arbitrarios con un content type específico.
+     */
+    public static void sendBytes(HttpExchange exchange, byte[] body, int statusCode, String contentType,
+            String contentDisposition) throws IOException {
+        byte[] bodyBytes = body == null ? new byte[0] : body;
+
+        exchange.getResponseHeaders().set("Content-Type", contentType);
+        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET ,POST, PUT, DELETE, OPTIONS");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+        if (contentDisposition != null && !contentDisposition.isBlank()) {
+            exchange.getResponseHeaders().set("Content-Disposition", contentDisposition);
+        }
+
+        exchange.sendResponseHeaders(statusCode, bodyBytes.length);
+
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(bodyBytes);
+            os.close();
+        }
+    }
+
+    /**
      * MÉTODO RÁPIDO: Enviar respuesta exitosa (200 OK)
      *
      * Usa este método cuando la operación fue exitosa.
