@@ -7,6 +7,8 @@ import com.libraryai.backend.config.DatabaseConnection;
 
 public class ShelfDao {
 
+        private static final String DUPLICATE_SHELF_MESSAGE = "Ya tienes una estantería con ese nombre";
+
         // language=sql
         private static String SQL_INSERT = """
                         INSERT INTO Estanteria(FK_UsuarioID, NombreCategoria) VALUES(?,?);
@@ -56,8 +58,14 @@ public class ShelfDao {
                         return responseJson;
                 } catch (SQLException e) {
                         e.printStackTrace();
+                        if (isDuplicateShelfError(e)) {
+                                responseJson.addProperty("status", 409);
+                                responseJson.addProperty("Mensaje", DUPLICATE_SHELF_MESSAGE);
+                                return responseJson;
+                        }
+
                         responseJson.addProperty("status", 500);
-                        responseJson.addProperty("Mensaje", "Error al crear estantería: " + e.getMessage());
+                        responseJson.addProperty("Mensaje", "No fue posible crear la estantería");
                         return responseJson;
                 }
         }
@@ -118,7 +126,13 @@ public class ShelfDao {
                 } catch (SQLException e) {
                         e.printStackTrace();
 
-                        response.addProperty("Mensaje", "Se produjo un error al actualizar el nombre de la estanteria. " + e.getMessage());
+                        if (isDuplicateShelfError(e)) {
+                                response.addProperty("Mensaje", DUPLICATE_SHELF_MESSAGE);
+                                response.addProperty("status", 409);
+                                return response;
+                        }
+
+                        response.addProperty("Mensaje", "No fue posible actualizar el nombre de la estantería");
                         response.addProperty("status", 500);
                         return response;
                 }
@@ -152,10 +166,22 @@ public class ShelfDao {
                 } catch (SQLException e) {
                         e.printStackTrace();
 
-                        response.addProperty("Mensaje", "Se produjo un error al eliminar la estanteria. " + e.getMessage());
+                        response.addProperty("Mensaje", "No fue posible eliminar la estantería");
                         response.addProperty("status", 500);
                         return response;
                 }
+        }
+
+        private static boolean isDuplicateShelfError(SQLException exception) {
+                String sqlState = exception.getSQLState();
+                String message = exception.getMessage();
+
+                if ("23000".equals(sqlState) || "23505".equals(sqlState)) {
+                        return true;
+                }
+
+                return message != null
+                                && message.toLowerCase().contains("duplicate entry");
         }
 
 

@@ -454,6 +454,13 @@ public class StoryService {
         Integer currentShelfId = storyData.has("estanteriaId") ? storyData.get("estanteriaId").getAsInt() : null;
         Integer nextShelfId = updateShelfAssignment ? estanteriaId : currentShelfId;
 
+        if (nextShelfId == null || nextShelfId <= 0) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "Debes asignar una estantería antes de convertir el relato en libro");
+            response.addProperty("status", 400);
+            return response;
+        }
+
         Story story = new Story(
                 relatoId,
                 usuarioId,
