@@ -26,6 +26,7 @@ public class ChatService {
 
     private static final int MAX_SOURCE_FILES_IN_PROMPT = 2;
     private static final String CANVAS_UPDATE_MESSAGE = "He actualizado el canvas con un nuevo borrador final.";
+    private static final String CANVAS_UPDATE_MESSAGE_VARIANT = "Añadí un avance nuevo al canvas para que revises el relato.";
 
     private static final class PolyResponsePayload {
         private final String chatMessage;
@@ -189,6 +190,7 @@ public class ChatService {
             JsonObject parametrosIA,
             JsonObject archivoContexto) {
         try {
+            String previousDraft = getStoryDraft(relatoId);
             PolyResponsePayload payload = buildFallbackPolyPayload(relatoId, usuarioId, mensajeUsuario, parametrosIA,
                     archivoContexto);
             String prompt = buildGeminiPrompt(relatoId, mensajeUsuario, archivoContexto);
@@ -211,7 +213,10 @@ public class ChatService {
             int siguienteOrden = getSiguienteOrden(relatoId);
             
             // Guardar la respuesta de Poly
-            ChatDao.save(relatoId, "Poly", sanitizeChatMessage(payload.chatMessage), siguienteOrden);
+            String chatMessage = payload.canvasDraft.isBlank()
+                    ? sanitizeChatMessage(payload.chatMessage)
+                    : buildCanvasUpdateMessage(payload.chatMessage, mensajeUsuario, previousDraft, payload.canvasDraft);
+            ChatDao.save(relatoId, "Poly", chatMessage, siguienteOrden);
 
             if (!payload.canvasDraft.isBlank()) {
                 StoryDao.updateDescription(relatoId, payload.canvasDraft);
@@ -259,6 +264,7 @@ public class ChatService {
             JsonArray mensajes = historyResponse.getAsJsonArray("mensajes");
             int fromIndex = Math.max(0, mensajes.size() - 6);
             prompt.append("Historial reciente:\n");
+            List<String> meaningfulHistory = new ArrayList<>();
 
             for (int index = fromIndex; index < mensajes.size(); index++) {
                 JsonElement item = mensajes.get(index);
@@ -267,11 +273,19 @@ public class ChatService {
                 }
 
                 JsonObject mensaje = item.getAsJsonObject();
-                prompt.append("- ")
-                        .append(mensaje.has("emisor") ? mensaje.get("emisor").getAsString() : "Sistema")
-                        .append(": ")
-                        .append(mensaje.has("contenido") ? mensaje.get("contenido").getAsString() : "")
-                        .append("\n");
+                String emisor = mensaje.has("emisor") ? mensaje.get("emisor").getAsString() : "Sistema";
+                String contenido = mensaje.has("contenido") ? mensaje.get("contenido").getAsString() : "";
+
+                if (isLowSignalHistoryMessage(emisor, contenido)) {
+                    continue;
+                }
+
+                meaningfulHistory.add("- " + emisor + ": " + contenido);
+            }
+
+            int startHistory = Math.max(0, meaningfulHistory.size() - 4);
+            for (int index = startHistory; index < meaningfulHistory.size(); index++) {
+                prompt.append(meaningfulHistory.get(index)).append("\n");
             }
         }
 
@@ -355,9 +369,12 @@ public class ChatService {
         instrucciones.append("[[/CHAT]]\n");
         instrucciones.append("Si todavia falta contexto, responde solo con el bloque [[CHAT]] y no incluyas [[CANVAS]]. ");
         instrucciones.append("Dentro de [[CANVAS]] no pongas encabezados, etiquetas ni explicaciones al usuario.");
+        instrucciones.append(" No repitas literalmente frases de confirmacion anteriores ni contestes con el mismo texto en mensajes consecutivos.");
+        instrucciones.append(" Si incluyes [[CHAT]], debe mencionar el avance concreto realizado y evitar formulas genericas repetidas.");
 
-        JsonObject effectiveSettings = buildEffectiveAISettings(relatoId, parametrosIA);
+        JsonObject effectiveSettings = buildEffectiveAISettings(relatoId, usuarioId, parametrosIA);
         String permanentInstruction = getPermanentInstruction(usuarioId);
+        boolean premiumUser = SettingsService.isPremiumUser(usuarioId);
 
         if (effectiveSettings.has("estiloEscritura")) {
             instrucciones.append("\nEstilo de escritura: ")
@@ -387,10 +404,17 @@ public class ChatService {
             instrucciones.append("\n\nInstruccion permanente del usuario:\n").append(permanentInstruction);
         }
 
+        if (!premiumUser) {
+            instrucciones.append(
+                    "\n\nLimitacion de plan Gratuito: mantén las respuestas compactas y prioriza avances breves.");
+            instrucciones.append(
+                    " Si generas [[CANVAS]], entrega un borrador corto y enfocado. No excedas aproximadamente 220 palabras en total.");
+        }
+
         return instrucciones.toString();
     }
 
-    private static JsonObject buildEffectiveAISettings(int relatoId, JsonObject parametrosIA) {
+    private static JsonObject buildEffectiveAISettings(int relatoId, int usuarioId, JsonObject parametrosIA) {
         JsonObject effectiveSettings = new JsonObject();
         JsonObject savedSettings = AIConfigurationDao.findByStoryId(relatoId);
         if (savedSettings.has("status") && savedSettings.get("status").getAsInt() == 200
@@ -411,6 +435,10 @@ public class ChatService {
                     effectiveSettings.add(key, parametrosIA.get(key));
                 }
             }
+        }
+
+        if (!SettingsService.isPremiumUser(usuarioId)) {
+            effectiveSettings.addProperty("longitudRespuesta", "Corta");
         }
 
         return effectiveSettings;
@@ -536,7 +564,7 @@ public class ChatService {
 
     private static PolyResponsePayload buildFallbackPolyPayload(int relatoId, int usuarioId, String mensajeUsuario,
             JsonObject parametrosIA, JsonObject archivoContexto) {
-        JsonObject effectiveSettings = buildEffectiveAISettings(relatoId, parametrosIA);
+        JsonObject effectiveSettings = buildEffectiveAISettings(relatoId, usuarioId, parametrosIA);
         String permanentInstruction = getPermanentInstruction(usuarioId);
         applyInstructionOverrides(effectiveSettings, permanentInstruction);
 
@@ -645,19 +673,50 @@ public class ChatService {
 
     private static boolean wantsStoryContinuation(String mensajeUsuario, String draft, String sourceHint) {
         String normalized = String.valueOf(mensajeUsuario == null ? "" : mensajeUsuario).trim().toLowerCase(Locale.ROOT);
-        if (!draft.isBlank() || !sourceHint.isBlank()) {
+        if (normalized.isBlank()) {
+            return false;
+        }
+
+        boolean explicitContinuationIntent = normalized.length() > 90
+                || normalized.contains("continua")
+                || normalized.contains("continuar")
+                || normalized.contains("sigue")
+                || normalized.contains("seguir")
+                || normalized.contains("escribe")
+                || normalized.contains("desarrolla")
+                || normalized.contains("desarrollar")
+                || normalized.contains("escena")
+                || normalized.contains("parrafo")
+                || normalized.contains("párrafo")
+                || normalized.contains("capitulo")
+                || normalized.contains("capítulo")
+                || normalized.contains("dialogo")
+                || normalized.contains("diálogo")
+                || normalized.contains("relato")
+                || normalized.contains("historia");
+
+        boolean likelyGuidanceIntent = normalized.endsWith("?")
+                || normalized.startsWith("que ")
+                || normalized.startsWith("qué ")
+                || normalized.startsWith("como ")
+                || normalized.startsWith("cómo ")
+                || normalized.startsWith("por que")
+                || normalized.startsWith("por qué")
+                || normalized.startsWith("ayudame a")
+                || normalized.startsWith("ayúdame a")
+                || normalized.startsWith("dame ideas")
+                || normalized.startsWith("que sugieres")
+                || normalized.startsWith("qué sugieres");
+
+        if (explicitContinuationIntent) {
             return true;
         }
 
-        return normalized.length() > 90
-                || normalized.contains("continua")
-                || normalized.contains("continuar")
-                || normalized.contains("escribe")
-                || normalized.contains("desarrolla")
-                || normalized.contains("escena")
-                || normalized.contains("parrafo")
-                || normalized.contains("capitulo")
-                || normalized.contains("dialogo");
+        if (!draft.isBlank() || !sourceHint.isBlank()) {
+            return !likelyGuidanceIntent && countWords(normalized) >= 3;
+        }
+
+        return false;
     }
 
     private static String buildGuidanceBody(String writingStyle, String userIdea, String sourceHint) {
@@ -821,6 +880,66 @@ public class ChatService {
         }
 
         return "La escena sostuvo un tono firme y continuo, suficiente para que el lector entrara de inmediato en el conflicto.";
+    }
+
+    private static boolean isLowSignalHistoryMessage(String emisor, String contenido) {
+        String normalizedSender = String.valueOf(emisor == null ? "" : emisor).trim();
+        String normalizedContent = String.valueOf(contenido == null ? "" : contenido).trim().toLowerCase(Locale.ROOT);
+
+        if (normalizedContent.isBlank()) {
+            return true;
+        }
+
+        if ("Sistema".equalsIgnoreCase(normalizedSender)
+                && normalizedContent.contains("no pude generar una respuesta")) {
+            return true;
+        }
+
+        if ("Poly".equalsIgnoreCase(normalizedSender)
+                && (normalizedContent.equals(CANVAS_UPDATE_MESSAGE.toLowerCase(Locale.ROOT))
+                        || normalizedContent.equals(CANVAS_UPDATE_MESSAGE_VARIANT.toLowerCase(Locale.ROOT))
+                        || normalizedContent.startsWith("he actualizado el canvas")
+                        || normalizedContent.startsWith("añadi un avance nuevo al canvas")
+                        || normalizedContent.startsWith("añadí un avance nuevo al canvas"))) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static String buildCanvasUpdateMessage(String chatMessage, String userMessage, String previousDraft,
+            String nextDraft) {
+        String normalizedChat = String.valueOf(chatMessage == null ? "" : chatMessage).trim();
+        if (!normalizedChat.isBlank()
+                && !normalizedChat.equalsIgnoreCase(CANVAS_UPDATE_MESSAGE)
+                && !normalizedChat.equalsIgnoreCase(CANVAS_UPDATE_MESSAGE_VARIANT)
+                && !normalizedChat.toLowerCase(Locale.ROOT).startsWith("he actualizado el canvas")) {
+            return sanitizeChatMessage(normalizedChat);
+        }
+
+        boolean hadDraft = previousDraft != null && !previousDraft.isBlank();
+        int previousWords = countWords(previousDraft);
+        int nextWords = countWords(nextDraft);
+        String normalizedUserMessage = String.valueOf(userMessage == null ? "" : userMessage).trim().toLowerCase(Locale.ROOT);
+
+        if (!hadDraft) {
+            return "Dejé un primer borrador en el canvas para que lo revises y me digas cómo seguir.";
+        }
+
+        if (normalizedUserMessage.contains("dialogo") || normalizedUserMessage.contains("diálogo")) {
+            return "Añadí un tramo nuevo al canvas con más énfasis en el diálogo y el conflicto.";
+        }
+
+        if (normalizedUserMessage.contains("continua") || normalizedUserMessage.contains("continuar")
+                || normalizedUserMessage.contains("sigue") || normalizedUserMessage.contains("seguir")) {
+            return "Continué el relato en el canvas con un tramo nuevo para mantener el avance de la escena.";
+        }
+
+        if (nextWords > previousWords) {
+            return "Extendí el borrador del canvas con un avance nuevo y más desarrollo narrativo.";
+        }
+
+        return "Actualicé el canvas con una nueva versión del borrador para que no repitamos el mismo tramo.";
     }
 
     private static String sanitizeTextWithInstruction(String response, String permanentInstruction) {

@@ -1,4 +1,4 @@
-﻿package com.libraryai.backend.server;
+package com.libraryai.backend.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -37,6 +37,7 @@ public class ServerMain {
 
         } catch (IOException e) {
             System.err.println("Error al iniciar el servidor: " + e.getMessage());
+            throw e;
         }
     }
 

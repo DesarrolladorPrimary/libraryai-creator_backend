@@ -16,6 +16,7 @@ import com.sun.net.httpserver.HttpHandler;
  * - GET /api/v1/settings/instruccion-ia?id=X  → obtiene instrucción permanente de Poly
  * - PUT /api/v1/settings/instruccion-ia?id=X  → actualiza instrucción permanente de Poly
  * - GET /api/v1/settings/suscripcion?id=X     → obtiene suscripción activa + datos del plan
+ * - PUT /api/v1/settings/suscripcion/simular?id=X → simula cambio de plan del usuario
  * - GET /api/v1/settings/version-ia?id=X      → obtiene versión actual del modelo IA (RF_32)
  * - GET /api/v1/settings/modelo-disponible?id=X → obtiene modelos disponibles según plan (RF_32)
  * - GET /api/v1/settings/sistema?id=X        → obtiene información completa del sistema (RF_32)
@@ -139,6 +140,60 @@ public class SettingsController {
                 return;
             }
             JsonObject response = SettingsService.getSuscripcion(id);
+
+            int statusCode = response.get("status").getAsInt();
+            response.remove("status");
+            ApiResponse.send(exchange, response.toString(), statusCode);
+        };
+    }
+
+    /**
+     * PUT /api/v1/settings/suscripcion/simular?id=X
+     * Body esperado: { "plan": "Premium" | "Gratuito" }
+     * Simula el cambio de plan sin pasarela de pago real.
+     */
+    public static HttpHandler simulateSuscripcion() {
+        return exchange -> {
+            System.out.println("Peticion de tipo: " + exchange.getRequestMethod() + " recibido\n");
+
+            ApiRequest request = new ApiRequest(exchange);
+            String body = request.readBody();
+
+            if (body == null || body.isBlank()) {
+                ApiResponse.error(exchange, 400, "El cuerpo de la petición está vacío");
+                return;
+            }
+
+            String parametros = exchange.getRequestURI().getQuery();
+            if (parametros == null || parametros.isEmpty()) {
+                ApiResponse.error(exchange, 400, "Se requiere el ID del usuario");
+                return;
+            }
+
+            JsonObject idJson = QueryParams.parseId(parametros);
+            int code = idJson.get("status").getAsInt();
+
+            if (code != 200) {
+                ApiResponse.error(exchange, code, idJson.get("Mensaje").getAsString());
+                return;
+            }
+
+            int id = idJson.get("id").getAsInt();
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
+
+            JsonObject json;
+            try {
+                json = new Gson().fromJson(body, JsonObject.class);
+            } catch (Exception e) {
+                ApiResponse.error(exchange, 400, "El cuerpo JSON es inválido");
+                return;
+            }
+
+            String plan = json != null && json.has("plan") ? json.get("plan").getAsString() : "";
+            JsonObject response = SettingsService.simulateSuscripcion(plan, id);
 
             int statusCode = response.get("status").getAsInt();
             response.remove("status");

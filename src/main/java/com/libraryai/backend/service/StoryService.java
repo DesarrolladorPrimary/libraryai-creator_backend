@@ -179,7 +179,8 @@ public class StoryService {
      */
     public static JsonObject updateStory(int relatoId, int usuarioId, String titulo, 
                                         String modoOrigen, String descripcion, 
-                                        Integer estanteriaId, Integer modeloUsadoId) {
+                                        Integer estanteriaId, Integer modeloUsadoId,
+                                        boolean updateShelfAssignment) {
         
         // Validar IDs
         if (relatoId <= 0 || usuarioId <= 0) {
@@ -226,10 +227,16 @@ public class StoryService {
             return response;
         }
 
+        String currentTitle = relatoData.get("titulo").getAsString();
+        String currentDescription = relatoData.get("descripcion").getAsString();
         String nextOriginMode = modoOrigen != null ? modoOrigen.trim() : relatoData.get("modoOrigen").getAsString();
+        Integer currentShelfId = relatoData.has("estanteriaId")
+                ? relatoData.get("estanteriaId").getAsInt()
+                : null;
         Integer currentModelId = relatoData.has("modeloUsadoId")
                 ? relatoData.get("modeloUsadoId").getAsInt()
                 : null;
+        Integer nextShelfId = updateShelfAssignment ? estanteriaId : currentShelfId;
         Integer nextModelId = modeloUsadoId != null ? modeloUsadoId : currentModelId;
 
         if ("Seccion_Artificial".equals(nextOriginMode) || nextModelId != null) {
@@ -245,20 +252,47 @@ public class StoryService {
             nextModelId = resolvedModel.has("id") ? resolvedModel.get("id").getAsInt() : null;
         }
         
+        String nextTitle = titulo != null ? titulo.trim() : currentTitle;
+        String nextDescription = descripcion != null ? descripcion.trim() : currentDescription;
+        boolean shouldCreateDraftVersion = descripcion != null && !nextDescription.equals(currentDescription);
+
         // Crear objeto Story con los datos actualizados
         Story story = new Story(
             relatoId,
             usuarioId,
-            estanteriaId,
+            nextShelfId,
             nextModelId,
-            titulo != null ? titulo.trim() : relatoData.get("titulo").getAsString(),
+            nextTitle,
             nextOriginMode,
-            descripcion != null ? descripcion.trim() : relatoData.get("descripcion").getAsString(),
+            nextDescription,
             LocalDateTime.parse(relatoData.get("fechaCreacion").getAsString().replace(" ", "T")),
             LocalDateTime.now() // Actualizar fecha de modificación
         );
-        
-        return StoryDao.update(story);
+
+        JsonObject updateResult = StoryDao.update(story);
+        if (!updateResult.has("status") || updateResult.get("status").getAsInt() != 200) {
+            return updateResult;
+        }
+
+        if (!shouldCreateDraftVersion) {
+            return updateResult;
+        }
+
+        JsonObject versionResult = StoryVersionDao.createVersion(
+                relatoId,
+                nextDescription,
+                buildDraftVersionNote(nextOriginMode),
+                false);
+
+        if (versionResult.has("status") && versionResult.get("status").getAsInt() == 201) {
+            updateResult.addProperty("version", versionResult.get("version").getAsInt());
+            updateResult.addProperty("Mensaje", "Relato actualizado y versionado correctamente");
+            return updateResult;
+        }
+
+        updateResult.addProperty("Mensaje", "Relato actualizado, pero no se pudo guardar la versión");
+        updateResult.add("detalleVersion", versionResult);
+        return updateResult;
     }
 
     /**
@@ -368,7 +402,8 @@ public class StoryService {
     }
 
     public static JsonObject exportStory(int relatoId, int usuarioId, String titulo, String contenido, String formato,
-            String exportFileName, String exportFileType, String exportFileBase64) {
+            Integer estanteriaId, boolean updateShelfAssignment, String exportFileName, String exportFileType,
+            String exportFileBase64) {
         JsonObject accessValidation = validateStoryOwnership(relatoId, usuarioId);
         if (accessValidation != null) {
             return accessValidation;
@@ -414,13 +449,18 @@ public class StoryService {
         }
 
         JsonObject storyData = currentStory.getAsJsonObject("relato");
+        String originMode = storyData.get("modoOrigen").getAsString();
+
+        Integer currentShelfId = storyData.has("estanteriaId") ? storyData.get("estanteriaId").getAsInt() : null;
+        Integer nextShelfId = updateShelfAssignment ? estanteriaId : currentShelfId;
+
         Story story = new Story(
                 relatoId,
                 usuarioId,
-                storyData.has("estanteriaId") ? storyData.get("estanteriaId").getAsInt() : null,
+                nextShelfId,
                 storyData.has("modeloUsadoId") ? storyData.get("modeloUsadoId").getAsInt() : null,
                 normalizedTitle,
-                storyData.get("modoOrigen").getAsString(),
+                originMode,
                 normalizedContent,
                 LocalDateTime.parse(storyData.get("fechaCreacion").getAsString().replace(" ", "T")),
                 LocalDateTime.now());
@@ -437,7 +477,7 @@ public class StoryService {
                 true);
 
         JsonObject response = new JsonObject();
-        response.addProperty("Mensaje", "Relato exportado y versionado correctamente");
+        response.addProperty("Mensaje", "Libro generado y versionado correctamente");
         response.addProperty("status", createVersion.get("status").getAsInt() == 201 ? 200 : createVersion.get("status").getAsInt());
         if (createVersion.has("version")) {
             response.addProperty("version", createVersion.get("version").getAsInt());
@@ -448,10 +488,10 @@ public class StoryService {
         if (exportFileResult != null) {
             if (exportFileResult.get("status").getAsInt() == 201) {
                 response.addProperty("archivoExportadoId", exportFileResult.get("id").getAsInt());
-                response.addProperty("Mensaje", "Relato exportado, versionado y archivo registrado correctamente");
+                response.addProperty("Mensaje", "Libro generado, versionado y archivo registrado correctamente");
             } else {
                 response.addProperty("Mensaje",
-                        "Relato exportado y versionado, pero no se pudo registrar el archivo exportado");
+                        "Libro generado y versionado, pero no se pudo registrar el archivo exportado");
                 response.add("detalleArchivo", exportFileResult);
             }
         }
@@ -522,6 +562,18 @@ public class StoryService {
         }
 
         return null;
+    }
+
+    private static String buildDraftVersionNote(String originMode) {
+        if ("Seccion_Artificial".equals(originMode)) {
+            return "Guardado de borrador desde Poly";
+        }
+
+        if ("Seccion_Creativa".equals(originMode)) {
+            return "Guardado de borrador desde Creativo";
+        }
+
+        return "Guardado de borrador";
     }
 
     private static JsonObject buildDefaultAIConfig(int storyId) {

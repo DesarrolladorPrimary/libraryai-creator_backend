@@ -43,6 +43,16 @@ public class ShelfController {
             }
 
             JsonArray response = ShelfService.obtenerEstanterias(usuarioId);
+            if (response.size() == 1 && response.get(0).isJsonObject()) {
+                JsonObject maybeError = response.get(0).getAsJsonObject();
+                if (maybeError.has("status") && maybeError.get("status").getAsInt() >= 400) {
+                    int status = maybeError.get("status").getAsInt();
+                    maybeError.remove("status");
+                    ApiResponse.send(exchange, maybeError.toString(), status);
+                    return;
+                }
+            }
+
             ApiResponse.send(exchange, response.toString(), 200);
         };
     }

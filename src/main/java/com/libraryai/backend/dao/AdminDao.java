@@ -84,7 +84,7 @@ public class AdminDao {
                     AND FK_PlanID = (
                         SELECT PK_PlanID
                         FROM PlanSuscripcion
-                        WHERE NombrePlan = 'Plan Premium'
+                        WHERE LOWER(NombrePlan) LIKE '%premium%'
                         LIMIT 1
                     )
                 ) AS UsuariosPremium,
@@ -348,6 +348,8 @@ public class AdminDao {
                 payment.addProperty("Monto", rs.getBigDecimal("Monto"));
                 payment.addProperty("FechaPago", rs.getTimestamp("FechaPago").toString());
                 payment.addProperty("EstadoPago", rs.getString("EstadoPago"));
+                payment.addProperty("Simulado", (rs.getString("Referencia") != null
+                        && rs.getString("Referencia").startsWith("SIM-")));
                 payments.add(payment);
             }
         } catch (SQLException e) {

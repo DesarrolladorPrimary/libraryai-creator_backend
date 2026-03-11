@@ -196,7 +196,8 @@ public class StoryController {
                 String titulo = storyData.has("titulo") ? storyData.get("titulo").getAsString() : null;
                 String modoOrigen = storyData.has("modoOrigen") ? storyData.get("modoOrigen").getAsString() : null;
                 String descripcion = storyData.has("descripcion") ? storyData.get("descripcion").getAsString() : null;
-                Integer estanteriaId = storyData.has("estanteriaId") && !storyData.get("estanteriaId").isJsonNull() ? 
+                boolean hasShelfField = storyData.has("estanteriaId");
+                Integer estanteriaId = hasShelfField && !storyData.get("estanteriaId").isJsonNull() ? 
                     storyData.get("estanteriaId").getAsInt() : null;
                 Integer modeloUsadoId = storyData.has("modeloUsadoId") && !storyData.get("modeloUsadoId").isJsonNull() ? 
                     storyData.get("modeloUsadoId").getAsInt() : null;
@@ -214,7 +215,7 @@ public class StoryController {
                 
                 // Actualizar relato
                 JsonObject response = StoryService.updateStory(relatoId, usuarioId, titulo, modoOrigen, 
-                    descripcion, estanteriaId, modeloUsadoId);
+                    descripcion, estanteriaId, modeloUsadoId, hasShelfField);
                 int statusCode = response.get("status").getAsInt();
                 
                 ApiResponse.send(exchange, response.toString(), statusCode);
@@ -422,6 +423,10 @@ public class StoryController {
                 String format = payload != null && payload.has("formato")
                         ? payload.get("formato").getAsString()
                         : null;
+                boolean hasShelfField = payload != null && payload.has("estanteriaId");
+                Integer shelfId = hasShelfField && !payload.get("estanteriaId").isJsonNull()
+                        ? payload.get("estanteriaId").getAsInt()
+                        : null;
                 String fileName = payload != null && payload.has("nombreArchivo") && !payload.get("nombreArchivo").isJsonNull()
                         ? payload.get("nombreArchivo").getAsString()
                         : null;
@@ -433,7 +438,7 @@ public class StoryController {
                         : null;
 
                 JsonObject response = StoryService.exportStory(relatoId, usuarioId, title, content, format,
-                        fileName, fileType, fileBase64);
+                        shelfId, hasShelfField, fileName, fileType, fileBase64);
                 ApiResponse.send(exchange, response.toString(), response.get("status").getAsInt());
 
             } catch (Exception e) {

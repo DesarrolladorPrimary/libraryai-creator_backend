@@ -1,12 +1,19 @@
 package com.libraryai.backend.controller.ai;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.server.http.ApiRequest;
 import com.libraryai.backend.server.http.ApiResponse;
+import com.libraryai.backend.service.SettingsService;
 import com.libraryai.backend.service.ai.GeminiService;
+import com.libraryai.backend.util.JwtUtil;
 import com.sun.net.httpserver.HttpHandler;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Handlers HTTP para funciones de IA.
@@ -41,8 +48,19 @@ public class AiController {
                     instrucciones = json.get("instrucciones").getAsString();
                 }
 
+                int usuarioId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
+                if (usuarioId <= 0) {
+                    ApiResponse.error(exchange, 401, "Usuario no autenticado");
+                    return;
+                }
+
+                String effectiveInstructions = buildPlanAwareInstructions(usuarioId, instrucciones);
+
                 // Ejecuta la generación y obtiene respuesta.
-                JsonObject responseJson = GeminiService.generateText(mensaje, instrucciones);
+                JsonObject responseJson = GeminiService.generateText(
+                        mensaje,
+                        effectiveInstructions,
+                        buildModelCandidates(usuarioId));
                 
                 // Usa status del servicio o 200 por defecto.
                 int code = responseJson.has("status") ? responseJson.get("status").getAsInt() : 200;
@@ -61,6 +79,67 @@ public class AiController {
             }
 
         };
+    }
+
+    private static int getUserIdFromToken(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return -1;
+        }
+
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+        JsonObject tokenInfo = JwtUtil.validateToken(token);
+
+        if (tokenInfo.has("Mensaje") || !tokenInfo.has("Id")) {
+            return -1;
+        }
+
+        return tokenInfo.get("Id").getAsInt();
+    }
+
+    private static String buildPlanAwareInstructions(int usuarioId, String instruccionesBase) {
+        StringBuilder instructions = new StringBuilder();
+
+        if (instruccionesBase != null && !instruccionesBase.trim().isEmpty()) {
+            instructions.append(instruccionesBase.trim());
+        }
+
+        if (!SettingsService.isPremiumUser(usuarioId)) {
+            if (instructions.length() > 0) {
+                instructions.append("\n\n");
+            }
+
+            instructions.append(
+                    "Limitacion de plan Gratuito: responde de forma breve y concreta. No superes aproximadamente 180 palabras y evita desarrollos extensos.");
+        }
+
+        return instructions.toString();
+    }
+
+    private static List<String> buildModelCandidates(int usuarioId) {
+        JsonObject availableModels = SettingsService.getModeloDisponible(usuarioId);
+        List<String> candidates = new ArrayList<>();
+
+        if (!availableModels.has("status") || availableModels.get("status").getAsInt() != 200
+                || !availableModels.has("modelos")) {
+            return candidates;
+        }
+
+        JsonArray modelos = availableModels.getAsJsonArray("modelos");
+        for (JsonElement item : modelos) {
+            if (!item.isJsonObject()) {
+                continue;
+            }
+
+            JsonObject modelo = item.getAsJsonObject();
+            if (modelo.has("nombre")) {
+                String name = modelo.get("nombre").getAsString().trim();
+                if (!name.isBlank() && !candidates.contains(name)) {
+                    candidates.add(name);
+                }
+            }
+        }
+
+        return candidates;
     }
 
 }

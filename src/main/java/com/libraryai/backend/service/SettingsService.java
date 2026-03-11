@@ -4,6 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.dao.SettingsDao;
+import com.libraryai.backend.dao.UserDao;
+import com.libraryai.backend.util.JwtUtil;
 
 /**
  * SETTINGSSERVICE - Lógica de negocio para configuraciones
@@ -55,6 +57,51 @@ public class SettingsService {
      */
     public static JsonObject getSuscripcion(int userId) {
         return SettingsDao.getSuscripcionActiva(userId);
+    }
+
+    public static String getNormalizedPlanName(int userId) {
+        JsonObject subscription = getSuscripcion(userId);
+
+        if (!subscription.has("status") || subscription.get("status").getAsInt() != 200) {
+            return "Gratuito";
+        }
+
+        String plan = subscription.has("plan") ? subscription.get("plan").getAsString() : "Gratuito";
+        return plan == null || plan.isBlank() ? "Gratuito" : plan.trim();
+    }
+
+    public static boolean isPremiumUser(int userId) {
+        return "Premium".equalsIgnoreCase(getNormalizedPlanName(userId));
+    }
+
+    public static JsonObject simulateSuscripcion(String plan, int userId) {
+        JsonObject response = new JsonObject();
+
+        if (plan == null || plan.trim().isEmpty()) {
+            response.addProperty("status", 400);
+            response.addProperty("Mensaje", "Debes indicar el plan a simular");
+            return response;
+        }
+
+        JsonObject result = SettingsDao.simulateSubscriptionChange(userId, plan.trim());
+        if (!result.has("status") || result.get("status").getAsInt() != 200) {
+            return result;
+        }
+
+        JsonObject user = UserDao.findById(userId);
+        if (user.has("status") && user.get("status").getAsInt() == 200
+                && user.has("Correo") && user.has("Rol")) {
+            String token = JwtUtil.generateUserToken(
+                    user.get("Correo").getAsString(),
+                    user.get("Rol").getAsString(),
+                    userId);
+
+            if (token != null && !token.isBlank()) {
+                result.addProperty("Token", token);
+            }
+        }
+
+        return result;
     }
 
     /**
