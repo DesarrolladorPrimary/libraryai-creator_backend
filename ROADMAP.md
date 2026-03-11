@@ -1,573 +1,308 @@
-# 🗺 ROADMAP - Library Creator (Proyecto Completo)
+# ROADMAP - Library Creator (Proyecto Completo)
 
-> **Estado Actual:** Desarrollo activo (frontend + backend)  
-> **Última Actualización:** 1 Marzo 2026  
-> **Versión:** v3.0 - Roadmap unificado del proyecto
-
----
-
-## 📌 Alcance del Roadmap
-
-Este documento ahora funciona como **roadmap único del proyecto completo**.
-
-Incluye:
-- Backend (API, seguridad, datos, IA y servicios)
-- Frontend (auth, feed, settings, biblioteca y experiencia de usuario)
-
-Su objetivo es dejar claro:
-- qué ya existe y está funcional,
-- qué está en estado MVP o prototipo,
-- y qué sigue pendiente por implementar.
+> **Estado actual:** MVP funcional en frontend + backend  
+> **Última actualización:** 10 Marzo 2026  
+> **Versión:** v3.1
 
 ---
 
-## 📊 Resumen de Progreso
+## Alcance del roadmap
 
-| Módulo | Estado | Progreso | Última Actualización |
-|---------|--------|----------|---------------------|
-| 🔧 Infraestructura | ✅ Completado | 100% | Ene 2026 |
-| 👤 Usuarios | ✅ Completado | 100% | Ene 2026 |
-|  Autenticación | ✅ Completado | 100% | Feb 2026 |
-| 📧 Correo/Verificación | ✅ Completado | 100% | Feb 2026 |
-| 🤖 IA (Gemini) | ✅ Completado | 100% | Ene 2026 |
-| 📚 Relatos | 🔄 MVP Funcional | 85% | Mar 2026 |
-| 💬 Chat | 🔄 MVP Funcional | 80% | Mar 2026 |
-| 🖥 Frontend Base (Auth/UI) | 🔄 MVP Funcional | 85% | Mar 2026 |
-| ⚙ Frontend App (Feed/Settings/Biblioteca) | 🔄 MVP Funcional | 80% | Mar 2026 |
-|  Frontend Creativo/Admin | 🔄 En Prototipo | 35% | Mar 2026 |
-|  Archivos |  Planeado | 0% | - |
-| 💳 Suscripciones |  Planeado | 0% | - |
-| 🔒 Roles Avanzados | ✅ Completado | 100% | Feb 2026 |
+Este roadmap cubre el estado real del proyecto completo:
+- Backend: API, seguridad, base de datos, IA y servicios
+- Frontend: auth, feed, settings, biblioteca, Poly, Creativo y admin
+
+Su función es evidenciar:
+- qué ya existe y está operativo,
+- qué está en estado MVP funcional,
+- y qué sigue faltando para cerrar producto.
 
 ---
 
-## 🎯 Módulos y Tareas Detalladas
+## Reglas de producto ya fijadas
 
-### 🔧 MÓDULO 1: INFRAESTRUCTURA ✅
-
-**Estado:** `COMPLETADO`  
-**Responsable:** Backend Team  
-**Fecha de Inicio:** 01 Ene 2026  
-**Fecha de Finalización:** 15 Ene 2026
-
-#### ✅ Tareas Completadas:
-- [x] **SER-001:** Servidor HTTP con sockets TCP (sin frameworks)
-- [x] **SER-002:** Sistema de Router personalizado
-- [x] **SER-003:** Clases ApiRequest y ApiResponse para manejo HTTP
-- [x] **SER-004:** Conexión a MySQL (DatabaseConnection)
-- [x] **SER-005:** Variables de entorno con dotenv
-- [x] **SER-006:** Middleware básico de logging
-- [x] **SER-007:** Manejo de errores centralizado
-- [x] **SER-008:** Soporte para rutas dinámicas en el router
-
-####  Archivos Clave:
-- `server/ServerMain.java`
-- `server/http/ApiRequest.java`
-- `server/http/ApiResponse.java`
-- `config/DatabaseConnection.java`
+- **Relato = borrador editable**
+- **Libro = resultado final convertido/exportado desde Biblioteca**
+- **Poly y Creativo generan y editan borradores**
+- **Biblioteca es el punto de conversión a libro y descarga final**
+- **Suscripciones y pagos son simulados en base de datos; no hay pasarela real en esta fase**
 
 ---
 
-### 👤 MÓDULO 2: USUARIOS ✅
+## Resumen de progreso
 
-**Estado:** `COMPLETADO`  
-**Responsable:** Backend Team  
-**Fecha de Inicio:** 10 Ene 2026  
-**Fecha de Finalización:** 20 Ene 2026
-
-#### ✅ Tareas Completadas:
-- [x] **USR-001:** Modelo Usuario (POJO completo)
-- [x] **USR-002:** UsuarioDao - CRUD completo
-- [x] **USR-003:** UserController - Endpoints REST
-- [x] **USR-004:** UserService - Lógica de negocio
-- [x] **USR-005:** Validación de datos de entrada
-- [x] **USR-006:** Manejo de errores específicos
-- [x] **USR-007:** Asignación automática de roles
-
-####  Archivos Clave:
-- `models/User.java`
-- `dao/UserDao.java`
-- `controller/UserController.java`
-- `service/UserService.java`
-
-####  Endpoints Implementados:
-- `GET /api/v1/usuarios` - Listar usuarios
-- `GET /api/v1/usuarios/id?id={id}` - Obtener usuario
-- `POST /api/v1/usuarios` - Crear usuario
-- `PUT /api/v1/usuarios?id={id}` - Actualizar usuario
-- `PUT /api/v1/usuarios/campo?id={id}` - Actualizar un campo específico
-- `DELETE /api/v1/usuarios/id?id={id}` - Eliminar usuario
+| Módulo | Estado | Progreso | Nota |
+|--------|--------|----------|------|
+| Infraestructura | ✅ Completado | 100% | Servidor, router, DB, dotenv y rutas dinámicas |
+| Usuarios | ✅ Completado | 100% | CRUD, roles base y validaciones |
+| Autenticación y seguridad | ✅ Completado | 100% | JWT, recuperación, guards y validaciones |
+| Correo y verificación | ✅ Completado | 100% | Verificación y recuperación por correo |
+| IA base (Gemini) | 🔄 MVP funcional | 90% | Integrada y operativa, aún requiere más QA de calidad |
+| Relatos | 🔄 MVP funcional | 90% | CRUD, guardado, versionado y biblioteca |
+| Chat / Poly | 🔄 MVP funcional | 85% | Chat persistente, archivos fuente y parámetros por relato |
+| Archivos / Biblioteca | 🔄 MVP funcional | 80% | Upload, descarga, exportación y organización |
+| Suscripciones simuladas | 🔄 MVP funcional | 70% | Cambio Gratuito/Premium simulado en BD |
+| Frontend base (Auth/UI) | 🔄 MVP funcional | 90% | Auth, sesión, idioma base y estados principales |
+| Frontend app (Feed/Settings/Biblioteca) | 🔄 MVP funcional | 90% | Perfil, plan, estanterías, biblioteca y guardado |
+| Frontend Poly / Creativo / Admin | 🔄 MVP funcional | 80% | Flujos reales conectados, falta pulido y pruebas |
+| Testing / QA | ⏳ Pendiente fuerte | 20% | Compilación validada, falta suite real |
 
 ---
 
-###  MÓDULO 3: AUTENTICACIÓN Y SEGURIDAD ✅
+## Estado por módulo
 
-**Estado:** `COMPLETADO`  
-**Responsable:** Backend Team  
-**Fecha de Inicio:** 15 Ene 2026  
-**Fecha de Finalización:** 27 Feb 2026
+### 1. Infraestructura
 
-#### ✅ Tareas Completadas:
-- [x] **AUTH-001:** LoginController + LoginService + LoginDao
-- [x] **AUTH-002:** Generación de tokens JWT (JwtUtil)
-- [x] **AUTH-003:** Validación de tokens JWT
-- [x] **AUTH-004:** Hash de contraseñas con BCrypt
-- [x] **AUTH-005:** Integración de roles en JWT
-- [x] **AUTH-006:** Middleware de autenticación (AuthMiddleware)
-- [x] **AUTH-007:** Verificación de correo al registro/login
-- [x] **AUTH-008:** Sistema de recuperación de contraseña
-- [x] **AUTH-009:** Tokens de acceso con expiración
-- [x] **AUTH-010:** Manejo de sesiones seguras
-- [x] **AUTH-011:** Validaciones reforzadas de credenciales y contraseñas
+**Estado:** `COMPLETADO`
 
-####  Archivos Clave:
-- `controller/auth/LoginController.java`
-- `service/auth/LoginService.java`
-- `dao/auth/LoginDao.java`
-- `util/JwtUtil.java`
-- `middleware/AuthMiddleware.java`
-- `service/EmailService.java`
-- `dao/auth/RecuperacionDao.java`
-- `service/auth/RecuperacionService.java`
-- `controller/auth/RecuperacionController.java`
+#### Ya implementado
+- Servidor HTTP propio con sockets TCP
+- Router personalizado con soporte de rutas dinámicas
+- `ApiRequest` y `ApiResponse`
+- Conexión MySQL con variables de entorno
+- Middleware base y manejo de errores
 
-####  Endpoints Implementados:
-- `POST /api/v1/login` - Login de usuarios
-- `POST /api/v1/recuperar` - Solicitar recuperación
-- `GET /api/v1/recuperar/validar` - Validar token
-- `PUT /api/v1/recuperar/nueva` - Nueva contraseña
+#### Pendiente técnico
+- Health checks
+- Rate limiting
+- Logs estructurados
+- Pool de conexiones
 
 ---
 
-### 🔒 MÓDULO 4: ROLES Y PERMISOS ✅
+### 2. Usuarios, Auth, Roles y Correo
 
-**Estado:** `COMPLETADO`  
-**Responsable:** Backend Team  
-**Fecha de Inicio:** 20 Ene 2026  
-**Fecha de Finalización:** 25 Feb 2026
+**Estado:** `COMPLETADO`
 
-#### ✅ Tareas Completadas:
-- [x] **ROL-001:** Modelo Rol y Permiso
-- [x] **ROL-002:** RolDao y PermisoDao
-- [x] **ROL-003:** Sistema de asignación de roles
-- [x] **ROL-004:** Verificación de permisos por rol
-- [x] **ROL-005:** Integración con JWT
-- [x] **ROL-006:** Roles por defecto (Admin, Usuario, Premium)
+#### Ya implementado
+- Registro, login y recuperación de contraseña
+- Verificación de correo
+- JWT con roles
+- Roles base: Gratuito, Premium y Admin
+- Guards y validaciones más robustas
+- Cambio de contraseña y eliminación de cuenta
 
-####  Archivos Clave:
-- `models/Rol.java`
-- `models/Permiso.java`
-- `dao/RolDao.java`
-- `dao/PermisoDao.java`
-- `dao/UserRoleDao.java`
+#### Pendiente técnico
+- Mejoras de QA y pruebas automáticas
+- Ajustes finos de mensajes y estados visuales
 
 ---
 
-### 📧 MÓDULO 5: CORREO Y VERIFICACIÓN ✅
+### 3. IA base (Gemini)
 
-**Estado:** `COMPLETADO`  
-**Responsable:** Backend Team  
-**Fecha de Inicio:** 01 Feb 2026  
-**Fecha de Finalización:** 27 Feb 2026
+**Estado:** `MVP FUNCIONAL`
 
-#### ✅ Tareas Completadas:
-- [x] **EMAIL-001:** Configuración SMTP con Gmail
-- [x] **EMAIL-002:** EmailService con plantillas HTML
-- [x] **EMAIL-003:** Verificación de correo al registro
-- [x] **EMAIL-004:** Verificación de correo al login
-- [x] **EMAIL-005:** Recuperación de contraseña
-- [x] **EMAIL-006:** Tokens únicos con expiración
-- [x] **EMAIL-007:** Manejo de errores de envío
-- [x] **EMAIL-008:** Logging de correos enviados
+#### Ya implementado
+- Cliente Gemini configurado desde entorno
+- Integración real en servicios de IA
+- Uso desde `Poly` y ayudas del creador manual
+- Configuración persistente por relato e instrucciones permanentes del usuario
+- Fallback controlado cuando Gemini falla
 
-####  Archivos Clave:
-- `service/EmailService.java`
-- `dao/auth/RecuperacionDao.java`
-- `models/AccessToken.java`
+#### Falta por cerrar
+- Afinar calidad de prompts y evitar repeticiones
+- Validación repetible de calidad en casos reales
+- Mejor trazabilidad cuando cae al fallback
 
 ---
 
-### 🤖 MÓDULO 6: INTELIGENCIA ARTIFICIAL ✅
+### 4. Relatos
 
-**Estado:** `COMPLETADO`  
-**Responsable:** Backend Team  
-**Fecha de Inicio:** 10 Ene 2026  
-**Fecha de Finalización:** 20 Ene 2026
+**Estado:** `MVP FUNCIONAL`
 
-#### ✅ Tareas Completadas:
-- [x] **AI-001:** Cliente para Google Gemini API
-- [x] **AI-002:** GeminiService para generación de texto
-- [x] **AI-003:** AiController con endpoints
-- [x] **AI-004:** Configuración de parámetros de IA
-- [x] **AI-005:** Manejo de errores y rate limiting
-- [x] **AI-006:** Integración con sistema de usuarios
+#### Ya implementado
+- CRUD completo de relatos
+- Relatos por usuario con control de ownership
+- Relación con estanterías
+- Guardado desde Poly y Creativo
+- Versionado en `RelatoVersion` al guardar contenido y exportar
+- Conversión desde borrador a libro desde biblioteca
 
-####  Archivos Clave:
-- `ai/GeminiAI.java`
-- `service/ai/GeminiService.java`
-- `controller/ai/AiController.java`
-
-####  Endpoints Implementados:
-- `POST /api/v1/generar-historias` - Generación de historias con Gemini
+#### Falta por cerrar
+- Búsqueda y filtrado real
+- Categorización
+- Historial visible de versiones y restauración
+- QA más fuerte sobre contratos
 
 ---
 
-### 📚 MÓDULO 7: RELATOS Y CONTENIDO 🔄
+### 5. Chat / Poly
 
-**Estado:** `MVP FUNCIONAL`  
-**Responsable:** Backend Team  
-**Fecha de Inicio:** 20 Feb 2026  
-**Fecha Estimada de Finalización:** 20 Mar 2026
+**Estado:** `MVP FUNCIONAL`
 
-#### ✅ Tareas Completadas:
-- [x] **REL-001:** Modelo Relato
-- [x] **REL-002:** RelatoDao con CRUD operativo
-- [x] **REL-003:** Estructura de base de datos
-- [x] **REL-004:** RelatoService - Lógica de negocio
-- [x] **REL-005:** RelatoController - Endpoints REST
-- [x] **REL-006:** Seguridad por usuario vía JWT en operaciones críticas
+#### Ya implementado
+- Crear, abrir, renombrar y eliminar chats
+- Modelo `1 relato = 1 chat`
+- Persistencia de mensajes en base de datos
+- Parámetros IA por relato
+- Carga de archivos fuente al contexto
+- Guardado del borrador y envío a biblioteca
+- Conversión final a libro desde biblioteca, no desde el canvas
 
-####  Tareas Pendientes:
-- [ ] **REL-007:** Versionamiento de relatos
-- [ ] **REL-008:** Búsqueda y filtrado
-- [ ] **REL-009:** Categorización
-- [ ] **REL-010:** Refinar contratos para frontend y documentación final
-
-####  Archivos Clave:
-- `models/Relato.java`
-- `dao/RelatoDao.java`
-- `service/StoryService.java`
-- `controller/StoryController.java`
-- `models/RelatoVersion.java` (pendiente)
+#### Falta por cerrar
+- QA end-to-end con Gemini real en varios escenarios
+- Mejor gestión visual de múltiples archivos fuente
+- Pulido de UX en estados de error/carga
+- Ajuste fino de prompts y continuidad narrativa
 
 ---
 
-### 💬 MÓDULO 8: CHAT Y MENSAJES 🔄
+### 6. Archivos y Biblioteca
 
-**Estado:** `MVP FUNCIONAL`  
-**Responsable:** Backend Team  
-**Fecha de Inicio:** 25 Feb 2026  
-**Fecha Estimada de Finalización:** 25 Mar 2026
+**Estado:** `MVP FUNCIONAL`
 
-#### ✅ Tareas Completadas:
-- [x] **CHAT-001:** Estructura de base de datos
-- [x] **CHAT-002:** Modelo MensajeChat
-- [x] **CHAT-003:** ChatDao operativo
-- [x] **CHAT-004:** ChatService - Gestión de conversaciones
-- [x] **CHAT-005:** ChatController - Endpoints REST
-- [x] **CHAT-006:** Persistencia básica de conversaciones
-- [x] **CHAT-007:** Seguridad por usuario vía JWT en operaciones críticas
+#### Ya implementado
+- `ArchivoSubido` y relaciones con relatos
+- Subida de archivos fuente para IA
+- Descarga y eliminación de documentos exportados
+- Biblioteca separando `Borradores` y `Libros`
+- Estanterías con crear, listar, renombrar y eliminar
+- Selección de estantería al convertir un borrador en libro
+- Exportación final desde biblioteca
 
-####  Tareas Pendientes:
-- [ ] **CHAT-008:** Historial de chat más completo
-- [ ] **CHAT-009:** Contexto de conversación extendido
-- [ ] **CHAT-010:** Integración más profunda con Gemini
-- [ ] **CHAT-011:** Refinar contratos para frontend y documentación final
-
-####  Archivos Clave:
-- `models/MensajeChat.java`
-- `dao/chats/ChatDao.java`
-- `service/chats/ChatService.java`
-- `controller/chats/ChatController.java`
+#### Falta por cerrar
+- Mejor visualización/gestión de varios archivos fuente
+- Persistencia total y validación final de todos los formatos exportados
+- Más pruebas sobre cuota por almacenamiento
+- Pulido de la UI de biblioteca
 
 ---
 
-###  MÓDULO 9: ARCHIVOS Y ALMACENAMIENTO 
+### 7. Suscripciones simuladas
 
-**Estado:** `PLANEADO`  
-**Prioridad:** Media  
-**Fecha Estimada de Inicio:** 25 Mar 2026  
-**Fecha Estimada de Finalización:** 15 Abr 2026
+**Estado:** `MVP FUNCIONAL`
 
-####  Tareas Pendientes:
-- [ ] **FILE-001:** Modelo ArchivoSubido
-- [ ] **FILE-002:** ArchivoDao - CRUD de metadatos
-- [ ] **FILE-003:** FileService - Subida/descarga
-- [ ] **FILE-004:** FileController - Endpoints
-- [ ] **FILE-005:** Límites por plan de suscripción
-- [ ] **FILE-006:** Validación de tipos de archivo
-- [ ] **FILE-007:** Almacenamiento físico
-- [ ] **FILE-008:** Exportación PDF/DOCX
+#### Ya implementado
+- Visualización de plan actual
+- Cambio simulado `Gratuito -> Premium -> Gratuito`
+- Persistencia en BD de `Suscripcion`, `Pago` y `UsuarioRol`
+- Emisión de token nuevo cuando cambia el plan
+- Lectura en frontend y admin del estado del plan
+- Restricciones base por almacenamiento y modelos
 
-####  Archivos por Crear:
-- `models/ArchivoSubido.java`
-- `dao/ArchivoDao.java`
-- `service/ArchivoService.java`
-- `controller/ArchivoController.java`
+#### Falta por cerrar
+- Aplicar más límites funcionales por plan en producto
+- Mejor visibilidad admin del historial simulado
+- QA del flujo completo en navegador
 
----
-
-### 💳 MÓDULO 10: SUSCRIPCIONES Y PAGOS 
-
-**Estado:** `PLANEADO`  
-**Prioridad:** Baja  
-**Fecha Estimada de Inicio:** 20 Abr 2026  
-**Fecha Estimada de Finalización:** 30 May 2026
-
-####  Tareas Pendientes:
-- [ ] **SUB-001:** Modelo PlanSuscripcion
-- [ ] **SUB-002:** Modelo Suscripcion
-- [ ] **SUB-003:** Modelo Pago
-- [ ] **SUB-004:** DAOs para suscripciones
-- [ ] **SUB-005:** Integración con pasarela de pago
-- [ ] **SUB-006:** Verificación de límites por plan
-- [ ] **SUB-007:** Renovaciones automáticas
+#### Fuera de alcance actual
+- Pasarela de pago real
+- Cobro en producción
+- Renovaciones automáticas reales
 
 ---
 
-### 🖥 MÓDULO 11: FRONTEND BASE (AUTH/UI) 🔄
+### 8. Frontend base
 
-**Estado:** `MVP FUNCIONAL`  
-**Responsable:** Frontend Team  
-**Fecha de Inicio:** 10 Feb 2026  
-**Fecha Estimada de Finalización:** 10 Mar 2026
+**Estado:** `MVP FUNCIONAL`
 
-#### ✅ Tareas Completadas:
-- [x] **FE-001:** Pantallas base de inicio, login y registro
-- [x] **FE-002:** Integración de login con JWT real
-- [x] **FE-003:** Flujo de recuperación de contraseña
-- [x] **FE-004:** Verificación de correo desde la UI
-- [x] **FE-005:** Guard de acceso para pantallas protegidas
-- [x] **FE-006:** Manejo defensivo de sesión y token inválido
-- [x] **FE-007:** Base URL unificada para la API
-- [x] **FE-008:** Sistema base de idiomas en la interfaz
+#### Ya implementado
+- Inicio, login, registro y recuperación
+- Sesión JWT robusta
+- Protección de vistas
+- Base URL centralizada para API
+- Idioma base en la UI
 
-####  Tareas Pendientes:
-- [ ] **FE-009:** Traducir todos los mensajes dinámicos y notificaciones
-- [ ] **FE-010:** Cerrar validaciones visuales finas y estados de error
-
-####  reas Cubiertas:
-- `public/index.html`
-- `public/auth/*`
-- `src/scripts/utils/*`
-- `src/scripts/pages/login.js`
-- `src/scripts/pages/regist.js`
-- `src/scripts/pages/recuperar.js`
+#### Falta por cerrar
+- Traducir más mensajes dinámicos
+- QA visual de errores y estados límite
 
 ---
 
-### ⚙ MÓDULO 12: FRONTEND APP (FEED / SETTINGS / BIBLIOTECA) 🔄
+### 9. Frontend app (Feed, Settings, Biblioteca)
 
-**Estado:** `MVP FUNCIONAL`  
-**Responsable:** Frontend Team  
-**Fecha de Inicio:** 15 Feb 2026  
-**Fecha Estimada de Finalización:** 20 Mar 2026
+**Estado:** `MVP FUNCIONAL`
 
-#### ✅ Tareas Completadas:
-- [x] **APP-001:** Feed principal navegable
-- [x] **APP-002:** Perfil de usuario conectado al backend
-- [x] **APP-003:** Cambio de contraseña y eliminación de cuenta
-- [x] **APP-004:** Instrucciones persistentes para Poly
-- [x] **APP-005:** Visualización del plan actual
-- [x] **APP-006:** Subida de foto de perfil
-- [x] **APP-007:** Estanterías con crear, listar, renombrar y eliminar
-- [x] **APP-008:** Selector de idioma en settings generales
+#### Ya implementado
+- Feed principal navegable
+- Perfil conectado al backend
+- Cambio de contraseña y eliminación de cuenta
+- Instrucciones persistentes para Poly
+- Subida de foto de perfil
+- Estanterías reales
+- Biblioteca con borradores y libros diferenciados
+- Conversión a libro desde biblioteca
 
-####  Tareas Pendientes:
-4. **APP-009:** Pulido inicial completado en biblioteca y navegacin entre estanteras
-- [ ] **APP-010:** Unificar traducciones de texto dinámico restante
-- [ ] **APP-011:** Validación manual completa de flujos en navegador
-
-####  reas Cubiertas:
-- `public/feed/feed-main.html`
-- `public/feed/settings/*`
-- `public/feed/biblioteca/*`
-- `src/scripts/pages/feed.js`
-- `src/scripts/pages/settings/*`
-- `src/scripts/pages/biblioteca/*`
+#### Falta por cerrar
+- Pulido visual adicional en biblioteca
+- Más pruebas manuales en escenarios límite
+- Traducciones restantes
 
 ---
 
-###  MÓDULO 13: FRONTEND CREATIVO / POLY / ADMIN 🔄
+### 10. Frontend Poly / Creativo / Admin
 
-**Estado:** `EN PROTOTIPO`  
-**Responsable:** Frontend Team  
-**Fecha de Inicio:** 20 Feb 2026  
-**Fecha Estimada de Finalización:** 30 Abr 2026
+**Estado:** `MVP FUNCIONAL`
 
-#### ✅ Tareas Completadas:
-- [x] **UX-001:** Maquetas visuales de Poly y creador creativo
-- [x] **UX-002:** Maquetas visuales del panel admin
-- [x] **UX-003:** Navegación básica hacia módulos futuros
+#### Ya implementado
+- `Poly` conectado al backend
+- `Creativo` conectado a relatos reales
+- Herramientas base de redacción en el creador manual
+- Admin con login real y paneles conectados
+- Biblioteca como punto final de conversión/exportación
 
-####  Tareas Pendientes:
-- [ ] **UX-004:** Integración real del chat de Poly con backend
-- [x] **UX-005:** Integracin real del creador manual
-- [x] **UX-006:** Historial y gestin visual de relatos
-- [x] **UX-007:** Login admin real con control por rol
-- [x] **UX-008:** Dashboard admin con datos reales
-
-####  reas Cubiertas:
-- `public/feed/poly/*`
-- `public/feed/creative/*`
-- `public/admin/*`
+#### Falta por cerrar
+- Pulido de UX en Poly, Creativo y Admin
+- Mejor consistencia visual entre módulos
+- QA end-to-end repetible
+- Ajustes finos del rol Premium dentro de la experiencia
 
 ---
 
-## 🚀 PRÓXIMAS TAREAS PRIORITARIAS
+## Próximas tareas prioritarias
 
-### 📅 Semana del 1-7 Marzo 2026:
-1. **REL-007:** Iniciar versionamiento de relatos
-2. **REL-008:** Definir búsqueda y filtrado
-3. **CHAT-008:** Completar historial de conversación
-4. **APP-009:** Pulido inicial completado en biblioteca y navegacin entre estanteras
+### Prioridad 1: QA real del producto
+1. Probar de punta a punta: auth, Poly, Creativo, Biblioteca y suscripciones simuladas
+2. Validar Gemini en uso real con archivos y parámetros
+3. Corregir regresiones de UX antes de seguir abriendo módulos
 
-### 📅 Semana del 8-14 Marzo 2026:
-1. **REL-009:** Categorización y metadatos
-2. **CHAT-009:** Contexto de conversación
-3. **CHAT-010:** Mejorar integración con Gemini
-4. **FE-009:** Traducir mensajes dinámicos y notificaciones
+### Prioridad 2: Cierre de relatos y biblioteca
+1. Búsqueda y filtrado de relatos
+2. Historial visible de versiones y restauración
+3. Mejor gestión de archivos fuente y documentos exportados
 
-### 📅 Semana del 15-21 Marzo 2026:
-1. **REL-010:** Cerrar contratos para frontend
-2. **CHAT-011:** Cerrar contratos para frontend
-3. **UX-004:** Integrar Poly con backend real
-4. **FILE-001:** Iniciar módulo de archivos
+### Prioridad 3: Premium/Admin
+1. Reforzar límites funcionales por plan
+2. Mejorar panel admin sobre suscripciones simuladas y pagos fake
+3. Cerrar métricas y conteos reales en admin
 
----
-
-## 🎯 HITOS PRINCIPALES
-
-| Hito | Fecha Estimada | Estado | Descripción |
-|------|----------------|---------|-------------|
-| 🎯 MVP Básico | 1 Mar 2026 | ✅ | Auth + Feed + Settings + Biblioteca + Backend base |
-| 🎯 Versión 1.0 | 30 Abr 2026 | 🔄 | Relatos + Chat + Poly conectados de punta a punta |
-| 🎯 Versión 2.0 | 30 Jun 2026 |  | Archivos + Exportación + mejora UX |
-| 🎯 Versión 3.0 | 30 Sep 2026 |  | Suscripciones + Pagos + Admin funcional |
+### Prioridad 4: Testing
+1. Smoke tests de auth, relatos, chat, upload y exportación
+2. Tests de integración para servicios y DAOs críticos
+3. Base de QA repetible para no romper el MVP
 
 ---
 
-## 📊 MÉTRICAS DE PROGRESO
+## Hitos actualizados
 
-### 📈 Estadísticas Actuales:
-- **Total de Módulos:** 13
-- **Módulos Completados:** 6 (46%)
-- **Módulos en Progreso / Prototipo:** 5 (39%)
-- **Módulos Planeados:** 2 (15%)
-- **Total de Tareas:** 100+
-- **Tareas Completadas:** 67 (67%)
-
-###  Logros Recientes:
--  **10 Mar 2026:** Panel admin conectado a backend con control por rol y gestin de usuarios
--  **10 Mar 2026:** Creador manual y biblioteca quedaron conectados a relatos y exportacin
-- ✅ **1 Mar 2026:** Frontend base y settings quedaron integrados con el backend
-- ✅ **1 Mar 2026:** Relatos y chat quedaron en estado MVP funcional
-- ✅ **1 Mar 2026:** Router actualizado con soporte de rutas dinámicas
-- ✅ **1 Mar 2026:** Seguridad por usuario reforzada con JWT en controladores
-- ✅ **27 Feb 2026:** Completado sistema de verificación de correo
+| Hito | Estado | Descripción |
+|------|--------|-------------|
+| MVP base | ✅ | Auth + Feed + Settings + Biblioteca + backend operativo |
+| MVP de IA | ✅ | Poly y Creativo conectados a relatos reales |
+| Biblioteca funcional | ✅ | Borradores y libros diferenciados, exportación desde biblioteca |
+| Suscripción simulada | ✅ | Cambio de plan persistido en BD sin pasarela real |
+| Cierre de producto v1 | 🔄 | Pendiente QA, búsqueda, versionado visible y pulido UX |
 
 ---
 
-## 🔧 MEJORAS TÉCNICAS PENDIENTES
+## Riesgos actuales
 
-### 🚀 Servidor HTTP:
-- [ ] **SRV-001:** Manejo de CORS
-- [ ] **SRV-002:** Rate limiting por IP
-- [ ] **SRV-003:** Compresión GZIP
-- [ ] **SRV-004:** Logs estructurados (JSON)
-- [ ] **SRV-005:** Health checks
-
-###  Seguridad:
-- [ ] **SEC-001:** Refresh tokens
-- [ ] **SEC-002:** Expiración y renovación automática de JWT
-- [ ] **SEC-003:** Protección contra ataques comunes
-- [ ] **SEC-004:** Validación avanzada de inputs
-
-### 🗄 Base de Datos:
-- [ ] **DB-001:** Pool de conexiones (HikariCP)
-- [ ] **DB-002:** Migrations/versioning del schema
-- [ ] **DB-003:** ndices optimizados
-- [ ] **DB-004:** Backup automático
-
-### 🧪 Testing:
-- [ ] **TEST-001:** Tests unitarios para Services
-- [ ] **TEST-002:** Tests de integración para DAOs
-- [ ] **TEST-003:** Tests E2E para Controllers
-- [ ] **TEST-004:** Pipeline de CI/CD
+- Falta de pruebas automáticas reales
+- Dependencia de QA manual para validar Gemini y flujos complejos
+- Pendientes de producto más ligados a cierre y pulido que a arquitectura
 
 ---
 
-## 📋 REQUERIMIENTOS FUTUROS
+## Decisiones importantes vigentes
 
-### 🔄 Autenticación por Correo (2FA):
-- **Estado:** Por definir
-- **Prioridad:** Alta
-- **Descripción:** Sistema de autenticación de dos factores vía correo
-- **Tareas estimadas:** 8-10 tareas
-- **Tiempo estimado:** 2-3 semanas
-
-### 📱 API REST Completa:
-- **Estado:** Planeado
-- **Prioridad:** Media
-- **Descripción:** Documentación completa con Swagger/OpenAPI
-
-###  Frontend Integration:
-- **Estado:** En progreso
-- **Prioridad:** Media
-- **Descripción:** API alineada para consumo frontend en autenticación, settings y estanterías
-
-### 🖥 Frontend de Producto:
-- **Estado:** En progreso
-- **Prioridad:** Alta
-- **Descripción:** Falta cerrar Poly, creador creativo, panel admin y pruebas de UX completas
+- Arquitectura backend: `Controller -> Service -> DAO`
+- Frontend: HTML + CSS + JavaScript modular por pantallas
+- Base de datos: MySQL
+- IA: Google Gemini
+- `Relato` es borrador editable
+- `Libro` es resultado final convertido/exportado desde biblioteca
+- Los pagos reales no forman parte de esta fase; se usan flujos simulados persistidos en BD
 
 ---
 
-##  NOTAS Y DECISIONES
-
-###  Arquitectura:
-- **Patrón:** Controller → Service → DAO
-- **Frontend:** HTML + CSS + JavaScript modular por pantallas
-- **Respuestas:** JSON consistentes con ApiResponse
-- **Autenticación:** JWT con roles integrados
-- **Base de datos:** MySQL con relaciones completas
-- **Routing:** Soporte para rutas estáticas y dinámicas
-
-### 🔧 Tecnologías:
-- **Backend:** Java 25 puro (sin frameworks)
-- **Servidor:** HTTP sockets personalizados
-- **IA:** Google Gemini API
-- **Email:** JavaMail con Gmail SMTP
-
-### 📋 Convenciones:
-- **Nomenclatura:** CamelCase (clases), snake_case (DB)
-- **JSON:** Gson para serialización
-- **Errores:** Códigos HTTP estándar
-- **Logs:** Salida estándar para debugging
-
----
-
-## 📞 CONTACTO Y COORDINACIÓN
-
-### 👥 Equipo:
-- **Backend Lead:** [Asignar]
-- **Frontend Lead:** [Asignar]
-- **DevOps:** [Asignar]
-- **QA:** [Asignar]
-
-### 📅 Reuniones:
-- **Sprint Planning:** Lunes 9:00 AM
-- **Daily Standup:** Diario 10:00 AM
-- **Sprint Review:** Viernes 4:00 PM
-- **Retrospective:** Viernes 5:00 PM
-
----
-
-## 🔄 ACTUALIZACIÓN DEL ROADMAP
-
-**Frecuencia:** Semanal  
-**Responsable:** Tech Lead  
-**Formato:** Markdown en Git  
-**Ubicación:** `./ROADMAP.md`
-
-**Para actualizar:**
-1. Marcar tareas completadas con `[x]`
-2. Actualizar fechas y estados
-3. Mover tareas entre secciones según progreso
-4. Actualizar métricas y estadísticas
-5. Commit con mensaje descriptivo
-
----
-
-*Última actualización: 1 Marzo 2026 por el equipo del proyecto*
-
+*Última actualización: 10 Marzo 2026*
