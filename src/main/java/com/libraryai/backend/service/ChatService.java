@@ -1,4 +1,4 @@
-package com.libraryai.backend.service;
+﻿package com.libraryai.backend.service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -20,13 +20,13 @@ import com.libraryai.backend.service.ai.GeminiService;
 import com.libraryai.backend.util.DocumentTextExtractor;
 
 /**
- * Servicio para la lógica de negocio de chat.
+ * Servicio para la lÃ³gica de negocio de chat.
  */
 public class ChatService {
 
     private static final int MAX_SOURCE_FILES_IN_PROMPT = 2;
     private static final String CANVAS_UPDATE_MESSAGE = "He actualizado el canvas con un nuevo borrador final.";
-    private static final String CANVAS_UPDATE_MESSAGE_VARIANT = "Añadí un avance nuevo al canvas para que revises el relato.";
+    private static final String CANVAS_UPDATE_MESSAGE_VARIANT = "Anadi un avance nuevo al canvas para que revises el relato.";
 
     private static final class PolyResponsePayload {
         private final String chatMessage;
@@ -39,13 +39,13 @@ public class ChatService {
     }
 
     /**
-     * Envía un mensaje en el chat de un relato.
+     * EnvÃ­a un mensaje en el chat de un relato.
      * 
      * @param relatoId ID del relato
-     * @param usuarioId ID del usuario que envía el mensaje
+     * @param usuarioId ID del usuario que envÃ­a el mensaje
      * @param emisor Tipo de emisor ('Usuario', 'Poly', 'Sistema')
      * @param contenido Contenido del mensaje
-     * @return JsonObject con el resultado de la operación
+     * @return JsonObject con el resultado de la operaciÃ³n
      */
     public static JsonObject sendMessage(
             int relatoId,
@@ -54,10 +54,10 @@ public class ChatService {
             String contenido,
             JsonObject parametrosIA,
             JsonObject archivoContexto) {
-        // Validaciones básicas
+        // Validaciones bÃ¡sicas
         if (relatoId <= 0 || usuarioId <= 0) {
             JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "IDs inválidos");
+            response.addProperty("Mensaje", "IDs invÃ¡lidos");
             response.addProperty("status", 400);
             return response;
         }
@@ -76,10 +76,10 @@ public class ChatService {
             return response;
         }
         
-        // Validar que el emisor sea válido
+        // Validar que el emisor sea vÃ¡lido
         if (!emisor.equals("Usuario") && !emisor.equals("Poly") && !emisor.equals("Sistema")) {
             JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "Emisor inválido. Debe ser 'Usuario', 'Poly' o 'Sistema'");
+            response.addProperty("Mensaje", "Emisor invÃ¡lido. Debe ser 'Usuario', 'Poly' o 'Sistema'");
             response.addProperty("status", 400);
             return response;
         }
@@ -96,8 +96,8 @@ public class ChatService {
             JsonObject moderationResult = ModerationService.validateText(
                     contenido,
                     usuarioId,
-                    "Poly no admite contenido +18 o palabras bloqueadas. Ajusta el mensaje e inténtalo de nuevo.",
-                    "Mensaje de chat bloqueado por moderación");
+                    "Poly no admite contenido +18 o palabras bloqueadas. Ajusta el mensaje e intÃ©ntalo de nuevo.",
+                    "Mensaje de chat bloqueado por moderaciÃ³n");
             if (moderationResult != null) {
                 return moderationResult;
             }
@@ -143,7 +143,7 @@ public class ChatService {
     public static JsonObject getChatHistory(int relatoId, int usuarioId) {
         if (relatoId <= 0 || usuarioId <= 0) {
             JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "IDs inválidos");
+            response.addProperty("Mensaje", "IDs invÃ¡lidos");
             response.addProperty("status", 400);
             return response;
         }
@@ -156,7 +156,7 @@ public class ChatService {
         try {
             JsonObject result = ChatDao.listByStory(relatoId);
             
-            // Enriquecer el resultado con información adicional
+            // Enriquecer el resultado con informaciÃ³n adicional
             if (result.get("status").getAsInt() == 200) {
                 JsonObject response = new JsonObject();
                 response.add("mensajes", result.get("mensajes"));
@@ -178,7 +178,7 @@ public class ChatService {
     }
 
     /**
-     * Genera una respuesta automática de Poly (IA).
+     * Genera una respuesta automatica de Poly (IA).
      * 
      * @param relatoId ID del relato
      * @param mensajeUsuario Mensaje del usuario al que responder
@@ -191,8 +191,6 @@ public class ChatService {
             JsonObject archivoContexto) {
         try {
             String previousDraft = getStoryDraft(relatoId);
-            PolyResponsePayload payload = buildFallbackPolyPayload(relatoId, usuarioId, mensajeUsuario, parametrosIA,
-                    archivoContexto);
             String prompt = buildGeminiPrompt(relatoId, mensajeUsuario, archivoContexto);
             String instrucciones = buildGeminiInstructions(relatoId, usuarioId, parametrosIA);
             JsonObject geminiResponse = GeminiService.generateText(
@@ -200,19 +198,26 @@ public class ChatService {
                     instrucciones,
                     buildModelCandidates(relatoId, usuarioId));
 
+            PolyResponsePayload payload = null;
+
             if (geminiResponse.has("status") && geminiResponse.get("status").getAsInt() == 200
                     && geminiResponse.has("AI")) {
                 payload = parsePolyResponse(geminiResponse.get("AI").getAsString());
             } else if (geminiResponse.has("Mensaje")) {
-                System.err.println("Gemini no respondió para relato " + relatoId + ": "
+                System.err.println("Gemini no respondio para relato " + relatoId + ": "
                         + geminiResponse.get("Mensaje").getAsString()
                         + (geminiResponse.has("detalle") ? " | " + geminiResponse.get("detalle").getAsString() : ""));
             }
-            
-            // Obtener el siguiente orden para la respuesta
+
+            if (!isUsablePolyPayload(payload)) {
+                int siguienteOrden = getSiguienteOrden(relatoId);
+                ChatDao.save(relatoId, "Sistema",
+                        "Poly no pudo generar una respuesta en este intento. Intenta de nuevo en unos segundos o reformula la instruccion.",
+                        siguienteOrden);
+                return;
+            }
+
             int siguienteOrden = getSiguienteOrden(relatoId);
-            
-            // Guardar la respuesta de Poly
             String chatMessage = payload.canvasDraft.isBlank()
                     ? sanitizeChatMessage(payload.chatMessage)
                     : buildCanvasUpdateMessage(payload.chatMessage, mensajeUsuario, previousDraft, payload.canvasDraft);
@@ -221,16 +226,17 @@ public class ChatService {
             if (!payload.canvasDraft.isBlank()) {
                 StoryDao.updateDescription(relatoId, payload.canvasDraft);
             }
-            
+
             System.out.println("Respuesta de Poly generada para relato " + relatoId);
-            
+
         } catch (Exception e) {
             System.err.println("Error al generar respuesta de Poly: " + e.getMessage());
-            
-            // En caso de error, enviar un mensaje de sistema
+
             try {
                 int siguienteOrden = getSiguienteOrden(relatoId);
-                ChatDao.save(relatoId, "Sistema", "Lo siento, no pude generar una respuesta en este momento.", siguienteOrden);
+                ChatDao.save(relatoId, "Sistema",
+                        "Poly no pudo generar una respuesta en este intento. Intenta de nuevo en unos segundos o reformula la instruccion.",
+                        siguienteOrden);
             } catch (Exception ex) {
                 System.err.println("Error al enviar mensaje de sistema: " + ex.getMessage());
             }
@@ -332,7 +338,7 @@ public class ChatService {
 
                     String extractedText = DocumentTextExtractor.extractText(storagePath, fileType);
                     if (!extractedText.isBlank()) {
-                        prompt.append("Contenido extraído de ")
+                        prompt.append("Contenido extraido de ")
                                 .append(fileName)
                                 .append(":\n")
                                 .append(extractedText)
@@ -406,7 +412,7 @@ public class ChatService {
 
         if (!premiumUser) {
             instrucciones.append(
-                    "\n\nLimitacion de plan Gratuito: mantén las respuestas compactas y prioriza avances breves.");
+                    "\n\nLimitacion de plan Gratuito: mantÃ©n las respuestas compactas y prioriza avances breves.");
             instrucciones.append(
                     " Si generas [[CANVAS]], entrega un borrador corto y enfocado. No excedas aproximadamente 220 palabras en total.");
         }
@@ -498,9 +504,7 @@ public class ChatService {
     private static PolyResponsePayload parsePolyResponse(String rawResponse) {
         String normalized = String.valueOf(rawResponse == null ? "" : rawResponse).trim();
         if (normalized.isBlank()) {
-            return new PolyResponsePayload(
-                    "No pude generar un texto final en este intento, pero puedes volver a pedirme que continúe la historia.",
-                    "");
+            return new PolyResponsePayload("", "");
         }
 
         String canvasDraft = sanitizeCanvasDraft(extractTaggedBlock(normalized, "CANVAS"));
@@ -521,6 +525,15 @@ public class ChatService {
         }
 
         return new PolyResponsePayload(sanitizeChatMessage(normalized), "");
+    }
+
+    private static boolean isUsablePolyPayload(PolyResponsePayload payload) {
+        if (payload == null) {
+            return false;
+        }
+
+        return (payload.chatMessage != null && !payload.chatMessage.isBlank())
+                || (payload.canvasDraft != null && !payload.canvasDraft.isBlank());
     }
 
     private static String extractTaggedBlock(String text, String tag) {
@@ -549,7 +562,7 @@ public class ChatService {
         String lower = normalized.toLowerCase(Locale.ROOT);
         String[] metaStarts = {
                 "puedo ", "si quieres", "te propongo", "para ", "voy a ",
-                "lo mas util", "lo más útil", "he actualizado", "puedes "
+                "lo mas util", "he actualizado", "puedes "
         };
         for (String metaStart : metaStarts) {
             if (lower.startsWith(metaStart)) {
@@ -560,84 +573,7 @@ public class ChatService {
         return countWords(normalized) >= 90
                 || normalized.contains("\n\n")
                 || normalized.length() >= 520;
-    }
-
-    private static PolyResponsePayload buildFallbackPolyPayload(int relatoId, int usuarioId, String mensajeUsuario,
-            JsonObject parametrosIA, JsonObject archivoContexto) {
-        JsonObject effectiveSettings = buildEffectiveAISettings(relatoId, usuarioId, parametrosIA);
-        String permanentInstruction = getPermanentInstruction(usuarioId);
-        applyInstructionOverrides(effectiveSettings, permanentInstruction);
-
-        String writingStyle = getSettingValue(effectiveSettings, "estiloEscritura", "Narrativo");
-        String responseLength = getSettingValue(effectiveSettings, "longitudRespuesta", "Media");
-        String emotionalTone = getSettingValue(effectiveSettings, "tonoEmocional", "Neutral");
-        String normalizedMessage = summarizeText(mensajeUsuario, 180);
-        String draft = getStoryDraft(relatoId);
-        String sourceHint = getSourceContextHint(relatoId, archivoContexto);
-        boolean continueStory = wantsStoryContinuation(mensajeUsuario, draft, sourceHint);
-
-        if (continueStory) {
-            String nextDraft = buildFallbackNarrativeDraft(
-                    writingStyle,
-                    emotionalTone,
-                    responseLength,
-                    normalizedMessage,
-                    draft,
-                    sourceHint,
-                    permanentInstruction);
-            return new PolyResponsePayload(
-                    "Actualice el canvas con un borrador narrativo para que lo revises y lo conviertas si te sirve.",
-                    nextDraft);
-        }
-
-        return new PolyResponsePayload(
-                buildGuidanceChatMessage(writingStyle, responseLength, emotionalTone, normalizedMessage, sourceHint,
-                        permanentInstruction),
-                "");
-    }
-
-    private static void applyInstructionOverrides(JsonObject effectiveSettings, String permanentInstruction) {
-        String normalized = normalizeInstruction(permanentInstruction);
-        if (normalized.isBlank()) {
-            return;
-        }
-
-        if (normalized.contains("dialogado")) {
-            effectiveSettings.addProperty("estiloEscritura", "Dialogado");
-        } else if (normalized.contains("descriptivo")) {
-            effectiveSettings.addProperty("estiloEscritura", "Descriptivo");
-        } else if (normalized.contains("narrativo")) {
-            effectiveSettings.addProperty("estiloEscritura", "Narrativo");
-        }
-
-        if (normalized.contains("poetico") || normalized.contains("poético")) {
-            effectiveSettings.addProperty("tonoEmocional", "Poético");
-        } else if (normalized.contains("dramatico") || normalized.contains("dramático")) {
-            effectiveSettings.addProperty("tonoEmocional", "Dramático");
-        } else if (normalized.contains("neutral")) {
-            effectiveSettings.addProperty("tonoEmocional", "Neutral");
-        }
-
-        if (normalized.contains("breve") || normalized.contains("corta")) {
-            effectiveSettings.addProperty("longitudRespuesta", "Corta");
-        } else if (normalized.contains("larga") || normalized.contains("extensa")
-                || normalized.contains("detallada")) {
-            effectiveSettings.addProperty("longitudRespuesta", "Larga");
-        }
-    }
-
-    private static String normalizeInstruction(String instruction) {
-        return String.valueOf(instruction == null ? "" : instruction).trim().toLowerCase(Locale.ROOT);
-    }
-
-    private static String getSettingValue(JsonObject settings, String key, String defaultValue) {
-        if (settings != null && settings.has(key)) {
-            return settings.get(key).getAsString();
-        }
-
-        return defaultValue;
-    }
-
+    }
     private static String getStoryDraft(int relatoId) {
         JsonObject storyResponse = StoryDao.findById(relatoId);
         if (storyResponse.has("status") && storyResponse.get("status").getAsInt() == 200
@@ -650,238 +586,6 @@ public class ChatService {
 
         return "";
     }
-
-    private static String getSourceContextHint(int relatoId, JsonObject archivoContexto) {
-        if (archivoContexto != null && archivoContexto.has("nombre")) {
-            return archivoContexto.get("nombre").getAsString().trim();
-        }
-
-        JsonObject filesResponse = UploadedFileDao.listByStoryAndOrigin(relatoId, "Subido");
-        if (filesResponse.has("status") && filesResponse.get("status").getAsInt() == 200
-                && filesResponse.has("archivos")) {
-            JsonArray files = filesResponse.getAsJsonArray("archivos");
-            if (files.size() > 0 && files.get(0).isJsonObject()) {
-                JsonObject file = files.get(0).getAsJsonObject();
-                if (file.has("nombreArchivo")) {
-                    return file.get("nombreArchivo").getAsString().trim();
-                }
-            }
-        }
-
-        return "";
-    }
-
-    private static boolean wantsStoryContinuation(String mensajeUsuario, String draft, String sourceHint) {
-        String normalized = String.valueOf(mensajeUsuario == null ? "" : mensajeUsuario).trim().toLowerCase(Locale.ROOT);
-        if (normalized.isBlank()) {
-            return false;
-        }
-
-        boolean explicitContinuationIntent = normalized.length() > 90
-                || normalized.contains("continua")
-                || normalized.contains("continuar")
-                || normalized.contains("sigue")
-                || normalized.contains("seguir")
-                || normalized.contains("escribe")
-                || normalized.contains("desarrolla")
-                || normalized.contains("desarrollar")
-                || normalized.contains("escena")
-                || normalized.contains("parrafo")
-                || normalized.contains("párrafo")
-                || normalized.contains("capitulo")
-                || normalized.contains("capítulo")
-                || normalized.contains("dialogo")
-                || normalized.contains("diálogo")
-                || normalized.contains("relato")
-                || normalized.contains("historia");
-
-        boolean likelyGuidanceIntent = normalized.endsWith("?")
-                || normalized.startsWith("que ")
-                || normalized.startsWith("qué ")
-                || normalized.startsWith("como ")
-                || normalized.startsWith("cómo ")
-                || normalized.startsWith("por que")
-                || normalized.startsWith("por qué")
-                || normalized.startsWith("ayudame a")
-                || normalized.startsWith("ayúdame a")
-                || normalized.startsWith("dame ideas")
-                || normalized.startsWith("que sugieres")
-                || normalized.startsWith("qué sugieres");
-
-        if (explicitContinuationIntent) {
-            return true;
-        }
-
-        if (!draft.isBlank() || !sourceHint.isBlank()) {
-            return !likelyGuidanceIntent && countWords(normalized) >= 3;
-        }
-
-        return false;
-    }
-
-    private static String buildGuidanceBody(String writingStyle, String userIdea, String sourceHint) {
-        if (!sourceHint.isBlank()) {
-            return "Con el material de " + sourceHint + ", lo mas util ahora es definir con precision la escena o el conflicto que quieres reforzar a partir de: "
-                    + userIdea + ".";
-        }
-
-        if ("Dialogado".equalsIgnoreCase(writingStyle)) {
-            return "Para llevar tu idea a un fragmento dialogado, conviene decidir quien inicia la escena, que tension hay entre voces y que informacion se revela primero alrededor de: "
-                    + userIdea + ".";
-        }
-
-        if ("Descriptivo".equalsIgnoreCase(writingStyle)) {
-            return "Para que la escena funcione en clave descriptiva, primero conviene fijar la imagen dominante, el ambiente y el detalle fisico mas potente alrededor de: "
-                    + userIdea + ".";
-        }
-
-        return "Para convertir tu idea en narracion continua, lo mas util ahora es fijar un protagonista, una accion inmediata y una consecuencia clara alrededor de: "
-                + userIdea + ".";
-    }
-
-    private static String buildGuidanceChatMessage(String writingStyle, String responseLength, String emotionalTone,
-            String userIdea, String sourceHint, String permanentInstruction) {
-        List<String> parts = new ArrayList<>();
-        parts.add(getGuidanceLead(emotionalTone));
-        parts.add(buildGuidanceBody(writingStyle, userIdea, sourceHint));
-        parts.add(buildLengthClose(responseLength, false));
-
-        if (!permanentInstruction.isBlank()) {
-            parts.add("Mantendre activas tus instrucciones generales mientras seguimos trabajando.");
-        }
-
-        return sanitizeTextWithInstruction(String.join(" ", parts), permanentInstruction);
-    }
-
-    private static String getGuidanceLead(String emotionalTone) {
-        if ("Dramático".equalsIgnoreCase(emotionalTone)) {
-            return "Voy a orientar la escena hacia un conflicto mas tenso antes de llevarla al canvas.";
-        }
-
-        if ("Poético".equalsIgnoreCase(emotionalTone)) {
-            return "Voy a sostener la escena con una cadencia mas evocadora antes de cerrarla como borrador final.";
-        }
-
-        return "Voy a mantener la respuesta clara y orientada al relato antes de pasarla al canvas.";
-    }
-
-    private static String buildLengthClose(String responseLength, boolean continueStory) {
-        if ("Corta".equalsIgnoreCase(responseLength)) {
-            return continueStory
-                    ? "Si quieres, en el siguiente mensaje lo cierro en un parrafo breve listo para el canvas."
-                    : "Si quieres, en el siguiente mensaje lo bajo a una version breve y directa.";
-        }
-
-        if ("Larga".equalsIgnoreCase(responseLength)) {
-            return continueStory
-                    ? "Si quieres, en el siguiente paso lo convierto en un fragmento mas extenso con apertura, desarrollo y cierre provisional."
-                    : "Si quieres, en el siguiente paso desarrollo esta base con mas detalle, ritmo y continuidad narrativa.";
-        }
-
-        return continueStory
-                ? "Si quieres, en el siguiente mensaje lo convierto en dos o tres parrafos continuos listos para el canvas."
-                : "Si quieres, en el siguiente mensaje lo desarrollo en una respuesta intermedia ya orientada al borrador final.";
-    }
-
-    private static String buildFallbackNarrativeDraft(String writingStyle, String emotionalTone, String responseLength,
-            String userIdea, String draft, String sourceHint, String permanentInstruction) {
-        String normalizedIdea = userIdea == null || userIdea.isBlank()
-                ? "la escena pendiente del relato"
-                : userIdea;
-        List<String> paragraphs = new ArrayList<>();
-
-        paragraphs.add(buildNarrativeOpening(writingStyle, emotionalTone, normalizedIdea, sourceHint, draft));
-        paragraphs.add(buildNarrativeDevelopment(writingStyle, emotionalTone, normalizedIdea, sourceHint));
-
-        if ("Larga".equalsIgnoreCase(responseLength) || "Media".equalsIgnoreCase(responseLength)) {
-            paragraphs.add(buildNarrativeClosure(writingStyle, emotionalTone, normalizedIdea));
-        }
-
-        String generatedDraft = String.join("\n\n", paragraphs);
-        String combinedDraft = draft == null || draft.isBlank()
-                ? generatedDraft
-                : draft.trim() + "\n\n" + generatedDraft;
-
-        return sanitizeTextWithInstruction(combinedDraft, permanentInstruction);
-    }
-
-    private static String buildNarrativeOpening(String writingStyle, String emotionalTone, String userIdea,
-            String sourceHint, String draft) {
-        String toneFragment = getToneSceneFragment(emotionalTone);
-        String baseContext = !draft.isBlank()
-                ? "La historia retomo el pulso del momento anterior sin perder la tension que ya venia acumulando."
-                : !sourceHint.isBlank()
-                        ? "La historia tomo forma sobre la huella que dejo " + sourceHint + ", como si ese material hubiera abierto una puerta concreta dentro de la escena."
-                        : "La escena comenzo a cerrarse alrededor de " + userIdea + ", con una direccion ya clara para el relato.";
-
-        if ("Dialogado".equalsIgnoreCase(writingStyle)) {
-            return baseContext + " " + toneFragment + " \"No podemos seguir fingiendo que nada cambio\", dijo uno de los personajes, y en esa frase quedo expuesto el nucleo del conflicto.";
-        }
-
-        if ("Descriptivo".equalsIgnoreCase(writingStyle)) {
-            return baseContext + " " + toneFragment + " El espacio se lleno de detalles precisos, de texturas y señales que empujaban la mirada hacia el centro del problema.";
-        }
-
-        return baseContext + " " + toneFragment + " Cada movimiento empujo la accion hacia adelante hasta dejar claro que ya no habia regreso posible.";
-    }
-
-    private static String buildNarrativeDevelopment(String writingStyle, String emotionalTone, String userIdea,
-            String sourceHint) {
-        String conflictFragment = !sourceHint.isBlank()
-                ? "Lo que parecia una referencia de apoyo se convirtio en una pieza decisiva para interpretar " + userIdea + "."
-                : "La tension de " + userIdea + " dejo de ser una idea suelta y paso a convertirse en una consecuencia visible dentro del relato.";
-
-        if ("Dialogado".equalsIgnoreCase(writingStyle)) {
-            return conflictFragment + " \"Si damos un paso mas, ya no vamos a poder volver\", respondio la otra voz, y el silencio posterior termino de fijar el costo emocional de la escena.";
-        }
-
-        if ("Descriptivo".equalsIgnoreCase(writingStyle)) {
-            return conflictFragment + " El ambiente se volvio mas denso, mas concreto, y cada detalle sensorial reforzo la sensacion de que la historia estaba cruzando un umbral.";
-        }
-
-        if ("Poético".equalsIgnoreCase(emotionalTone)) {
-            return conflictFragment + " La escena avanzo con un ritmo contenido, dejando que cada imagen respirara antes de caer sobre la siguiente como una marea lenta.";
-        }
-
-        if ("Dramático".equalsIgnoreCase(emotionalTone)) {
-            return conflictFragment + " El conflicto escalo con rapidez, dejando a los personajes frente a una decision que ya no admitia demora.";
-        }
-
-        return conflictFragment + " A partir de ahi, la secuencia gano continuidad y sostuvo el avance de la historia sin desviarse del eje principal.";
-    }
-
-    private static String buildNarrativeClosure(String writingStyle, String emotionalTone, String userIdea) {
-        if ("Dialogado".equalsIgnoreCase(writingStyle)) {
-            return "\"Entonces hagamos que esta vez importe\", dijo la voz que hasta ese momento habia dudado, y la escena quedo cerrada con una resolucion provisional que invita a seguir el siguiente tramo del relato.";
-        }
-
-        if ("Descriptivo".equalsIgnoreCase(writingStyle)) {
-            return "Cuando la escena termino de asentarse, el entorno y las emociones ya hablaban el mismo idioma, dejando a " + userIdea + " integrado como una imagen final lista para seguir desarrollandose.";
-        }
-
-        if ("Poético".equalsIgnoreCase(emotionalTone)) {
-            return "Al final, la escena quedo suspendida en un equilibrio fragil, como si el relato hubiera encontrado una forma de respirar justo antes del siguiente giro.";
-        }
-
-        if ("Dramático".equalsIgnoreCase(emotionalTone)) {
-            return "El cierre dejo una sensacion de urgencia contenida y una consecuencia clara, suficiente para que el siguiente tramo del relato arranque sin perder impulso.";
-        }
-
-        return "Con eso, el fragmento quedo cerrado como una unidad narrativa clara, listo para seguir creciendo en el canvas como parte del relato final.";
-    }
-
-    private static String getToneSceneFragment(String emotionalTone) {
-        if ("Poético".equalsIgnoreCase(emotionalTone)) {
-            return "Habia en el ambiente una cadencia leve, casi suspendida, que hacia sentir cada gesto como una señal irrepetible.";
-        }
-
-        if ("Dramático".equalsIgnoreCase(emotionalTone)) {
-            return "Todo quedo atravesado por una tension inmediata, como si cualquier minimo error pudiera romper el equilibrio de la escena.";
-        }
-
-        return "La escena sostuvo un tono firme y continuo, suficiente para que el lector entrara de inmediato en el conflicto.";
-    }
-
     private static boolean isLowSignalHistoryMessage(String emisor, String contenido) {
         String normalizedSender = String.valueOf(emisor == null ? "" : emisor).trim();
         String normalizedContent = String.valueOf(contenido == null ? "" : contenido).trim().toLowerCase(Locale.ROOT);
@@ -899,8 +603,7 @@ public class ChatService {
                 && (normalizedContent.equals(CANVAS_UPDATE_MESSAGE.toLowerCase(Locale.ROOT))
                         || normalizedContent.equals(CANVAS_UPDATE_MESSAGE_VARIANT.toLowerCase(Locale.ROOT))
                         || normalizedContent.startsWith("he actualizado el canvas")
-                        || normalizedContent.startsWith("añadi un avance nuevo al canvas")
-                        || normalizedContent.startsWith("añadí un avance nuevo al canvas"))) {
+                        || normalizedContent.startsWith("anadi un avance nuevo al canvas"))) {
             return true;
         }
 
@@ -923,40 +626,24 @@ public class ChatService {
         String normalizedUserMessage = String.valueOf(userMessage == null ? "" : userMessage).trim().toLowerCase(Locale.ROOT);
 
         if (!hadDraft) {
-            return "Dejé un primer borrador en el canvas para que lo revises y me digas cómo seguir.";
+            return "Deje un primer borrador en el canvas para que lo revises y me digas como seguir.";
         }
 
-        if (normalizedUserMessage.contains("dialogo") || normalizedUserMessage.contains("diálogo")) {
-            return "Añadí un tramo nuevo al canvas con más énfasis en el diálogo y el conflicto.";
+        if (normalizedUserMessage.contains("dialogo")) {
+            return "Anadi un tramo nuevo al canvas con mas enfasis en el dialogo y el conflicto.";
         }
 
         if (normalizedUserMessage.contains("continua") || normalizedUserMessage.contains("continuar")
                 || normalizedUserMessage.contains("sigue") || normalizedUserMessage.contains("seguir")) {
-            return "Continué el relato en el canvas con un tramo nuevo para mantener el avance de la escena.";
+            return "Continue el relato en el canvas con un tramo nuevo para mantener el avance de la escena.";
         }
 
         if (nextWords > previousWords) {
-            return "Extendí el borrador del canvas con un avance nuevo y más desarrollo narrativo.";
+            return "Extendi el borrador del canvas con un avance nuevo y mas desarrollo narrativo.";
         }
 
-        return "Actualicé el canvas con una nueva versión del borrador para que no repitamos el mismo tramo.";
-    }
-
-    private static String sanitizeTextWithInstruction(String response, String permanentInstruction) {
-        String sanitized = response == null ? "" : response.trim();
-        if (sanitized.isBlank()) {
-            return "Puedo seguir ayudandote con el relato en cuanto me des una escena, conflicto o personaje para desarrollar.";
-        }
-
-        Pattern quotedPattern = Pattern.compile("(?i)(?:nunca|no) uses? la palabra\\s+[\"“']([^\"”']+)[\"”']");
-        Matcher quotedMatcher = quotedPattern.matcher(String.valueOf(permanentInstruction == null ? "" : permanentInstruction));
-        while (quotedMatcher.find()) {
-            sanitized = sanitized.replaceAll("(?i)\\b" + Pattern.quote(quotedMatcher.group(1).trim()) + "\\b", "");
-        }
-
-        return sanitized.replaceAll("\\s{2,}", " ").trim();
-    }
-
+        return "Actualice el canvas con una nueva version del borrador para que no repitamos el mismo tramo.";
+    }
     private static String sanitizeCanvasDraft(String text) {
         String sanitized = String.valueOf(text == null ? "" : text).trim();
         sanitized = sanitized.replaceAll("(?im)^borrador final\\s*:?\\s*", "");
@@ -971,17 +658,7 @@ public class ChatService {
 
         sanitized = sanitized.replaceAll("\\s{2,}", " ").trim();
         return sanitized.length() > 500 ? sanitized.substring(0, 500).trim() : sanitized;
-    }
-
-    private static String summarizeText(String text, int maxLength) {
-        String normalized = String.valueOf(text == null ? "" : text).trim().replaceAll("\\s+", " ");
-        if (normalized.length() <= maxLength) {
-            return normalized;
-        }
-
-        return normalized.substring(0, Math.max(0, maxLength - 1)).trim() + "…";
-    }
-
+    }
     private static int countWords(String text) {
         String normalized = String.valueOf(text == null ? "" : text).trim();
         if (normalized.isBlank()) {
@@ -992,10 +669,10 @@ public class ChatService {
     }
 
     /**
-     * Obtiene el siguiente número de orden para un relato.
+     * Obtiene el siguiente nÃºmero de orden para un relato.
      * 
      * @param relatoId ID del relato
-     * @return Siguiente número de orden
+     * @return Siguiente nÃºmero de orden
      */
     private static int getSiguienteOrden(int relatoId) {
         try {
@@ -1023,7 +700,7 @@ public class ChatService {
     public static JsonObject clearChatHistory(int relatoId, int usuarioId) {
         if (relatoId <= 0 || usuarioId <= 0) {
             JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "IDs inválidos");
+            response.addProperty("Mensaje", "IDs invÃ¡lidos");
             response.addProperty("status", 400);
             return response;
         }
@@ -1037,16 +714,16 @@ public class ChatService {
     }
 
     /**
-     * Obtiene estadísticas del chat de un relato.
+     * Obtiene estadÃ­sticas del chat de un relato.
      * 
      * @param relatoId ID del relato
      * @param usuarioId ID del usuario solicitante
-     * @return JsonObject con estadísticas
+     * @return JsonObject con estadÃ­sticas
      */
     public static JsonObject getChatStats(int relatoId, int usuarioId) {
         if (relatoId <= 0 || usuarioId <= 0) {
             JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "IDs inválidos");
+            response.addProperty("Mensaje", "IDs invÃ¡lidos");
             response.addProperty("status", 400);
             return response;
         }
@@ -1101,7 +778,7 @@ public class ChatService {
             
         } catch (Exception e) {
             JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "Error al obtener estadísticas: " + e.getMessage());
+            response.addProperty("Mensaje", "Error al obtener estadÃ­sticas: " + e.getMessage());
             response.addProperty("status", 500);
             return response;
         }
@@ -1138,3 +815,8 @@ public class ChatService {
         return null;
     }
 }
+
+
+
+
+
