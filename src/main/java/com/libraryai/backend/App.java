@@ -1,6 +1,8 @@
 package com.libraryai.backend;
 
 import com.libraryai.backend.config.AIConfig;
+import com.libraryai.backend.seeders.SeedAIModels;
+import com.libraryai.backend.seeders.SeedForbiddenWords;
 import com.libraryai.backend.seeders.SeedRoles;
 import com.libraryai.backend.server.ServerMain;
 
@@ -20,6 +22,8 @@ public class App {
             }
 
             SeedRoles.insertRoles();
+            SeedAIModels.insertModels();
+            SeedForbiddenWords.insertForbiddenWords();
             ServerMain.startServer();
         } catch (ExceptionInInitializerError e) {
             Throwable cause = e.getCause() != null ? e.getCause() : e;

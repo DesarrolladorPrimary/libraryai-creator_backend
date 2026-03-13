@@ -36,6 +36,11 @@ public class UserDao {
             """;
 
     // language=sql
+    private final static String SQL_SELECT_PASSWORD_BY_ID = """
+            SELECT PasswordHash FROM Usuario WHERE PK_UsuarioID = ?;
+            """;
+
+    // language=sql
     private final static String SQL_DELETE = """
             DELETE FROM Usuario WHERE `PK_UsuarioID` = ?;
             """;
@@ -143,6 +148,30 @@ public class UserDao {
             e.printStackTrace();
         }
         return user;
+    }
+
+    /**
+     * Obtiene el hash de contraseña actual de un usuario.
+     *
+     * @param id ID del usuario.
+     * @return Hash almacenado o {@code null} si no existe/no pudo consultarse.
+     */
+    public static String findPasswordHashById(int id) {
+        try (
+                Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT_PASSWORD_BY_ID)) {
+
+            pstmt.setInt(1, id);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getString("PasswordHash");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     /**

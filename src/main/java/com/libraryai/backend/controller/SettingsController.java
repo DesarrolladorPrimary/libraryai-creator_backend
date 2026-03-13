@@ -17,9 +17,9 @@ import com.sun.net.httpserver.HttpHandler;
  * - PUT /api/v1/settings/instruccion-ia?id=X  → actualiza instrucción permanente de Poly
  * - GET /api/v1/settings/suscripcion?id=X     → obtiene suscripción activa + datos del plan
  * - PUT /api/v1/settings/suscripcion/simular?id=X → simula cambio de plan del usuario
- * - GET /api/v1/settings/version-ia?id=X      → obtiene versión actual del modelo IA (RF_32)
- * - GET /api/v1/settings/modelo-disponible?id=X → obtiene modelos disponibles según plan (RF_32)
- * - GET /api/v1/settings/sistema?id=X        → obtiene información completa del sistema (RF_32)
+ * - GET /api/v1/settings/version-ia?id=X      → obtiene versión actual del modelo IA (RF_23)
+ * - GET /api/v1/settings/modelo-disponible?id=X → obtiene modelos disponibles según plan (RF_23)
+ * - GET /api/v1/settings/sistema?id=X        → obtiene información completa del sistema (RF_23)
  */
 public class SettingsController {
 
@@ -203,7 +203,7 @@ public class SettingsController {
 
     /**
      * GET /api/v1/settings/version-ia?id=X
-     * Retorna la versión actual del modelo IA y changelog (RF_32)
+     * Retorna la versión actual del modelo IA y changelog (RF_23)
      */
     public static HttpHandler getVersionIA() {
         return exchange -> {
@@ -236,7 +236,7 @@ public class SettingsController {
 
     /**
      * GET /api/v1/settings/modelo-disponible?id=X
-     * Retorna modelos disponibles según plan del usuario (RF_32)
+     * Retorna modelos disponibles según plan del usuario (RF_23)
      */
     public static HttpHandler getModeloDisponible() {
         return exchange -> {

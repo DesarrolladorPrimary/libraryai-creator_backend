@@ -105,14 +105,14 @@ public class SettingsService {
     }
 
     /**
-     * Obtiene la versión actual del modelo IA y changelog (RF_32).
+     * Obtiene la versión actual del modelo IA y changelog (RF_23).
      */
     public static JsonObject getVersionIA(int userId) {
         return SettingsDao.getVersionActual();
     }
 
     /**
-     * Obtiene modelos disponibles según plan del usuario (RF_32).
+     * Obtiene modelos disponibles según plan del usuario (RF_23).
      */
     public static JsonObject getModeloDisponible(int userId) {
         // Primero obtener el plan del usuario
@@ -217,7 +217,7 @@ public class SettingsService {
     }
 
     /**
-     * Obtiene información completa del sistema (RF_32).
+     * Obtiene información completa del sistema (RF_23).
      */
     public static JsonObject getInfoSistema(int userId) {
         JsonObject response = new JsonObject();

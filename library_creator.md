@@ -262,8 +262,8 @@ requisito
 El sistema debe permitir al usuario acceder a las
 funciones principales de manera corta y sencilla, siendo
 desde la pantalla principal a una función (Crear chat, la
-biblioteca o configuraciones) en menos de 3 clics u
-oportunidades.
+biblioteca o configuraciones) mediante una ruta visible
+y predecible, idealmente en no más de 4 interacciones.
 
 características
 
@@ -1085,7 +1085,8 @@ características
 
 Rol "Gratuito": Es el rol por defecto al
 registrarse. Tiene acceso a funciones limitadas.
-Rol "Premium": Rol de pago. Tiene límites
+Rol "Premium": Rol de suscripción simulada en
+beta. Tiene límites
 ampliados o ilimitados.
 Rol "Administrador": Tiene acceso a funciones
 de gestión del sistema, incluyendo la capacidad
@@ -1169,39 +1170,43 @@ RF_ 19
 
 Nombre de requisito
 
-Procesar Pago y Suscripción Automática
+Simular Suscripción Premium y Activación
+Inmediata
 
 Componente
 
-"Pasarela de Pagos (API externa), Módulo de
-Suscripción"
+"Módulo de Suscripción, Sección de Planes"
 
 Característica asociada
 
-Integración de pagos y activación automática de
-servicios
+Simulación de cambio de plan y activación de
+beneficios
 
 Descripción del requisito
 
-El sistema debe integrar un proveedor de pagos
-seguro para permitir al usuario adquirir el plan
-"Premium" y activar los beneficios de forma
-inmediata tras la confirmación exitosa de la
-transacción.
+El sistema debe permitir al usuario activar el plan
+"Premium" de forma simulada dentro de la
+plataforma, aplicando de inmediato sus beneficios
+y límites sin integrar una pasarela de pago real
+durante la fase beta.
 
 características
 
-1. Al seleccionar "Mejorar a Premium", el sistema
-redirigirá a la interfaz segura del proveedor de
-pagos.
+1. Al seleccionar "Simular Premium", el sistema
+actualizará el plan del usuario desde la propia
+interfaz.
 
-2. El sistema debe ser capaz de recibir la
-confirmación de pago (Webhook/API).
+2. El sistema registrará en la base de datos un
+movimiento simulado de suscripción para fines de
+auditoría interna y pruebas.
 
-3. Al recibir la confirmación de "pago exitoso", el
-sistema cambiará automáticamente el rol del
-usuario de "Gratuito" a "Premium" en la base de
-datos.
+3. Tras la activación simulada, el sistema cambiará
+automáticamente el rol o plan del usuario de
+"Gratuito" a "Premium" y habilitará sus funciones.
+
+4. El usuario podrá volver al plan "Gratuito"
+mediante el mismo flujo de simulación mientras la
+aplicación permanezca en fase beta.
 
 27
 
@@ -1213,10 +1218,12 @@ Alta
 
 Restricciones
 
-El sistema debe manejar errores de transacción
-(fondos insuficientes, tarjeta rechazada) e
-informar al usuario. La conexión debe ser segura
-(HTTPS).
+Durante la fase beta no se procesarán cobros
+reales ni se capturarán datos financieros
+sensibles. La interfaz debe informar claramente
+que se trata de una simulación de suscripción. La
+conexión debe ser segura (HTTPS) en entornos
+desplegados.
 
 Interacción humano tecnología
 
@@ -1234,11 +1241,13 @@ RF_ 20
 
 Nombre de requisito
 
-Gestionar Usuarios y Transacciones (Admin)
+Gestionar Usuarios y Suscripciones Simuladas
+(Admin)
 
 Componente
 
-Panel de Administración, Historial de Pagos
+Panel de Administración, Historial de
+Suscripciones Simuladas
 
 Característica asociada
 
@@ -1248,9 +1257,9 @@ Descripción del requisito
 
 El sistema debe proveer una interfaz para que el
 "Administrador" gestione los usuarios y visualice
-el estado de las suscripciones, conservando la
-capacidad de modificar roles en casos
-excepcionales (soporte técnico).
+el estado de las suscripciones simuladas,
+conservando la capacidad de modificar roles en
+casos excepcionales o de soporte técnico.
 
 28
 
@@ -1259,13 +1268,16 @@ excepcionales (soporte técnico).
 características
 
 1. El "Administrador" podrá visualizar el historial
-de pagos y el estado actual de la suscripción de
-cualquier usuario.
+de cambios de plan y movimientos simulados de
+suscripción de cualquier usuario.
 
-2. El "Administrador" conserva el permiso de
+2. El "Administrador" podrá consultar el estado
+actual del plan o rol de cualquier usuario.
+
+3. El "Administrador" conserva el permiso de
 revocar o asignar roles manualmente para
-resolver disputas o errores, aunque el proceso
-principal sea automático.
+resolver errores, soporte técnico o pruebas
+internas del sistema.
 
 Prioridad
 
@@ -1275,10 +1287,9 @@ Restricciones
 
 Esta interfaz es exclusiva para el rol
 "Administrador". El administrador no debe tener
-acceso a datos sensibles de pago (como
-números completos de tarjetas de crédito), solo a
-los metadatos de la transacción (ID, fecha,
-estado).
+acceso a datos financieros sensibles; solo podrá
+ver metadatos de la simulación (ID de referencia,
+fecha, estado, plan aplicado y usuario afectado).
 
 Interacción humano tecnología
 

@@ -100,7 +100,7 @@ Configura las siguientes variables en un archivo `.env` en la raíz del proyecto
 
 ```ini
 # Configuración de Base de Datos
-DB_URL="jdbc:mysql://localhost:3306/libraryai_db"
+DB_URL="jdbc:mysql://localhost:3306/LibraryAI_DB"
 DB_USER="root"
 DB_PASSWD="tu_contraseña_segura"
 

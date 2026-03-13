@@ -222,7 +222,7 @@ public class SettingsDao {
     }
 
     /**
-     * Obtiene la versión actual del modelo IA (RF_32).
+     * Obtiene la versión actual del modelo IA (RF_23).
      */
     public static JsonObject getVersionActual() {
         JsonObject response = new JsonObject();
@@ -265,7 +265,7 @@ public class SettingsDao {
     }
 
     /**
-     * Obtiene modelos disponibles según el plan del usuario (RF_32).
+     * Obtiene modelos disponibles según el plan del usuario (RF_23).
      */
     public static JsonObject getModelosPorPlan(String plan) {
         JsonObject response = new JsonObject();

@@ -196,6 +196,13 @@ public class UploadController {
                     return;
                 }
 
+                JsonObject quotaValidation = StoryService.validateStorageQuota(userId, fileBytes.length,
+                        "subir archivos fuente a tu relato");
+                if (quotaValidation != null) {
+                    ApiResponse.send(exchange, quotaValidation.toString(), quotaValidation.get("status").getAsInt());
+                    return;
+                }
+
                 Path uploadPath = Paths.get(STORY_UPLOAD_DIR);
                 if (!Files.exists(uploadPath)) {
                     Files.createDirectories(uploadPath);

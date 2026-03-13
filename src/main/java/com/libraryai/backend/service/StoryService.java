@@ -29,6 +29,8 @@ public class StoryService {
     private static final String DEFAULT_RESPONSE_LENGTH = "Media";
     private static final String DEFAULT_EMOTIONAL_TONE = "Neutral";
     private static final String EXPORT_UPLOAD_DIR = "uploads/exportados/";
+    private static final String CREATIVE_MODERATION_MESSAGE =
+            "La seccion creativa no admite contenido +18 o palabras bloqueadas. Ajusta el texto e intentalo de nuevo.";
 
     /**
      * Crea un nuevo relato con validaciones.
@@ -75,6 +77,29 @@ public class StoryService {
             return response;
         }
 
+        String normalizedTitle = titulo.trim();
+        String normalizedDescription = descripcion != null ? descripcion.trim() : "";
+
+        JsonObject moderationResult = validateCreativeDraftModeration(
+                usuarioId,
+                modoOrigen,
+                normalizedTitle,
+                normalizedDescription,
+                "Creacion de borrador creativo bloqueada por moderacion");
+        if (moderationResult != null) {
+            return moderationResult;
+        }
+
+        JsonObject shelfValidation = validateShelfOwnership(
+                usuarioId,
+                estanteriaId,
+                false,
+                "Debes asignar una estanteria existente antes de guardar el relato en biblioteca",
+                "La estanteria seleccionada no existe o no te pertenece");
+        if (shelfValidation != null) {
+            return shelfValidation;
+        }
+
         Integer resolvedModelId = modeloUsadoId;
         if ("Seccion_Artificial".equals(modoOrigen) || modeloUsadoId != null) {
             JsonObject modelResolution = SettingsService.resolveModeloIA(usuarioId, modeloUsadoId, modeloUsadoId != null);
@@ -93,9 +118,9 @@ public class StoryService {
             usuarioId,
             estanteriaId,
             resolvedModelId,
-            titulo.trim(),
+            normalizedTitle,
             modoOrigen,
-            descripcion != null ? descripcion.trim() : "",
+            normalizedDescription,
             ahora,
             ahora
         );
@@ -256,6 +281,26 @@ public class StoryService {
         String nextDescription = descripcion != null ? descripcion.trim() : currentDescription;
         boolean shouldCreateDraftVersion = descripcion != null && !nextDescription.equals(currentDescription);
 
+        JsonObject moderationResult = validateCreativeDraftModeration(
+                usuarioId,
+                nextOriginMode,
+                nextTitle,
+                nextDescription,
+                "Actualizacion de borrador creativo bloqueada por moderacion");
+        if (moderationResult != null) {
+            return moderationResult;
+        }
+
+        JsonObject shelfValidation = validateShelfOwnership(
+                usuarioId,
+                nextShelfId,
+                false,
+                "Debes asignar una estanteria existente antes de guardar el relato en biblioteca",
+                "La estanteria seleccionada no existe o no te pertenece");
+        if (shelfValidation != null) {
+            return shelfValidation;
+        }
+
         // Crear objeto Story con los datos actualizados
         Story story = new Story(
             relatoId,
@@ -293,6 +338,74 @@ public class StoryService {
         updateResult.addProperty("Mensaje", "Relato actualizado, pero no se pudo guardar la versión");
         updateResult.add("detalleVersion", versionResult);
         return updateResult;
+    }
+
+    private static JsonObject validateCreativeDraftModeration(
+            int userId,
+            String originMode,
+            String title,
+            String description,
+            String logReason) {
+        if (!"Seccion_Creativa".equals(originMode)) {
+            return null;
+        }
+
+        StringBuilder content = new StringBuilder();
+        if (title != null && !title.isBlank()) {
+            content.append(title.trim());
+        }
+
+        if (description != null && !description.isBlank()) {
+            if (content.length() > 0) {
+                content.append("\n\n");
+            }
+            content.append(description.trim());
+        }
+
+        return ModerationService.validateText(
+                content.toString(),
+                userId,
+                CREATIVE_MODERATION_MESSAGE,
+                logReason);
+    }
+
+    private static JsonObject validateShelfOwnership(
+            int userId,
+            Integer shelfId,
+            boolean required,
+            String requiredMessage,
+            String invalidMessage) {
+        if (shelfId == null || shelfId <= 0) {
+            if (!required) {
+                return null;
+            }
+
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", requiredMessage);
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        JsonArray shelves = ShelfService.obtenerEstanterias(userId);
+        for (JsonElement element : shelves) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+
+            JsonObject shelf = element.getAsJsonObject();
+            if (shelf.has("status") && shelf.get("status").getAsInt() >= 400) {
+                return shelf;
+            }
+
+            if (shelf.has("id") && shelf.get("id").getAsInt() == shelfId) {
+                return null;
+            }
+        }
+
+        JsonObject response = new JsonObject();
+        response.addProperty("Mensaje", invalidMessage);
+        response.addProperty("status", 400);
+        return response;
     }
 
     /**
@@ -454,11 +567,14 @@ public class StoryService {
         Integer currentShelfId = storyData.has("estanteriaId") ? storyData.get("estanteriaId").getAsInt() : null;
         Integer nextShelfId = updateShelfAssignment ? estanteriaId : currentShelfId;
 
-        if (nextShelfId == null || nextShelfId <= 0) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "Debes asignar una estantería antes de convertir el relato en libro");
-            response.addProperty("status", 400);
-            return response;
+        JsonObject shelfValidation = validateShelfOwnership(
+                usuarioId,
+                nextShelfId,
+                true,
+                "Debes asignar una estanteria antes de convertir el relato en libro",
+                "La estanteria seleccionada no existe o no te pertenece");
+        if (shelfValidation != null) {
+            return shelfValidation;
         }
 
         Story story = new Story(
@@ -650,7 +766,8 @@ public class StoryService {
                 return response;
             }
 
-            JsonObject quotaValidation = validateExportStorageQuota(userId, fileBytes.length);
+            JsonObject quotaValidation = validateStorageQuota(userId, fileBytes.length,
+                    "guardar documentos en la biblioteca");
             if (quotaValidation != null) {
                 return quotaValidation;
             }
@@ -777,7 +894,7 @@ public class StoryService {
         return null;
     }
 
-    private static JsonObject validateExportStorageQuota(int userId, long newFileBytes) {
+    public static JsonObject validateStorageQuota(int userId, long newFileBytes, String actionDescription) {
         JsonObject subscription = SettingsDao.getSuscripcionActiva(userId);
         if (!subscription.has("status") || subscription.get("status").getAsInt() != 200) {
             JsonObject response = new JsonObject();
@@ -806,7 +923,10 @@ public class StoryService {
         }
 
         JsonObject response = new JsonObject();
-        response.addProperty("Mensaje", "Has superado la cuota disponible para guardar documentos en la biblioteca");
+        String normalizedAction = actionDescription == null || actionDescription.isBlank()
+                ? "guardar archivos en tu cuenta"
+                : actionDescription.trim();
+        response.addProperty("Mensaje", "Has superado la cuota disponible para " + normalizedAction);
         response.addProperty("status", 409);
         response.addProperty("almacenamientoUsadoMb", Math.round(nextUsageMb * 100.0d) / 100.0d);
         response.addProperty("limiteAlmacenamientoMb", storageLimitMb);

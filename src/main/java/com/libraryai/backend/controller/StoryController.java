@@ -33,8 +33,10 @@ public class StoryController {
                 String titulo = storyData.has("titulo") ? storyData.get("titulo").getAsString() : null;
                 String modoOrigen = storyData.has("modoOrigen") ? storyData.get("modoOrigen").getAsString() : null;
                 String descripcion = storyData.has("descripcion") ? storyData.get("descripcion").getAsString() : null;
-                Integer estanteriaId = storyData.has("estanteriaId") ? storyData.get("estanteriaId").getAsInt() : null;
-                Integer modeloUsadoId = storyData.has("modeloUsadoId") ? storyData.get("modeloUsadoId").getAsInt() : null;
+                Integer estanteriaId = storyData.has("estanteriaId") && !storyData.get("estanteriaId").isJsonNull()
+                    ? storyData.get("estanteriaId").getAsInt() : null;
+                Integer modeloUsadoId = storyData.has("modeloUsadoId") && !storyData.get("modeloUsadoId").isJsonNull()
+                    ? storyData.get("modeloUsadoId").getAsInt() : null;
                 
                 // Obtener usuarioId del token JWT (del header Authorization)
                 int usuarioId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));

@@ -9,6 +9,7 @@ import com.google.gson.JsonObject;
 import com.libraryai.backend.dao.auth.RecuperacionDao;
 import com.libraryai.backend.dao.auth.LoginDao;
 import com.libraryai.backend.service.EmailService;
+import com.libraryai.backend.service.UserService;
 
 /**
  * Servicio de recuperación de contraseña.
@@ -176,6 +177,11 @@ public class RecuperacionService {
         // Si el token no es válido, retorna el error
         if (validacion.has("status") && validacion.get("status").getAsInt() != 200) {
             return validacion;
+        }
+
+        JsonObject passwordValidation = UserService.validatePasswordPolicy(nuevaContraseña);
+        if (passwordValidation != null) {
+            return passwordValidation;
         }
         
         // Obtiene el ID del usuario y del token

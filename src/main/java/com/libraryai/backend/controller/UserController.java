@@ -4,6 +4,7 @@ package com.libraryai.backend.controller;
 import java.net.URI;
 // Gson es la librería de Google para manejar JSON
 import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 // JsonArray para listas de objetos JSON (ej: lista de usuarios)
 import com.google.gson.JsonArray;
 // JsonObject para objetos JSON individuales
@@ -175,16 +176,28 @@ public class UserController {
             // Gson convierte String JSON a objetos Java
             Gson gson = new Gson();
 
-            // Parseamos el body a un JsonObject
-            JsonObject json = gson.fromJson(body, JsonObject.class);
+            JsonObject json;
+            try {
+                // Parseamos el body a un JsonObject
+                json = gson.fromJson(body, JsonObject.class);
+            } catch (JsonParseException | IllegalStateException e) {
+                ApiResponse.error(exchange, 400, "El cuerpo JSON es inválido");
+                return;
+            }
+
+            if (!hasNonBlankString(json, "nombre")
+                    || !hasNonBlankString(json, "correo")
+                    || !hasNonBlankString(json, "contraseña")) {
+                ApiResponse.error(exchange, 400, "Debes enviar nombre, correo y contraseña");
+                return;
+            }
 
             // Extraemos cada campo del JSON recibido
-            String nombre = json.get("nombre").getAsString();
-            String correo = json.get("correo").getAsString();
+            String nombre = json.get("nombre").getAsString().trim();
+            String correo = json.get("correo").getAsString().trim();
             String contraseña = json.get("contraseña").getAsString();
 
-            System.out.println("Datos recibidos correctamente. \nnombre: " + nombre + ",\ncorreo: " + correo
-                    + ",\ncontraseña: " + contraseña);
+            System.out.println("Intento de registro recibido para el correo: " + correo);
 
             // ========== LÓGICA DE NEGOCIO ==========
 
@@ -446,6 +459,13 @@ public class UserController {
         String role = tokenInfo.get("Rol").getAsString();
 
         return tokenUserId == requestedUserId || role.equalsIgnoreCase("Admin");
+    }
+
+    private static boolean hasNonBlankString(JsonObject json, String key) {
+        return json != null
+                && json.has(key)
+                && !json.get(key).isJsonNull()
+                && !json.get(key).getAsString().isBlank();
     }
 
 }

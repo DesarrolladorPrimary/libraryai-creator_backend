@@ -23,6 +23,37 @@ public class UserService {
     private static final String PASSWORD_COMPLEXITY_PATTERN = ".*[\\d\\W_].*";
 
     /**
+     * Valida la política de contraseñas usada en registro, actualización y
+     * recuperación.
+     *
+     * @param contraseña Contraseña sin hashear.
+     * @return JsonObject con error o {@code null} si la contraseña es válida.
+     */
+    public static JsonObject validatePasswordPolicy(String contraseña) {
+        JsonObject response = new JsonObject();
+
+        if (contraseña == null || contraseña.isBlank()) {
+            response.addProperty("Mensaje", "La contraseña es obligatoria");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        if (contraseña.length() < 8) {
+            response.addProperty("Mensaje", "La contraseña debe tener mínimo 8 caracteres");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        if (!contraseña.matches(PASSWORD_COMPLEXITY_PATTERN)) {
+            response.addProperty("Mensaje", "La contraseña debe incluir un número o símbolo");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        return null;
+    }
+
+    /**
      * Valida los datos del usuario y coordina la creación si todo es correcto.
      *
      * @param nombre     Nombre del usuario.
@@ -34,68 +65,56 @@ public class UserService {
 
         // Objeto JSON para devolver la respuesta
         JsonObject rJsonObject = new JsonObject();
-        // Llamamos al DAO para ver si el correo ya existe en DB
-        boolean correoDB = UserDao.existsByEmail(correo);
 
         // Validamos que los datos básicos no sean null y la contraseña sea positiva
         if (nombre != null && correo != null && contraseña != null && !contraseña.isBlank()) {
 
             if (nombre.matches(NAME_PATTERN) && nombre.trim().length() > 2) {
-                // Si el correo NO existe en la base de datos...
-                if (correoDB == false) { 
+                if (!correo.matches(EMAIL_PATTERN)) {
+                    // Error: correo sin @
+                    rJsonObject.addProperty("Mensaje", "Correo no válido");
+                    rJsonObject.addProperty("status", 400); // Bad Request
+                    return rJsonObject;
+                }
 
-                    if (correo.matches(EMAIL_PATTERN)) {
-                        if (contraseña.length() < 8) {
-                            rJsonObject.addProperty("Mensaje", "La contraseña debe tener mínimo 8 caracteres");
-                            rJsonObject.addProperty("status", 400);
-                            return rJsonObject;
-                        }
-
-                        if (!contraseña.matches(PASSWORD_COMPLEXITY_PATTERN)) {
-                            rJsonObject.addProperty("Mensaje", "La contraseña debe incluir un número o símbolo");
-                            rJsonObject.addProperty("status", 400);
-                            return rJsonObject;
-                        }
-
-
-                        // Hasheamos la contraseña
-                        String contraseñaHash = BCrypt.hashpw(contraseña, BCrypt.gensalt());
-
-                        // Creamos el objeto Modelo 'Usuario' con todos los datos
-                        User user = new User(0, nombre, correo, contraseñaHash, LocalDate.now(), true);
-
-                        // Le decimos al DAO que lo guarde en la BD
-                        int id = UserDao.save(user);
-
-                        if (id != 0) {
-                            UserRoleDao.assignRole(id);
-                            
-                            // Generar token de verificación de correo
-                            String tokenVerificacion = UUID.randomUUID().toString();
-                            LocalDateTime expiracion = LocalDateTime.now().plusHours(24);
-                            RecuperacionDao.guardarToken(id, tokenVerificacion, expiracion, "Verificacion_Registro");
-                            
-                            // Enviar correo de verificación
-                            EmailService.enviarCorreoVerificacion(correo, tokenVerificacion);
-
-                            // Preparamos respuesta de éxito
-                            rJsonObject.addProperty("Mensaje", "Usuario registrado correctamente. Verifica tu correo.");
-                            rJsonObject.addProperty("status", 201); // Created
-                        } else {
-                            rJsonObject.addProperty("Mensaje", "Error del servidor");
-                            rJsonObject.addProperty("status", 500); // Error
-                        }
-
-                    } else {
-                        // Error: correo sin @
-                        rJsonObject.addProperty("Mensaje", "Correo no válido");
-                        rJsonObject.addProperty("status", 400); // Bad Request
-
-                    }
-                } else {
+                if (UserDao.existsByEmail(correo)) {
                     // Error: El usuario ya existe
                     rJsonObject.addProperty("Mensaje", "Usuario ya existente con ese correo");
                     rJsonObject.addProperty("status", 409); // Conflict
+                    return rJsonObject;
+                }
+
+                JsonObject passwordValidation = validatePasswordPolicy(contraseña);
+                if (passwordValidation != null) {
+                    return passwordValidation;
+                }
+
+                // Hasheamos la contraseña
+                String contraseñaHash = BCrypt.hashpw(contraseña, BCrypt.gensalt());
+
+                // Creamos el objeto Modelo 'Usuario' con todos los datos
+                User user = new User(0, nombre, correo, contraseñaHash, LocalDate.now(), true);
+
+                // Le decimos al DAO que lo guarde en la BD
+                int id = UserDao.save(user);
+
+                if (id != 0) {
+                    UserRoleDao.assignRole(id);
+
+                    // Generar token de verificación de correo
+                    String tokenVerificacion = UUID.randomUUID().toString();
+                    LocalDateTime expiracion = LocalDateTime.now().plusHours(24);
+                    RecuperacionDao.guardarToken(id, tokenVerificacion, expiracion, "Verificacion_Registro");
+
+                    // Enviar correo de verificación
+                    EmailService.enviarCorreoVerificacion(correo, tokenVerificacion);
+
+                    // Preparamos respuesta de éxito
+                    rJsonObject.addProperty("Mensaje", "Usuario registrado correctamente. Verifica tu correo.");
+                    rJsonObject.addProperty("status", 201); // Created
+                } else {
+                    rJsonObject.addProperty("Mensaje", "Error del servidor");
+                    rJsonObject.addProperty("status", 500); // Error
                 }
             } else {
                 // Error: Algún dato venía nulo o incorrecto
@@ -138,7 +157,12 @@ public class UserService {
             // Valores actuales en DB.
             String nombreDB = datos.get("Nombre").getAsString();
             String correoDB = datos.get("Correo").getAsString();
-            String contraseñaDB = datos.get("Contraseña").getAsString();
+            String contraseñaDB = UserDao.findPasswordHashById(id);
+            if (contraseñaDB == null || contraseñaDB.isBlank()) {
+                response.addProperty("Mensaje", "No fue posible recuperar la contraseña actual del usuario");
+                response.addProperty("status", 500);
+                return response;
+            }
 
             // Si el cliente no envia un campo, se conserva el actual.
             if (nombre.isEmpty()) {
@@ -153,6 +177,10 @@ public class UserService {
                 contraseña = contraseñaDB;
 
             } else {
+                JsonObject passwordValidation = validatePasswordPolicy(contraseña);
+                if (passwordValidation != null) {
+                    return passwordValidation;
+                }
                 contraseña = BCrypt.hashpw(contraseña, BCrypt.gensalt());
             }
 
@@ -191,16 +219,9 @@ public class UserService {
         }
         
         if (campo.equalsIgnoreCase("contraseña")) {
-            if (valor == null || valor.length() < 8) {
-                response.addProperty("Mensaje", "La contraseña debe tener mínimo 8 caracteres");
-                response.addProperty("status", 400);
-                return response;
-            }
-
-            if (!valor.matches(PASSWORD_COMPLEXITY_PATTERN)) {
-                response.addProperty("Mensaje", "La contraseña debe incluir un número o símbolo");
-                response.addProperty("status", 400);
-                return response;
+            JsonObject passwordValidation = validatePasswordPolicy(valor);
+            if (passwordValidation != null) {
+                return passwordValidation;
             }
 
             valor = BCrypt.hashpw(valor, BCrypt.gensalt());
