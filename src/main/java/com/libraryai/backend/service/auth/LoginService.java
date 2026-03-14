@@ -58,7 +58,7 @@ public class LoginService {
                     return response;
                 }
 
-                if (!BCrypt.checkpw(contraseña, contraseñaDB)) {
+                if (!matchesPassword(contraseña, contraseñaDB)) {
                     response.addProperty("Mensaje", "La contraseña no coincide con la registrada");
                     response.addProperty("status", 400);
                     return response;
@@ -81,6 +81,26 @@ public class LoginService {
             response.addProperty("status", 500);
             return response;
         }
+    }
+
+    private static boolean matchesPassword(String plainPassword, String storedHash) {
+        if (plainPassword == null || storedHash == null || storedHash.isBlank()) {
+            return false;
+        }
+
+        try {
+            return BCrypt.checkpw(plainPassword, normalizeBcryptRevision(storedHash));
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
+    private static String normalizeBcryptRevision(String hash) {
+        if (hash.startsWith("$2y$") || hash.startsWith("$2x$")) {
+            return "$2a$" + hash.substring(4);
+        }
+
+        return hash;
     }
 }
  

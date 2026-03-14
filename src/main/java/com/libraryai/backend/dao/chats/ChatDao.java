@@ -8,6 +8,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.config.DatabaseConnection;
 
+/**
+ * DAO para persistir y consultar el historial de mensajes asociado a un relato.
+ */
 public class ChatDao {
     // language=sql;
     static String SQL_INSERT = """
@@ -26,6 +29,9 @@ public class ChatDao {
             WHERE FK_RelatoID = ?
             """;
 
+    /**
+     * Guarda un mensaje dentro del historial del chat del relato.
+     */
     public static void save(int idRelato, String emisor, String mensaje, int orden){
         try (
             Connection conn = DatabaseConnection.getConnection();
@@ -47,6 +53,9 @@ public class ChatDao {
 
     }
 
+    /**
+     * Devuelve el historial completo del chat ordenado por secuencia de mensaje.
+     */
     public static JsonObject listByStory(int idRelato) {
         JsonObject response = new JsonObject();
         JsonArray mensajes = new JsonArray();
@@ -79,6 +88,9 @@ public class ChatDao {
         return response;
     }
 
+    /**
+     * Elimina todo el historial de chat vinculado a un relato.
+     */
     public static JsonObject deleteByStory(int idRelato) {
         JsonObject response = new JsonObject();
 

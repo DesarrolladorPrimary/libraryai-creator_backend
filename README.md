@@ -114,7 +114,9 @@ EMAIL_PASS="tu_contraseña_de_app_gmail"
 
 # Inteligencia Artificial (Google Gemini)
 GEMINI_API_KEY="tu_api_key_de_gemini"
-GEMINI_MODEL="gemini-2.0-flash-exp"
+GEMINI_MODEL="gemini-2.5-flash"
+GEMINI_FREE_MODEL="gemini-2.5-flash"
+GEMINI_PREMIUM_MODEL="gemini-2.5-pro"
 
 # Frontend público usado en correos de verificación y recuperación
 FRONTEND_BASE_URL="http://localhost:5500/public"

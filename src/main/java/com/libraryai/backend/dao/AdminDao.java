@@ -129,6 +129,9 @@ public class AdminDao {
             ORDER BY pg.FechaPago DESC, pg.PK_PagoID DESC;
             """;
 
+    /**
+     * Lista usuarios con rol, plan y estado de suscripción para gestión admin.
+     */
     public static JsonArray listAdminUsers() {
         JsonArray users = new JsonArray();
 
@@ -162,6 +165,9 @@ public class AdminDao {
         return users;
     }
 
+    /**
+     * Actualiza el estado activo del usuario.
+     */
     public static JsonObject updateUserStatus(int userId, boolean active) {
         JsonObject response = new JsonObject();
 
@@ -189,6 +195,9 @@ public class AdminDao {
         }
     }
 
+    /**
+     * Reemplaza el rol actual de un usuario y registra auditoría del cambio.
+     */
     public static JsonObject updateUserRole(int userId, int adminId, String newRole) {
         JsonObject response = new JsonObject();
         Connection conn = null;
@@ -273,6 +282,9 @@ public class AdminDao {
         }
     }
 
+    /**
+     * Obtiene métricas agregadas para el dashboard administrativo.
+     */
     public static JsonObject getSystemStats() {
         JsonObject stats = new JsonObject();
 
@@ -282,7 +294,7 @@ public class AdminDao {
                 ResultSet rs = stmt.executeQuery(SQL_SYSTEM_STATS)) {
 
             if (!rs.next()) {
-                stats.addProperty("Mensaje", "No fue posible obtener estadisticas");
+                stats.addProperty("Mensaje", "No fue posible obtener estadísticas");
                 stats.addProperty("status", 404);
                 return stats;
             }
@@ -297,12 +309,15 @@ public class AdminDao {
             stats.addProperty("status", 200);
             return stats;
         } catch (SQLException e) {
-            stats.addProperty("Mensaje", "Error al obtener estadisticas del sistema");
+            stats.addProperty("Mensaje", "Error al obtener estadísticas del sistema");
             stats.addProperty("status", 500);
             return stats;
         }
     }
 
+    /**
+     * Resume los planes existentes con usuarios activos asociados.
+     */
     public static JsonArray getPlansSummary() {
         JsonArray plans = new JsonArray();
 
@@ -313,9 +328,14 @@ public class AdminDao {
 
             while (rs.next()) {
                 JsonObject plan = new JsonObject();
+                String nombrePlan = rs.getString("NombrePlan");
+                long almacenamientoMaxMb = rs.getLong("AlmacenamientoMaxMB");
+                if (rs.wasNull() && nombrePlan != null && nombrePlan.toLowerCase().contains("premium")) {
+                    almacenamientoMaxMb = 2048L;
+                }
                 plan.addProperty("PK_PlanID", rs.getInt("PK_PlanID"));
-                plan.addProperty("NombrePlan", rs.getString("NombrePlan"));
-                plan.addProperty("AlmacenamientoMaxMB", rs.getLong("AlmacenamientoMaxMB"));
+                plan.addProperty("NombrePlan", nombrePlan);
+                plan.addProperty("AlmacenamientoMaxMB", almacenamientoMaxMb);
                 plan.addProperty("Precio", rs.getBigDecimal("Precio"));
                 plan.addProperty("Activo", rs.getBoolean("Activo"));
                 plan.addProperty("UsuariosActivos", rs.getInt("UsuariosActivos"));
@@ -331,6 +351,9 @@ public class AdminDao {
         return plans;
     }
 
+    /**
+     * Obtiene el historial de pagos simulados ordenado por fecha.
+     */
     public static JsonArray getPaymentHistory() {
         JsonArray payments = new JsonArray();
 

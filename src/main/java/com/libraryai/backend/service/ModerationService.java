@@ -15,12 +15,12 @@ import com.libraryai.backend.dao.ModerationDao;
 public class ModerationService {
 
     public static JsonObject validateText(String text, int userId, String userMessage, String logReason) {
-        String normalizedText = normalize(text);
-        if (normalizedText.isBlank()) {
+        TextVariants variants = buildVariants(text);
+        if (variants.spaced.isBlank() && variants.collapsed.isBlank()) {
             return null;
         }
 
-        if (containsExplicitMarkers(normalizedText) || containsForbiddenWord(normalizedText, ModerationDao.listForbiddenWords())) {
+        if (containsExplicitMarkers(variants) || containsForbiddenWord(variants, ModerationDao.listForbiddenWords())) {
             ModerationDao.createModerationLog(userId, logReason, hash(text));
 
             JsonObject response = new JsonObject();
@@ -32,26 +32,51 @@ public class ModerationService {
         return null;
     }
 
-    private static boolean containsExplicitMarkers(String normalizedText) {
-        return normalizedText.contains("+18") || normalizedText.contains("nsfw");
+    private static boolean containsExplicitMarkers(TextVariants variants) {
+        if (variants == null) {
+            return false;
+        }
+
+        if (Pattern.compile("(?iu)(?:^|\\s)(?:\\+\\s*18|18\\s*\\+)(?:$|\\s)")
+                .matcher(variants.spaced)
+                .find()) {
+            return true;
+        }
+
+        String collapsed = variants.collapsed;
+        return collapsed.contains("nsfw")
+                || collapsed.contains("porno")
+                || collapsed.contains("pornografia")
+                || collapsed.contains("sexoexplicito")
+                || collapsed.contains("contenidoadulto")
+                || collapsed.contains("xxx");
     }
 
-    private static boolean containsForbiddenWord(String normalizedText, List<String> forbiddenWords) {
+    private static boolean containsForbiddenWord(TextVariants variants, List<String> forbiddenWords) {
+        if (variants == null) {
+            return false;
+        }
+
         for (String rawWord : forbiddenWords) {
-            String normalizedWord = normalize(rawWord);
-            if (normalizedWord.isBlank()) {
+            TextVariants wordVariants = buildVariants(rawWord);
+            if (wordVariants.spaced.isBlank() && wordVariants.collapsed.isBlank()) {
                 continue;
             }
 
-            if (normalizedWord.contains(" ")) {
-                if (normalizedText.contains(normalizedWord)) {
+            if (wordVariants.spaced.contains(" ")) {
+                if (variants.spaced.contains(wordVariants.spaced)
+                        || (!wordVariants.collapsed.isBlank() && variants.collapsed.contains(wordVariants.collapsed))) {
                     return true;
                 }
                 continue;
             }
 
-            Pattern pattern = Pattern.compile("(?iu)\\b" + Pattern.quote(normalizedWord) + "\\b");
-            if (pattern.matcher(normalizedText).find()) {
+            Pattern pattern = Pattern.compile("(?iu)\\b" + Pattern.quote(wordVariants.spaced) + "\\b");
+            if (pattern.matcher(variants.spaced).find()) {
+                return true;
+            }
+
+            if (!wordVariants.collapsed.isBlank() && variants.collapsed.contains(wordVariants.collapsed)) {
                 return true;
             }
         }
@@ -59,10 +84,36 @@ public class ModerationService {
         return false;
     }
 
-    private static String normalize(String value) {
+    private static TextVariants buildVariants(String value) {
         String normalized = String.valueOf(value == null ? "" : value).trim().toLowerCase();
         normalized = Normalizer.normalize(normalized, Normalizer.Form.NFD);
-        return normalized.replaceAll("\\p{M}+", "");
+        normalized = normalized.replaceAll("\\p{M}+", "");
+
+        StringBuilder canonical = new StringBuilder(normalized.length());
+        for (char current : normalized.toCharArray()) {
+            canonical.append(mapLeetCharacter(current));
+        }
+
+        String spaced = canonical
+                .toString()
+                .replaceAll("[^a-z0-9+]+", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        String collapsed = spaced.replace(" ", "");
+        return new TextVariants(spaced, collapsed);
+    }
+
+    private static char mapLeetCharacter(char current) {
+        return switch (current) {
+            case '@', '4' -> 'a';
+            case '3' -> 'e';
+            case '1', '!', '|', 'í', 'ì', 'ï', 'î' -> 'i';
+            case '0' -> 'o';
+            case '$', '5' -> 's';
+            case '7' -> 't';
+            case '8' -> 'b';
+            default -> current;
+        };
     }
 
     private static String hash(String value) {
@@ -78,6 +129,16 @@ public class ModerationService {
             return builder.toString();
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    private static final class TextVariants {
+        private final String spaced;
+        private final String collapsed;
+
+        private TextVariants(String spaced, String collapsed) {
+            this.spaced = spaced == null ? "" : spaced;
+            this.collapsed = collapsed == null ? "" : collapsed;
         }
     }
 }

@@ -9,10 +9,16 @@ import com.libraryai.backend.dao.AdminDao;
  */
 public class AdminService {
 
+    /**
+     * Obtiene la lista de usuarios gestionables en el panel admin.
+     */
     public static JsonArray listAdminUsers() {
         return AdminDao.listAdminUsers();
     }
 
+    /**
+     * Actualiza el estado activo/suspendido de un usuario.
+     */
     public static JsonObject updateUserStatus(int userId, boolean active) {
         if (userId <= 0) {
             JsonObject response = new JsonObject();
@@ -24,6 +30,9 @@ public class AdminService {
         return AdminDao.updateUserStatus(userId, active);
     }
 
+    /**
+     * Cambia el rol de un usuario validando datos mínimos del administrador.
+     */
     public static JsonObject updateUserRole(int userId, int adminId, String newRole) {
         JsonObject response = new JsonObject();
 
@@ -48,14 +57,23 @@ public class AdminService {
         return AdminDao.updateUserRole(userId, adminId, newRole.trim());
     }
 
+    /**
+     * Obtiene métricas globales del sistema.
+     */
     public static JsonObject getSystemStats() {
         return AdminDao.getSystemStats();
     }
 
+    /**
+     * Obtiene el resumen de planes configurados.
+     */
     public static JsonArray getPlansSummary() {
         return AdminDao.getPlansSummary();
     }
 
+    /**
+     * Obtiene el historial de pagos simulados.
+     */
     public static JsonArray getPaymentHistory() {
         return AdminDao.getPaymentHistory();
     }

@@ -926,7 +926,7 @@ antes de guardar.
 2. Si el usuario es "Gratuito", el sistema validará
 que no exceda el límite de 500 MB.
 3. Si el usuario es "Premium", el sistema
-permitirá almacenamiento ilimitado.
+permitirá almacenamiento de hasta 2 GB.
 
 Prioridad
 
@@ -1087,7 +1087,7 @@ Rol "Gratuito": Es el rol por defecto al
 registrarse. Tiene acceso a funciones limitadas.
 Rol "Premium": Rol de suscripción simulada en
 beta. Tiene límites
-ampliados o ilimitados.
+ampliados, incluyendo hasta 2 GB de almacenamiento.
 Rol "Administrador": Tiene acceso a funciones
 de gestión del sistema, incluyendo la capacidad
 de modificar los roles de otros usuarios.

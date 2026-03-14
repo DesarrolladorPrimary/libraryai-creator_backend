@@ -15,6 +15,9 @@ import com.sun.net.httpserver.HttpHandler;
  */
 public class AdminController {
 
+    /**
+     * Expone el listado de usuarios visible para administración.
+     */
     public static HttpHandler listUsers() {
         return exchange -> {
             JsonArray response = AdminService.listAdminUsers();
@@ -23,6 +26,9 @@ public class AdminController {
         };
     }
 
+    /**
+     * Suspende o reactiva un usuario según el flag recibido en el body.
+     */
     public static HttpHandler updateUserStatus() {
         return exchange -> {
             String query = exchange.getRequestURI().getQuery();
@@ -66,6 +72,9 @@ public class AdminController {
         };
     }
 
+    /**
+     * Cambia el rol de un usuario y registra la auditoría del cambio.
+     */
     public static HttpHandler updateUserRole() {
         return exchange -> {
             String query = exchange.getRequestURI().getQuery();
@@ -115,6 +124,9 @@ public class AdminController {
         };
     }
 
+    /**
+     * Devuelve métricas agregadas del sistema para el dashboard admin.
+     */
     public static HttpHandler getStats() {
         return exchange -> {
             JsonObject response = AdminService.getSystemStats();
@@ -124,6 +136,9 @@ public class AdminController {
         };
     }
 
+    /**
+     * Devuelve el resumen de planes disponibles y usuarios activos por plan.
+     */
     public static HttpHandler getPlans() {
         return exchange -> {
             JsonArray response = AdminService.getPlansSummary();
@@ -132,6 +147,9 @@ public class AdminController {
         };
     }
 
+    /**
+     * Devuelve el historial de pagos simulados visible para administración.
+     */
     public static HttpHandler getPayments() {
         return exchange -> {
             JsonArray response = AdminService.getPaymentHistory();

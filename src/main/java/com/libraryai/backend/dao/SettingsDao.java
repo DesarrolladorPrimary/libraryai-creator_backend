@@ -23,6 +23,7 @@ public class SettingsDao {
     private static final String ROLE_FREE = "Gratuito";
     private static final String ROLE_PREMIUM = "Premium";
     private static final long PLAN_FREE_STORAGE_MB = 500L;
+    private static final long PLAN_PREMIUM_STORAGE_MB = 2048L;
     private static final BigDecimal PLAN_FREE_PRICE = BigDecimal.ZERO;
     private static final BigDecimal PLAN_PREMIUM_PRICE = new BigDecimal("9.99");
 
@@ -118,11 +119,9 @@ public class SettingsDao {
                 String planName = rs.getString("NombrePlan");
                 String normalizedPlan = normalizePlanName(planName);
                 Long almacenamientoMax = rs.getObject("AlmacenamientoMaxMB") == null
-                        ? null
+                        ? (isPremiumPlan(planName) ? PLAN_PREMIUM_STORAGE_MB : null)
                         : ((Number) rs.getObject("AlmacenamientoMaxMB")).longValue();
-                boolean almacenamientoIlimitado = isPremiumPlan(planName)
-                        || almacenamientoMax == null
-                        || almacenamientoMax <= 0;
+                boolean almacenamientoIlimitado = almacenamientoMax == null || almacenamientoMax <= 0;
                 double usedStorageMb = bytesToMb(UploadedFileDao.sumBytesByUser(userId));
                 response.addProperty("status", 200);
                 response.addProperty("plan", normalizedPlan);
@@ -162,6 +161,9 @@ public class SettingsDao {
         return response;
     }
 
+    /**
+     * Simula un cambio de plan creando suscripción, pago simulado y rol efectivo.
+     */
     public static JsonObject simulateSubscriptionChange(int userId, String requestedPlan) {
         JsonObject response = new JsonObject();
         String normalizedPlan = normalizePlanName(requestedPlan);
@@ -225,11 +227,30 @@ public class SettingsDao {
      * Obtiene la versión actual del modelo IA (RF_23).
      */
     public static JsonObject getVersionActual() {
+        return getVersionActual(ROLE_FREE);
+    }
+
+    /**
+     * Resuelve el modelo preferente según el plan solicitado.
+     */
+    public static JsonObject getVersionActual(String plan) {
         JsonObject response = new JsonObject();
-        String sql = """
+        String sql = isPremiumPlan(plan)
+                ? """
             SELECT PK_ModeloID, NombreModelo, Version, Descripcion, NotasVersion, Estado, EsGratuito
             FROM ModeloIA
             WHERE Estado = 'Activo'
+            ORDER BY CASE
+                WHEN LOWER(NombreModelo) = LOWER(?) THEN 0
+                WHEN EsGratuito = FALSE THEN 1
+                ELSE 2
+            END, PK_ModeloID ASC
+            LIMIT 1
+        """
+                : """
+            SELECT PK_ModeloID, NombreModelo, Version, Descripcion, NotasVersion, Estado, EsGratuito
+            FROM ModeloIA
+            WHERE Estado = 'Activo' AND EsGratuito = TRUE
             ORDER BY CASE
                 WHEN LOWER(NombreModelo) = LOWER(?) THEN 0
                 ELSE 1
@@ -240,25 +261,19 @@ public class SettingsDao {
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, AIConfig.MODEL_AI == null ? "" : AIConfig.MODEL_AI.trim());
+            stmt.setString(1, getPreferredModelNameForPlan(plan));
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
+                response = buildModelJson(rs);
                 response.addProperty("status", 200);
-                response.addProperty("id", rs.getInt("PK_ModeloID"));
-                response.addProperty("version", rs.getString("Version"));
-                response.addProperty("nombre", rs.getString("NombreModelo"));
-                response.addProperty("descripcion", rs.getString("Descripcion"));
-                response.addProperty("changelog", rs.getString("NotasVersion") != null ? rs.getString("NotasVersion") : "");
-                response.addProperty("activo", rs.getString("NombreModelo"));
-                response.addProperty("gratuito", rs.getBoolean("EsGratuito"));
             } else {
-                return buildConfiguredModelFallback();
+                return buildConfiguredModelFallback(plan);
             }
 
         } catch (Exception e) {
             System.out.println("Error en getVersionActual: " + e.getMessage());
-            return buildConfiguredModelFallback();
+            return buildConfiguredModelFallback(plan);
         }
 
         return response;
@@ -278,7 +293,11 @@ public class SettingsDao {
                 SELECT PK_ModeloID, NombreModelo, Version, Descripcion, NotasVersion, EsGratuito
                 FROM ModeloIA
                 WHERE Estado = 'Activo'
-                ORDER BY EsGratuito ASC, PK_ModeloID ASC
+                ORDER BY CASE
+                    WHEN LOWER(NombreModelo) = LOWER(?) THEN 0
+                    WHEN EsGratuito = FALSE THEN 1
+                    ELSE 2
+                END, PK_ModeloID ASC
             """;
         } else {
             // Gratuito solo tiene acceso a modelos gratuitos
@@ -286,13 +305,17 @@ public class SettingsDao {
                 SELECT PK_ModeloID, NombreModelo, Version, Descripcion, NotasVersion, EsGratuito
                 FROM ModeloIA
                 WHERE Estado = 'Activo' AND EsGratuito = TRUE
-                ORDER BY PK_ModeloID ASC
+                ORDER BY CASE
+                    WHEN LOWER(NombreModelo) = LOWER(?) THEN 0
+                    ELSE 1
+                END, PK_ModeloID ASC
             """;
         }
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
+            stmt.setString(1, getPreferredModelNameForPlan(plan));
             ResultSet rs = stmt.executeQuery();
             
             JsonArray modelos = new JsonArray();
@@ -314,6 +337,9 @@ public class SettingsDao {
         return response;
     }
 
+    /**
+     * Busca un modelo IA específico si se encuentra activo en catálogo.
+     */
     public static JsonObject getModeloById(int modelId) {
         JsonObject response = new JsonObject();
         String sql = """
@@ -379,7 +405,7 @@ public class SettingsDao {
             stmt.setString(1, planName);
 
             if (isPremiumPlan(planName)) {
-                stmt.setNull(2, Types.BIGINT);
+                stmt.setLong(2, PLAN_PREMIUM_STORAGE_MB);
                 stmt.setBigDecimal(3, PLAN_PREMIUM_PRICE);
             } else {
                 stmt.setLong(2, PLAN_FREE_STORAGE_MB);
@@ -502,18 +528,36 @@ public class SettingsDao {
 
     private static JsonObject buildModelJson(ResultSet rs) throws java.sql.SQLException {
         JsonObject modelo = new JsonObject();
+        String nombre = rs.getString("NombreModelo");
+        String version = rs.getString("Version");
+        String descripcion = rs.getString("Descripcion") != null ? rs.getString("Descripcion") : "";
+        String notasVersion = rs.getString("NotasVersion") != null ? rs.getString("NotasVersion") : "";
         modelo.addProperty("id", rs.getInt("PK_ModeloID"));
-        modelo.addProperty("nombre", rs.getString("NombreModelo"));
-        modelo.addProperty("version", rs.getString("Version"));
-        modelo.addProperty("descripcion", rs.getString("Descripcion") != null ? rs.getString("Descripcion") : "");
-        modelo.addProperty("notasVersion", rs.getString("NotasVersion") != null ? rs.getString("NotasVersion") : "");
+        modelo.addProperty("nombre", nombre);
+        modelo.addProperty("version", version);
+        modelo.addProperty("descripcion", descripcion);
+        modelo.addProperty("notasVersion", notasVersion);
+        modelo.addProperty("changelog", notasVersion);
+        modelo.addProperty("activo", nombre);
         modelo.addProperty("gratuito", rs.getBoolean("EsGratuito"));
         return modelo;
     }
 
-    private static JsonObject buildConfiguredModelFallback() {
+    private static String getPreferredModelNameForPlan(String plan) {
+        if (isPremiumPlan(plan) && AIConfig.PREMIUM_MODEL != null && !AIConfig.PREMIUM_MODEL.isBlank()) {
+            return AIConfig.PREMIUM_MODEL.trim();
+        }
+
+        if (AIConfig.FREE_MODEL != null && !AIConfig.FREE_MODEL.isBlank()) {
+            return AIConfig.FREE_MODEL.trim();
+        }
+
+        return AIConfig.MODEL_AI == null ? "" : AIConfig.MODEL_AI.trim();
+    }
+
+    private static JsonObject buildConfiguredModelFallback(String plan) {
         JsonObject response = new JsonObject();
-        String configuredModel = AIConfig.MODEL_AI == null ? "" : AIConfig.MODEL_AI.trim();
+        String configuredModel = getPreferredModelNameForPlan(plan);
 
         if (configuredModel.isBlank()) {
             response.addProperty("status", 404);
@@ -523,11 +567,12 @@ public class SettingsDao {
 
         response.addProperty("status", 200);
         response.addProperty("nombre", configuredModel);
-        response.addProperty("version", "Configuracion global");
+        response.addProperty("version", "Configuración global");
         response.addProperty("descripcion", "Modelo operativo configurado desde el entorno del backend.");
         response.addProperty("changelog", "Sin registro cargado en la tabla ModeloIA.");
+        response.addProperty("notasVersion", "Sin registro cargado en la tabla ModeloIA.");
         response.addProperty("activo", configuredModel);
-        response.addProperty("gratuito", true);
+        response.addProperty("gratuito", !isPremiumPlan(plan));
         return response;
     }
 }

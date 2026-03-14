@@ -20,7 +20,7 @@ import com.libraryai.backend.service.ai.GeminiService;
 import com.libraryai.backend.util.DocumentTextExtractor;
 
 /**
- * Servicio para la lÃ³gica de negocio de chat.
+ * Servicio para la lógica de negocio de chat.
  */
 public class ChatService {
 
@@ -39,13 +39,13 @@ public class ChatService {
     }
 
     /**
-     * EnvÃ­a un mensaje en el chat de un relato.
+     * Envía un mensaje en el chat de un relato.
      * 
      * @param relatoId ID del relato
-     * @param usuarioId ID del usuario que envÃ­a el mensaje
+     * @param usuarioId ID del usuario que envía el mensaje
      * @param emisor Tipo de emisor ('Usuario', 'Poly', 'Sistema')
      * @param contenido Contenido del mensaje
-     * @return JsonObject con el resultado de la operaciÃ³n
+     * @return JsonObject con el resultado de la operación
      */
     public static JsonObject sendMessage(
             int relatoId,
@@ -54,10 +54,10 @@ public class ChatService {
             String contenido,
             JsonObject parametrosIA,
             JsonObject archivoContexto) {
-        // Validaciones bÃ¡sicas
+        // Validaciones básicas
         if (relatoId <= 0 || usuarioId <= 0) {
             JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "IDs invÃ¡lidos");
+            response.addProperty("Mensaje", "IDs inválidos");
             response.addProperty("status", 400);
             return response;
         }
@@ -76,10 +76,10 @@ public class ChatService {
             return response;
         }
         
-        // Validar que el emisor sea vÃ¡lido
+        // Validar que el emisor sea válido
         if (!emisor.equals("Usuario") && !emisor.equals("Poly") && !emisor.equals("Sistema")) {
             JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "Emisor invÃ¡lido. Debe ser 'Usuario', 'Poly' o 'Sistema'");
+            response.addProperty("Mensaje", "Emisor inválido. Debe ser 'Usuario', 'Poly' o 'Sistema'");
             response.addProperty("status", 400);
             return response;
         }
@@ -96,8 +96,8 @@ public class ChatService {
             JsonObject moderationResult = ModerationService.validateText(
                     contenido,
                     usuarioId,
-                    "Poly no admite contenido +18 o palabras bloqueadas. Ajusta el mensaje e intÃ©ntalo de nuevo.",
-                    "Mensaje de chat bloqueado por moderaciÃ³n");
+                    "Poly no admite contenido +18 o palabras bloqueadas. Ajusta el mensaje e inténtalo de nuevo.",
+                    "Mensaje de chat bloqueado por moderación");
             if (moderationResult != null) {
                 return moderationResult;
             }
@@ -143,7 +143,7 @@ public class ChatService {
     public static JsonObject getChatHistory(int relatoId, int usuarioId) {
         if (relatoId <= 0 || usuarioId <= 0) {
             JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "IDs invÃ¡lidos");
+            response.addProperty("Mensaje", "IDs inválidos");
             response.addProperty("status", 400);
             return response;
         }
@@ -156,7 +156,7 @@ public class ChatService {
         try {
             JsonObject result = ChatDao.listByStory(relatoId);
             
-            // Enriquecer el resultado con informaciÃ³n adicional
+            // Enriquecer el resultado con información adicional
             if (result.get("status").getAsInt() == 200) {
                 JsonObject response = new JsonObject();
                 response.add("mensajes", result.get("mensajes"));
@@ -178,7 +178,7 @@ public class ChatService {
     }
 
     /**
-     * Genera una respuesta automatica de Poly (IA).
+     * Genera una respuesta automática de Poly (IA).
      * 
      * @param relatoId ID del relato
      * @param mensajeUsuario Mensaje del usuario al que responder
@@ -212,7 +212,7 @@ public class ChatService {
             if (!isUsablePolyPayload(payload)) {
                 int siguienteOrden = getSiguienteOrden(relatoId);
                 ChatDao.save(relatoId, "Sistema",
-                        "Poly no pudo generar una respuesta en este intento. Intenta de nuevo en unos segundos o reformula la instruccion.",
+                        "Poly no pudo generar una respuesta en este intento. Intenta de nuevo en unos segundos o reformula la instrucción.",
                         siguienteOrden);
                 return;
             }
@@ -220,11 +220,18 @@ public class ChatService {
             int siguienteOrden = getSiguienteOrden(relatoId);
             String chatMessage = payload.canvasDraft.isBlank()
                     ? sanitizeChatMessage(payload.chatMessage)
-                    : buildCanvasUpdateMessage(payload.chatMessage, mensajeUsuario, previousDraft, payload.canvasDraft);
+                    : buildCanvasUpdateMessage(
+                            payload.chatMessage,
+                            mensajeUsuario,
+                            previousDraft,
+                            mergeCanvasDraft(previousDraft, payload.canvasDraft));
             ChatDao.save(relatoId, "Poly", chatMessage, siguienteOrden);
 
             if (!payload.canvasDraft.isBlank()) {
-                StoryDao.updateDescription(relatoId, payload.canvasDraft);
+                String mergedDraft = mergeCanvasDraft(previousDraft, payload.canvasDraft);
+                if (!mergedDraft.isBlank() && !mergedDraft.equals(previousDraft)) {
+                    StoryDao.updateDescription(relatoId, mergedDraft);
+                }
             }
 
             System.out.println("Respuesta de Poly generada para relato " + relatoId);
@@ -235,7 +242,7 @@ public class ChatService {
             try {
                 int siguienteOrden = getSiguienteOrden(relatoId);
                 ChatDao.save(relatoId, "Sistema",
-                        "Poly no pudo generar una respuesta en este intento. Intenta de nuevo en unos segundos o reformula la instruccion.",
+                        "Poly no pudo generar una respuesta en este intento. Intenta de nuevo en unos segundos o reformula la instrucción.",
                         siguienteOrden);
             } catch (Exception ex) {
                 System.err.println("Error al enviar mensaje de sistema: " + ex.getMessage());
@@ -251,8 +258,8 @@ public class ChatService {
                 && storyResponse.has("relato")) {
             JsonObject relato = storyResponse.getAsJsonObject("relato");
             prompt.append("Contexto del relato actual:\n");
-            prompt.append("Titulo: ")
-                    .append(relato.has("titulo") ? relato.get("titulo").getAsString() : "Sin titulo")
+            prompt.append("Título: ")
+                    .append(relato.has("titulo") ? relato.get("titulo").getAsString() : "Sin título")
                     .append("\n");
             prompt.append("Modo: ")
                     .append(relato.has("modoOrigen") ? relato.get("modoOrigen").getAsString() : "Sin modo")
@@ -354,7 +361,8 @@ public class ChatService {
         }
 
         prompt.append("\nUltimo mensaje del usuario:\n").append(mensajeUsuario).append("\n\n");
-        prompt.append("Responde como Poly. Si ya hay suficiente contexto, desarrolla directamente el borrador de la historia en texto narrativo util para el canvas. ");
+        prompt.append("Responde como Poly. Si ya hay suficiente contexto, escribe el siguiente fragmento narrativo que continue el borrador actual como una novela. ");
+        prompt.append("No reescribas desde cero el texto previo ni repitas escenas ya resueltas. ");
         prompt.append("Si aun falta contexto, guia al usuario con una respuesta breve pero orientada a construir el relato final.");
 
         return prompt.toString();
@@ -364,19 +372,22 @@ public class ChatService {
         StringBuilder instrucciones = new StringBuilder();
         instrucciones.append("Eres Poly, un asistente de escritura creativa. ");
         instrucciones.append("Debes ayudar a construir relatos listos para convertirse en borrador final. ");
-        instrucciones.append("CanvasAI debe recibir el texto final del relato, no la conversacion. ");
+        instrucciones.append("CanvasAI debe recibir la continuación narrativa del relato, no la conversación. ");
         instrucciones.append("Evita meta-explicaciones innecesarias y prioriza contenido narrativo cuando el usuario ya haya dado suficiente contexto. ");
-        instrucciones.append("Si ya puedes escribir un borrador final, responde con este formato exacto:\n");
+        instrucciones.append("Si ya existe borrador, debes continuarlo como una novela y agregar solo el tramo nuevo. ");
+        instrucciones.append("No reescribas desde cero el contenido existente, no lo resumes y no lo sustituyas por otra versión completa. ");
+        instrucciones.append("Si ya puedes escribir un avance narrativo, responde con este formato exacto:\n");
         instrucciones.append("[[CANVAS]]\n");
-        instrucciones.append("texto narrativo final, continuo y listo para CanvasAI\n");
+        instrucciones.append("solo el nuevo fragmento narrativo que debe agregarse al final del borrador actual\n");
         instrucciones.append("[[/CANVAS]]\n");
         instrucciones.append("[[CHAT]]\n");
         instrucciones.append("una nota breve para el chat confirmando que actualizaste el canvas\n");
         instrucciones.append("[[/CHAT]]\n");
-        instrucciones.append("Si todavia falta contexto, responde solo con el bloque [[CHAT]] y no incluyas [[CANVAS]]. ");
+        instrucciones.append("Si todavía falta contexto, responde solo con el bloque [[CHAT]] y no incluyas [[CANVAS]]. ");
         instrucciones.append("Dentro de [[CANVAS]] no pongas encabezados, etiquetas ni explicaciones al usuario.");
-        instrucciones.append(" No repitas literalmente frases de confirmacion anteriores ni contestes con el mismo texto en mensajes consecutivos.");
-        instrucciones.append(" Si incluyes [[CHAT]], debe mencionar el avance concreto realizado y evitar formulas genericas repetidas.");
+        instrucciones.append(" Mantén continuidad de voz, personajes, tono, tiempo verbal y hechos previos.");
+        instrucciones.append(" No repitas literalmente frases de confirmación anteriores ni contestes con el mismo texto en mensajes consecutivos.");
+        instrucciones.append(" Si incluyes [[CHAT]], debe mencionar el avance concreto realizado y evitar fórmulas genéricas repetidas.");
 
         JsonObject effectiveSettings = buildEffectiveAISettings(relatoId, usuarioId, parametrosIA);
         String permanentInstruction = getPermanentInstruction(usuarioId);
@@ -407,12 +418,12 @@ public class ChatService {
         }
 
         if (!permanentInstruction.isBlank()) {
-            instrucciones.append("\n\nInstruccion permanente del usuario:\n").append(permanentInstruction);
+            instrucciones.append("\n\nInstrucción permanente del usuario:\n").append(permanentInstruction);
         }
 
         if (!premiumUser) {
             instrucciones.append(
-                    "\n\nLimitacion de plan Gratuito: mantÃ©n las respuestas compactas y prioriza avances breves.");
+                    "\n\nLimitación de plan Gratuito: mantén las respuestas compactas y prioriza avances breves.");
             instrucciones.append(
                     " Si generas [[CANVAS]], entrega un borrador corto y enfocado. No excedas aproximadamente 220 palabras en total.");
         }
@@ -642,12 +653,117 @@ public class ChatService {
             return "Extendi el borrador del canvas con un avance nuevo y mas desarrollo narrativo.";
         }
 
-        return "Actualice el canvas con una nueva version del borrador para que no repitamos el mismo tramo.";
+        return "Actualicé el canvas con una nueva versión del borrador para que no repitamos el mismo tramo.";
     }
     private static String sanitizeCanvasDraft(String text) {
         String sanitized = String.valueOf(text == null ? "" : text).trim();
         sanitized = sanitized.replaceAll("(?im)^borrador final\\s*:?\\s*", "");
         return sanitized.trim();
+    }
+
+    private static String mergeCanvasDraft(String previousDraft, String nextFragment) {
+        String previous = sanitizeCanvasDraft(previousDraft);
+        String candidate = sanitizeCanvasDraft(nextFragment);
+
+        if (candidate.isBlank()) {
+            return previous;
+        }
+
+        if (previous.isBlank()) {
+            return candidate;
+        }
+
+        if (previous.equals(candidate)) {
+            return previous;
+        }
+
+        List<String> mergedParagraphs = new ArrayList<>(splitNarrativeParagraphs(previous));
+        LinkedHashSet<String> seenParagraphs = new LinkedHashSet<>();
+        for (String paragraph : mergedParagraphs) {
+            String key = normalizeNarrativeKey(paragraph);
+            if (!key.isBlank()) {
+                seenParagraphs.add(key);
+            }
+        }
+
+        List<String> newParagraphs = new ArrayList<>();
+        for (String paragraph : splitNarrativeParagraphs(candidate)) {
+            String key = normalizeNarrativeKey(paragraph);
+            if (key.isBlank() || seenParagraphs.contains(key)) {
+                continue;
+            }
+
+            newParagraphs.add(paragraph);
+            seenParagraphs.add(key);
+        }
+
+        if (newParagraphs.isEmpty()) {
+            String suffix = extractIncrementalSuffix(previous, candidate);
+            if (suffix.isBlank()) {
+                return previous;
+            }
+
+            newParagraphs.addAll(splitNarrativeParagraphs(suffix));
+        }
+
+        if (newParagraphs.isEmpty()) {
+            return previous;
+        }
+
+        mergedParagraphs.addAll(newParagraphs);
+        return String.join("\n\n", mergedParagraphs).trim();
+    }
+
+    private static List<String> splitNarrativeParagraphs(String text) {
+        List<String> paragraphs = new ArrayList<>();
+        String normalized = String.valueOf(text == null ? "" : text).trim();
+        if (normalized.isBlank()) {
+            return paragraphs;
+        }
+
+        for (String paragraph : normalized.split("\\n\\s*\\n")) {
+            String cleaned = paragraph.trim();
+            if (!cleaned.isBlank()) {
+                paragraphs.add(cleaned);
+            }
+        }
+
+        if (paragraphs.isEmpty()) {
+            paragraphs.add(normalized);
+        }
+
+        return paragraphs;
+    }
+
+    private static String extractIncrementalSuffix(String previous, String candidate) {
+        String previousNormalized = normalizeNarrativeKey(previous);
+        String candidateNormalized = normalizeNarrativeKey(candidate);
+        if (previousNormalized.isBlank() || candidateNormalized.isBlank()) {
+            return "";
+        }
+
+        if (candidate.startsWith(previous)) {
+            return candidate.substring(previous.length()).trim();
+        }
+
+        int exactIndex = candidate.indexOf(previous);
+        if (exactIndex >= 0) {
+            return candidate.substring(exactIndex + previous.length()).trim();
+        }
+
+        if (candidateNormalized.startsWith(previousNormalized) || candidateNormalized.contains(previousNormalized)) {
+            return "";
+        }
+
+        return candidate;
+    }
+
+    private static String normalizeNarrativeKey(String value) {
+        return String.valueOf(value == null ? "" : value)
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("\\p{Punct}+", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
     }
 
     private static String sanitizeChatMessage(String text) {
@@ -669,10 +785,10 @@ public class ChatService {
     }
 
     /**
-     * Obtiene el siguiente nÃºmero de orden para un relato.
+     * Obtiene el siguiente número de orden para un relato.
      * 
      * @param relatoId ID del relato
-     * @return Siguiente nÃºmero de orden
+     * @return Siguiente número de orden
      */
     private static int getSiguienteOrden(int relatoId) {
         try {
@@ -700,7 +816,7 @@ public class ChatService {
     public static JsonObject clearChatHistory(int relatoId, int usuarioId) {
         if (relatoId <= 0 || usuarioId <= 0) {
             JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "IDs invÃ¡lidos");
+            response.addProperty("Mensaje", "IDs inválidos");
             response.addProperty("status", 400);
             return response;
         }
@@ -714,16 +830,16 @@ public class ChatService {
     }
 
     /**
-     * Obtiene estadÃ­sticas del chat de un relato.
+     * Obtiene estadísticas del chat de un relato.
      * 
      * @param relatoId ID del relato
      * @param usuarioId ID del usuario solicitante
-     * @return JsonObject con estadÃ­sticas
+     * @return JsonObject con estadísticas
      */
     public static JsonObject getChatStats(int relatoId, int usuarioId) {
         if (relatoId <= 0 || usuarioId <= 0) {
             JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "IDs invÃ¡lidos");
+            response.addProperty("Mensaje", "IDs inválidos");
             response.addProperty("status", 400);
             return response;
         }
@@ -778,7 +894,7 @@ public class ChatService {
             
         } catch (Exception e) {
             JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "Error al obtener estadÃ­sticas: " + e.getMessage());
+            response.addProperty("Mensaje", "Error al obtener estadísticas: " + e.getMessage());
             response.addProperty("status", 500);
             return response;
         }

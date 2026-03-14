@@ -18,7 +18,8 @@ public class App {
             if (AIConfig.API_KEY == null || AIConfig.API_KEY.isBlank()) {
                 System.err.println("Aviso: GEMINI_API_KEY no está configurada. Poly responderá con el fallback local.");
             } else {
-                System.out.println("Gemini configurado con modelo: " + AIConfig.MODEL_AI);
+                System.out.println("Gemini configurado con modelos: gratuito=" + AIConfig.FREE_MODEL
+                        + ", premium=" + AIConfig.PREMIUM_MODEL);
             }
 
             SeedRoles.insertRoles();

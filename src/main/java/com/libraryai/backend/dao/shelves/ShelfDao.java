@@ -5,6 +5,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.config.DatabaseConnection;
 
+/**
+ * DAO para crear, listar, actualizar y eliminar estanterías del usuario.
+ */
 public class ShelfDao {
 
         private static final String DUPLICATE_SHELF_MESSAGE = "Ya tienes una estantería con ese nombre";
@@ -35,6 +38,9 @@ public class ShelfDao {
                         DELETE FROM  Estanteria WHERE PK_EstanteriaID = ?;
                         """;
 
+        /**
+         * Crea una estantería nueva para el usuario autenticado.
+         */
         public static JsonObject createShelf(int idUser, String nombreEstanteria) {
                 JsonObject responseJson = new JsonObject();
                 try (
@@ -70,6 +76,9 @@ public class ShelfDao {
                 }
         }
 
+        /**
+         * Lista todas las estanterías registradas para un usuario.
+         */
         public static JsonArray getShelvesByUserId(int idUser) {
                 JsonArray estanteriasArray = new JsonArray();
                 
@@ -99,6 +108,9 @@ public class ShelfDao {
 
 
 
+        /**
+         * Renombra una estantería existente.
+         */
         public static JsonObject updateShelf(String nombreCategoria, int idEstanteria){
                 JsonObject response = new JsonObject();
                 try (
@@ -115,7 +127,7 @@ public class ShelfDao {
                                 response.addProperty("status", 200);
                         }
                         else{
-                                response.addProperty("Mensaje", "No se pudo actualizar la estanteria");
+                                response.addProperty("Mensaje", "No se pudo actualizar la estantería");
                                 response.addProperty("status", 404);
                         }
 
@@ -140,6 +152,9 @@ public class ShelfDao {
 
 
 
+        /**
+         * Elimina una estantería por su identificador.
+         */
         public static JsonObject deleteShelf(int idEstanteria){
                 JsonObject response = new JsonObject();
                 try (
@@ -151,11 +166,11 @@ public class ShelfDao {
                         int filasAfect = pstmt.executeUpdate();
 
                         if (filasAfect > 0) {
-                                response.addProperty("Mensaje", "Se elimino correctamente");
+                                response.addProperty("Mensaje", "Se eliminó correctamente");
                                 response.addProperty("status", 200);
                         }
                         else{
-                                response.addProperty("Mensaje", "No se pudo eliminar la estanteria");
+                                response.addProperty("Mensaje", "No se pudo eliminar la estantería");
                                 response.addProperty("status", 404);
                         }
 
@@ -172,6 +187,9 @@ public class ShelfDao {
                 }
         }
 
+        /**
+         * Detecta errores de unicidad para traducirlos a un conflicto de negocio.
+         */
         private static boolean isDuplicateShelfError(SQLException exception) {
                 String sqlState = exception.getSQLState();
                 String message = exception.getMessage();

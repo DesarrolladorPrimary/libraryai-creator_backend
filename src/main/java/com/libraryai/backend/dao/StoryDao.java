@@ -266,6 +266,9 @@ public class StoryDao {
         return response;
     }
 
+    /**
+     * Actualiza únicamente el contenido del borrador del relato.
+     */
     public static JsonObject updateDescription(int relatoId, String descripcion) {
         JsonObject response = new JsonObject();
 

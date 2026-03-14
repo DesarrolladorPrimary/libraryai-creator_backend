@@ -7,6 +7,9 @@ import java.sql.SQLException;
 
 import com.libraryai.backend.config.DatabaseConnection;
 
+/**
+ * Seeder responsable de crear el catálogo mínimo de roles del sistema.
+ */
 public class SeedRoles {
 
     // language=sql
@@ -18,6 +21,9 @@ public class SeedRoles {
             "Admin", "Gratuito", "Premium"
     };
 
+    /**
+     * Inserta los roles base si la tabla aún no fue inicializada.
+     */
     public static void insertRoles() {
         try (
                 Connection conn = DatabaseConnection.getConnection();

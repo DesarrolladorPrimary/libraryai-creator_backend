@@ -7,6 +7,7 @@ import com.google.gson.JsonIOException;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.server.http.ApiRequest;
 import com.libraryai.backend.server.http.ApiResponse;
+import com.libraryai.backend.service.ModerationService;
 import com.libraryai.backend.service.SettingsService;
 import com.libraryai.backend.service.ai.GeminiService;
 import com.libraryai.backend.util.JwtUtil;
@@ -51,6 +52,16 @@ public class AiController {
                 int usuarioId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
                 if (usuarioId <= 0) {
                     ApiResponse.error(exchange, 401, "Usuario no autenticado");
+                    return;
+                }
+
+                JsonObject moderationResult = ModerationService.validateText(
+                        mensaje + "\n" + instrucciones,
+                        usuarioId,
+                        "La solicitud contiene contenido NSFW o palabras bloqueadas. Ajusta el texto antes de continuar.",
+                        "Solicitud de IA bloqueada por moderacion");
+                if (moderationResult != null) {
+                    ApiResponse.send(exchange, moderationResult.toString(), 400);
                     return;
                 }
 

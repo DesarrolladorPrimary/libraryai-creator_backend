@@ -90,6 +90,9 @@ public class UploadedFileDao {
             WHERE FK_ArchivoID = ?
             """;
 
+    /**
+     * Registra metadatos de un archivo subido o exportado.
+     */
     public static JsonObject create(int userId, String fileName, String fileType, String origin,
             String storagePath, long sizeBytes) {
         JsonObject response = new JsonObject();
@@ -127,6 +130,9 @@ public class UploadedFileDao {
         }
     }
 
+    /**
+     * Vincula un archivo existente con un relato.
+     */
     public static JsonObject linkToStory(int storyId, int fileId) {
         JsonObject response = new JsonObject();
 
@@ -148,6 +154,9 @@ public class UploadedFileDao {
         }
     }
 
+    /**
+     * Lista todos los archivos asociados a un relato.
+     */
     public static JsonObject listByStory(int storyId) {
         JsonObject response = new JsonObject();
         JsonArray files = new JsonArray();
@@ -174,6 +183,9 @@ public class UploadedFileDao {
         }
     }
 
+    /**
+     * Lista archivos de un relato filtrando por origen.
+     */
     public static JsonObject listByStoryAndOrigin(int storyId, String origin) {
         JsonObject response = new JsonObject();
         JsonArray files = new JsonArray();
@@ -201,6 +213,9 @@ public class UploadedFileDao {
         }
     }
 
+    /**
+     * Suma almacenamiento consumido por usuario para un origen concreto.
+     */
     public static long sumBytesByUserAndOrigin(int userId, String origin) {
         try (Connection conn = DatabaseConnection.getConnection();
                 PreparedStatement pstmt = conn.prepareStatement(SQL_SUM_BYTES_BY_USER_AND_ORIGIN)) {
@@ -219,6 +234,9 @@ public class UploadedFileDao {
         return 0L;
     }
 
+    /**
+     * Suma el almacenamiento total consumido por un usuario.
+     */
     public static long sumBytesByUser(int userId) {
         if (userId <= 0) {
             return 0L;
@@ -240,6 +258,9 @@ public class UploadedFileDao {
         return 0L;
     }
 
+    /**
+     * Lista documentos exportados visibles en biblioteca.
+     */
     public static JsonObject listExportedByUser(int userId, Integer shelfId) {
         JsonObject response = new JsonObject();
         JsonArray documents = new JsonArray();
@@ -289,6 +310,9 @@ public class UploadedFileDao {
         }
     }
 
+    /**
+     * Busca un archivo por id, usuario propietario y origen esperado.
+     */
     public static JsonObject findByIdAndUserAndOrigin(int fileId, int userId, String origin) {
         JsonObject response = new JsonObject();
 
@@ -317,6 +341,9 @@ public class UploadedFileDao {
         }
     }
 
+    /**
+     * Elimina el vínculo entre un relato y un archivo ya registrado.
+     */
     public static JsonObject unlinkFromStory(int storyId, int fileId) {
         JsonObject response = new JsonObject();
 
@@ -337,6 +364,9 @@ public class UploadedFileDao {
         }
     }
 
+    /**
+     * Cuenta cuántos relatos siguen vinculados a un archivo.
+     */
     public static int countStoryLinks(int fileId) {
         try (Connection conn = DatabaseConnection.getConnection();
                 PreparedStatement pstmt = conn.prepareStatement(SQL_COUNT_STORY_LINKS)) {
@@ -353,6 +383,9 @@ public class UploadedFileDao {
         return 0;
     }
 
+    /**
+     * Elimina un archivo siempre que pertenezca al usuario indicado.
+     */
     public static JsonObject deleteByUser(int fileId, int userId) {
         JsonObject response = new JsonObject();
 

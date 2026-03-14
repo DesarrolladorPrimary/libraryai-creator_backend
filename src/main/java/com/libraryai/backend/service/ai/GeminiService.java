@@ -22,7 +22,7 @@ public class GeminiService {
         
         // No se puede generar respuesta sin prompt.
         if (prompt.isEmpty()) {
-            responseAI.addProperty("Mensaje", "El mensaje esta vacio");
+            responseAI.addProperty("Mensaje", "El mensaje está vacío");
             responseAI.addProperty("status", 400);
             return responseAI;
         }
@@ -31,12 +31,15 @@ public class GeminiService {
         return GeminiAI.generateText(prompt, instrucciones);
     }
 
+    /**
+     * Intenta generar texto recorriendo una lista ordenada de modelos candidatos.
+     */
     public static JsonObject generateText(String mensaje, String instrucciones, List<String> candidateModels) {
         JsonObject responseAI = new JsonObject();
         String prompt = mensaje != null ? mensaje.trim() : "";
 
         if (prompt.isEmpty()) {
-            responseAI.addProperty("Mensaje", "El mensaje esta vacio");
+            responseAI.addProperty("Mensaje", "El mensaje está vacío");
             responseAI.addProperty("status", 400);
             return responseAI;
         }
@@ -70,10 +73,6 @@ public class GeminiService {
                 if (attempts.size() > 0) {
                     modelResponse.add("modelosIntentados", attempts);
                 }
-                return modelResponse;
-            }
-
-            if (status == 400 || status == 500) {
                 return modelResponse;
             }
 

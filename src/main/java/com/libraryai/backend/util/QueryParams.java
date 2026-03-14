@@ -11,7 +11,7 @@ public class QueryParams {
      * Extrae el parametro id desde una query tipo "id=123".
      * Retorna un JsonObject con:
      * - id: valor parseado
-     * - status: 200 si es valido, 404 si es invalido o vacio
+     * - status: 200 si es válido, 404 si es inválido o vacío
      * - Mensaje: descripcion del error cuando aplica
      */
     public static JsonObject parseId(String idBody){
@@ -20,9 +20,9 @@ public class QueryParams {
         // Normaliza a String por si viene un objeto o null.
         String query = idBody.toString();
         
-        // Valida formato simple "id=numero".
+        // Valida formato simple "id=número".
         if (query.isEmpty() || !query.matches("id=\\d+")) {
-            json.addProperty("Mensaje", "query no valida o vacia");
+            json.addProperty("Mensaje", "query no válida o vacía");
             json.addProperty("status", 404);
             return json;
         }

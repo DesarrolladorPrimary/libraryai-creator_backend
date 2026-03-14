@@ -24,6 +24,8 @@ import com.libraryai.backend.util.DocumentExportBuilder;
  */
 public class StoryService {
 
+    private static final String MODE_ARTIFICIAL = "Seccion_Artificial";
+    private static final String MODE_CREATIVE = "Seccion_Creativa";
     private static final String DEFAULT_WRITING_STYLE = "Narrativo";
     private static final String DEFAULT_CREATIVITY_LEVEL = "Medio";
     private static final String DEFAULT_RESPONSE_LENGTH = "Media";
@@ -45,36 +47,9 @@ public class StoryService {
      */
     public static JsonObject createStory(int usuarioId, String titulo, String modoOrigen, 
                                         String descripcion, Integer estanteriaId, Integer modeloUsadoId) {
-        
-        // Validaciones básicas
-        if (titulo == null || titulo.trim().isEmpty()) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "El título es obligatorio");
-            response.addProperty("status", 400);
-            return response;
-        }
-        
-        if (modoOrigen == null || modoOrigen.trim().isEmpty()) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "El modo de origen es obligatorio");
-            response.addProperty("status", 400);
-            return response;
-        }
-        
-        // Validar que el modo de origen sea válido
-        if (!modoOrigen.equals("Seccion_Artificial") && !modoOrigen.equals("Seccion_Creativa")) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "Modo de origen inválido. Debe ser 'Seccion_Artificial' o 'Seccion_Creativa'");
-            response.addProperty("status", 400);
-            return response;
-        }
-        
-        // Validar longitud del título
-        if (titulo.length() > 255) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "El título no puede exceder 255 caracteres");
-            response.addProperty("status", 400);
-            return response;
+        JsonObject basicValidation = validateStoryCreationInput(titulo, modoOrigen);
+        if (basicValidation != null) {
+            return basicValidation;
         }
 
         String normalizedTitle = titulo.trim();
@@ -94,22 +69,19 @@ public class StoryService {
                 usuarioId,
                 estanteriaId,
                 false,
-                "Debes asignar una estanteria existente antes de guardar el relato en biblioteca",
-                "La estanteria seleccionada no existe o no te pertenece");
+                "Debes asignar una estantería existente antes de guardar el relato en biblioteca",
+                "La estantería seleccionada no existe o no te pertenece");
         if (shelfValidation != null) {
             return shelfValidation;
         }
 
-        Integer resolvedModelId = modeloUsadoId;
-        if ("Seccion_Artificial".equals(modoOrigen) || modeloUsadoId != null) {
-            JsonObject modelResolution = SettingsService.resolveModeloIA(usuarioId, modeloUsadoId, modeloUsadoId != null);
-            if (!modelResolution.has("status") || modelResolution.get("status").getAsInt() != 200) {
-                return modelResolution;
-            }
-
-            JsonObject resolvedModel = modelResolution.getAsJsonObject("modelo");
-            resolvedModelId = resolvedModel.has("id") ? resolvedModel.get("id").getAsInt() : null;
+        // El modo artificial puede resolver modelo por plan aunque el cliente
+        // no mande uno explícito; creativo solo lo usa si ya viene definido.
+        JsonObject modelResolution = resolveModelIfNeeded(usuarioId, modoOrigen, modeloUsadoId, modeloUsadoId != null);
+        if (isErrorResponse(modelResolution)) {
+            return modelResolution;
         }
+        Integer resolvedModelId = extractResolvedModelId(modelResolution, modeloUsadoId);
         
         // Crear el objeto Story
         LocalDateTime ahora = LocalDateTime.now();
@@ -137,10 +109,7 @@ public class StoryService {
      */
     public static JsonObject getUserStories(int usuarioId) {
         if (usuarioId <= 0) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "ID de usuario inválido");
-            response.addProperty("status", 400);
-            return response;
+            return buildErrorResponse("ID de usuario inválido", 400);
         }
         
         return StoryDao.findByUserId(usuarioId);
@@ -154,38 +123,25 @@ public class StoryService {
      * @return JsonObject con los datos del relato
      */
     public static JsonObject getStoryById(int relatoId, int usuarioId) {
-        if (relatoId <= 0 || usuarioId <= 0) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "IDs inválidos");
-            response.addProperty("status", 400);
-            return response;
+        JsonObject invalidIds = validatePositiveIds(relatoId, usuarioId);
+        if (invalidIds != null) {
+            return invalidIds;
         }
-        
-        JsonObject result = StoryDao.findById(relatoId);
-        
-        // Validar que el relato pertenezca al usuario
-        if (result.get("status").getAsInt() == 200) {
-            JsonObject relato = result.getAsJsonObject("relato");
-            int relatoUsuarioId = relato.get("usuarioId").getAsInt();
-            
-            if (relatoUsuarioId != usuarioId) {
-                JsonObject response = new JsonObject();
-                response.addProperty("Mensaje", "No tienes permisos para acceder a este relato");
-                response.addProperty("status", 403);
-                return response;
-            }
 
-            JsonObject configResult = AIConfigurationDao.findByStoryId(relatoId);
-            if (configResult.has("status") && configResult.get("status").getAsInt() == 200
-                    && configResult.has("configuracionIA")) {
-                result.add("configuracionIA", configResult.getAsJsonObject("configuracionIA"));
-            } else {
-                result.add("configuracionIA", buildDefaultAIConfig(relatoId));
-            }
-
-            result.add("archivosFuente", extractFilesByOrigin(relatoId, "Subido"));
-            result.add("archivosExportados", extractFilesByOrigin(relatoId, "Exportado"));
+        JsonObject result = findOwnedStory(relatoId, usuarioId, "No tienes permisos para acceder a este relato");
+        if (!hasOkStatus(result)) {
+            return result;
         }
+
+        JsonObject configResult = AIConfigurationDao.findByStoryId(relatoId);
+        if (hasOkStatus(configResult) && configResult.has("configuracionIA")) {
+            result.add("configuracionIA", configResult.getAsJsonObject("configuracionIA"));
+        } else {
+            result.add("configuracionIA", buildDefaultAIConfig(relatoId));
+        }
+
+        result.add("archivosFuente", extractFilesByOrigin(relatoId, "Subido"));
+        result.add("archivosExportados", extractFilesByOrigin(relatoId, "Exportado"));
         
         return result;
     }
@@ -206,76 +162,44 @@ public class StoryService {
                                         String modoOrigen, String descripcion, 
                                         Integer estanteriaId, Integer modeloUsadoId,
                                         boolean updateShelfAssignment) {
-        
-        // Validar IDs
-        if (relatoId <= 0 || usuarioId <= 0) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "IDs inválidos");
-            response.addProperty("status", 400);
-            return response;
+        JsonObject invalidIds = validatePositiveIds(relatoId, usuarioId);
+        if (invalidIds != null) {
+            return invalidIds;
         }
-        
-        // Verificar que el relato exista y pertenezca al usuario
-        JsonObject existingStory = StoryDao.findById(relatoId);
-        if (existingStory.get("status").getAsInt() != 200) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "El relato no existe");
-            response.addProperty("status", 404);
-            return response;
+
+        JsonObject existingStory = findOwnedStory(relatoId, usuarioId, "No tienes permisos para modificar este relato");
+        if (!hasOkStatus(existingStory)) {
+            return existingStory;
         }
-        
         JsonObject relatoData = existingStory.getAsJsonObject("relato");
-        int relatoUsuarioId = relatoData.get("usuarioId").getAsInt();
-        
-        if (relatoUsuarioId != usuarioId) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "No tienes permisos para modificar este relato");
-            response.addProperty("status", 403);
-            return response;
-        }
         
         // Validar modo de origen si se proporciona
-        if (modoOrigen != null && !modoOrigen.trim().isEmpty()) {
-            if (!modoOrigen.equals("Seccion_Artificial") && !modoOrigen.equals("Seccion_Creativa")) {
-                JsonObject response = new JsonObject();
-                response.addProperty("Mensaje", "Modo de origen inválido. Debe ser 'Seccion_Artificial' o 'Seccion_Creativa'");
-                response.addProperty("status", 400);
-                return response;
-            }
+        if (modoOrigen != null && !modoOrigen.trim().isEmpty() && !isValidOriginMode(modoOrigen)) {
+            return buildErrorResponse(
+                    "Modo de origen inválido. Debe ser 'Seccion_Artificial' o 'Seccion_Creativa'",
+                    400);
         }
         
         // Validar título si se proporciona
         if (titulo != null && titulo.length() > 255) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "El título no puede exceder 255 caracteres");
-            response.addProperty("status", 400);
-            return response;
+            return buildErrorResponse("El título no puede exceder 255 caracteres", 400);
         }
 
         String currentTitle = relatoData.get("titulo").getAsString();
         String currentDescription = relatoData.get("descripcion").getAsString();
         String nextOriginMode = modoOrigen != null ? modoOrigen.trim() : relatoData.get("modoOrigen").getAsString();
-        Integer currentShelfId = relatoData.has("estanteriaId")
-                ? relatoData.get("estanteriaId").getAsInt()
-                : null;
-        Integer currentModelId = relatoData.has("modeloUsadoId")
-                ? relatoData.get("modeloUsadoId").getAsInt()
-                : null;
+        Integer currentShelfId = getOptionalInt(relatoData, "estanteriaId");
+        Integer currentModelId = getOptionalInt(relatoData, "modeloUsadoId");
         Integer nextShelfId = updateShelfAssignment ? estanteriaId : currentShelfId;
         Integer nextModelId = modeloUsadoId != null ? modeloUsadoId : currentModelId;
 
-        if ("Seccion_Artificial".equals(nextOriginMode) || nextModelId != null) {
-            JsonObject modelResolution = SettingsService.resolveModeloIA(
-                    usuarioId,
-                    nextModelId,
-                    modeloUsadoId != null);
-            if (!modelResolution.has("status") || modelResolution.get("status").getAsInt() != 200) {
-                return modelResolution;
-            }
-
-            JsonObject resolvedModel = modelResolution.getAsJsonObject("modelo");
-            nextModelId = resolvedModel.has("id") ? resolvedModel.get("id").getAsInt() : null;
+        // Reutiliza la misma resolución de modelo del create para no divergir
+        // entre borradores nuevos y relatos ya existentes.
+        JsonObject modelResolution = resolveModelIfNeeded(usuarioId, nextOriginMode, nextModelId, modeloUsadoId != null);
+        if (isErrorResponse(modelResolution)) {
+            return modelResolution;
         }
+        nextModelId = extractResolvedModelId(modelResolution, nextModelId);
         
         String nextTitle = titulo != null ? titulo.trim() : currentTitle;
         String nextDescription = descripcion != null ? descripcion.trim() : currentDescription;
@@ -295,8 +219,8 @@ public class StoryService {
                 usuarioId,
                 nextShelfId,
                 false,
-                "Debes asignar una estanteria existente antes de guardar el relato en biblioteca",
-                "La estanteria seleccionada no existe o no te pertenece");
+                "Debes asignar una estantería existente antes de guardar el relato en biblioteca",
+                "La estantería seleccionada no existe o no te pertenece");
         if (shelfValidation != null) {
             return shelfValidation;
         }
@@ -310,7 +234,7 @@ public class StoryService {
             nextTitle,
             nextOriginMode,
             nextDescription,
-            LocalDateTime.parse(relatoData.get("fechaCreacion").getAsString().replace(" ", "T")),
+            parseStoryCreatedAt(relatoData),
             LocalDateTime.now() // Actualizar fecha de modificación
         );
 
@@ -346,7 +270,9 @@ public class StoryService {
             String title,
             String description,
             String logReason) {
-        if (!"Seccion_Creativa".equals(originMode)) {
+        // Solo moderamos el flujo creativo manual; Poly ya modera sus entradas
+        // y salidas en su propio servicio.
+        if (!MODE_CREATIVE.equals(originMode)) {
             return null;
         }
 
@@ -416,30 +342,14 @@ public class StoryService {
      * @return JsonObject con el resultado de la operación
      */
     public static JsonObject deleteStory(int relatoId, int usuarioId) {
-        if (relatoId <= 0 || usuarioId <= 0) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "IDs inválidos");
-            response.addProperty("status", 400);
-            return response;
+        JsonObject invalidIds = validatePositiveIds(relatoId, usuarioId);
+        if (invalidIds != null) {
+            return invalidIds;
         }
-        
-        // Verificar que el relato exista y pertenezca al usuario
-        JsonObject existingStory = StoryDao.findById(relatoId);
-        if (existingStory.get("status").getAsInt() != 200) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "El relato no existe");
-            response.addProperty("status", 404);
-            return response;
-        }
-        
-        JsonObject relatoData = existingStory.getAsJsonObject("relato");
-        int relatoUsuarioId = relatoData.get("usuarioId").getAsInt();
-        
-        if (relatoUsuarioId != usuarioId) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "No tienes permisos para eliminar este relato");
-            response.addProperty("status", 403);
-            return response;
+
+        JsonObject existingStory = findOwnedStory(relatoId, usuarioId, "No tienes permisos para eliminar este relato");
+        if (!hasOkStatus(existingStory)) {
+            return existingStory;
         }
         
         JsonObject cleanupFiles = deleteStoryFiles(relatoId, usuarioId);
@@ -564,15 +474,15 @@ public class StoryService {
         JsonObject storyData = currentStory.getAsJsonObject("relato");
         String originMode = storyData.get("modoOrigen").getAsString();
 
-        Integer currentShelfId = storyData.has("estanteriaId") ? storyData.get("estanteriaId").getAsInt() : null;
+        Integer currentShelfId = getOptionalInt(storyData, "estanteriaId");
         Integer nextShelfId = updateShelfAssignment ? estanteriaId : currentShelfId;
 
         JsonObject shelfValidation = validateShelfOwnership(
                 usuarioId,
                 nextShelfId,
                 true,
-                "Debes asignar una estanteria antes de convertir el relato en libro",
-                "La estanteria seleccionada no existe o no te pertenece");
+                "Debes asignar una estantería antes de convertir el relato en libro",
+                "La estantería seleccionada no existe o no te pertenece");
         if (shelfValidation != null) {
             return shelfValidation;
         }
@@ -581,11 +491,11 @@ public class StoryService {
                 relatoId,
                 usuarioId,
                 nextShelfId,
-                storyData.has("modeloUsadoId") ? storyData.get("modeloUsadoId").getAsInt() : null,
+                getOptionalInt(storyData, "modeloUsadoId"),
                 normalizedTitle,
                 originMode,
                 normalizedContent,
-                LocalDateTime.parse(storyData.get("fechaCreacion").getAsString().replace(" ", "T")),
+                parseStoryCreatedAt(storyData),
                 LocalDateTime.now());
 
         JsonObject updateStory = StoryDao.update(story);
@@ -629,13 +539,11 @@ public class StoryService {
      * @return JsonObject con estadísticas
      */
     public static JsonObject getUserStoryStats(int usuarioId) {
-        JsonObject response = new JsonObject();
-        
         if (usuarioId <= 0) {
-            response.addProperty("Mensaje", "ID de usuario inválido");
-            response.addProperty("status", 400);
-            return response;
+            return buildErrorResponse("ID de usuario inválido", 400);
         }
+
+        JsonObject response = new JsonObject();
         
         try {
             int totalRelatos = StoryDao.countByUserId(usuarioId);
@@ -661,38 +569,16 @@ public class StoryService {
     }
 
     public static JsonObject validateStoryOwnership(int relatoId, int usuarioId) {
-        if (relatoId <= 0 || usuarioId <= 0) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "IDs inválidos");
-            response.addProperty("status", 400);
-            return response;
-        }
-
-        JsonObject existingStory = StoryDao.findById(relatoId);
-        if (existingStory.get("status").getAsInt() != 200) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "El relato no existe");
-            response.addProperty("status", 404);
-            return response;
-        }
-
-        JsonObject storyData = existingStory.getAsJsonObject("relato");
-        if (storyData.get("usuarioId").getAsInt() != usuarioId) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "No tienes permisos para acceder a este relato");
-            response.addProperty("status", 403);
-            return response;
-        }
-
-        return null;
+        JsonObject result = findOwnedStory(relatoId, usuarioId, "No tienes permisos para acceder a este relato");
+        return hasOkStatus(result) ? null : result;
     }
 
     private static String buildDraftVersionNote(String originMode) {
-        if ("Seccion_Artificial".equals(originMode)) {
+        if (MODE_ARTIFICIAL.equals(originMode)) {
             return "Guardado de borrador desde Poly";
         }
 
-        if ("Seccion_Creativa".equals(originMode)) {
+        if (MODE_CREATIVE.equals(originMode)) {
             return "Guardado de borrador desde Creativo";
         }
 
@@ -740,6 +626,8 @@ public class StoryService {
                     && fileBase64 != null && !fileBase64.trim().isEmpty();
 
             if (hasClientFile) {
+                // Si el frontend ya generó el archivo, registramos exactamente
+                // ese binario en vez de reconstruirlo en backend.
                 normalizedType = fileType.trim().toUpperCase();
                 if (!normalizedType.equals("DOC") && !normalizedType.equals("DOCX") && !normalizedType.equals("PDF")) {
                     JsonObject response = new JsonObject();
@@ -766,6 +654,8 @@ public class StoryService {
                 return response;
             }
 
+            // La cuota se valida justo antes de persistir para contar el peso
+            // real del archivo final y no una estimación previa.
             JsonObject quotaValidation = validateStorageQuota(userId, fileBytes.length,
                     "guardar documentos en la biblioteca");
             if (quotaValidation != null) {
@@ -791,6 +681,8 @@ public class StoryService {
                 return createdFile;
             }
 
+            // Si falla el enlace con el relato, se revierte también el archivo
+            // físico para no dejar basura en disco ni registros huérfanos.
             JsonObject linkFile = UploadedFileDao.linkToStory(storyId, createdFile.get("id").getAsInt());
             if (!linkFile.has("status") || linkFile.get("status").getAsInt() != 200) {
                 UploadedFileDao.deleteByUser(createdFile.get("id").getAsInt(), userId);
@@ -896,11 +788,8 @@ public class StoryService {
 
     public static JsonObject validateStorageQuota(int userId, long newFileBytes, String actionDescription) {
         JsonObject subscription = SettingsDao.getSuscripcionActiva(userId);
-        if (!subscription.has("status") || subscription.get("status").getAsInt() != 200) {
-            JsonObject response = new JsonObject();
-            response.addProperty("Mensaje", "No fue posible validar el almacenamiento disponible");
-            response.addProperty("status", 500);
-            return response;
+        if (!hasOkStatus(subscription)) {
+            return buildErrorResponse("No fue posible validar el almacenamiento disponible", 500);
         }
 
         boolean unlimitedStorage = subscription.has("almacenamientoIlimitado")
@@ -930,6 +819,100 @@ public class StoryService {
         response.addProperty("status", 409);
         response.addProperty("almacenamientoUsadoMb", Math.round(nextUsageMb * 100.0d) / 100.0d);
         response.addProperty("limiteAlmacenamientoMb", storageLimitMb);
+        return response;
+    }
+
+    private static JsonObject validateStoryCreationInput(String titulo, String modoOrigen) {
+        if (titulo == null || titulo.trim().isEmpty()) {
+            return buildErrorResponse("El título es obligatorio", 400);
+        }
+
+        if (modoOrigen == null || modoOrigen.trim().isEmpty()) {
+            return buildErrorResponse("El modo de origen es obligatorio", 400);
+        }
+
+        if (!isValidOriginMode(modoOrigen)) {
+            return buildErrorResponse(
+                    "Modo de origen inválido. Debe ser 'Seccion_Artificial' o 'Seccion_Creativa'",
+                    400);
+        }
+
+        if (titulo.length() > 255) {
+            return buildErrorResponse("El título no puede exceder 255 caracteres", 400);
+        }
+
+        return null;
+    }
+
+    private static JsonObject findOwnedStory(int relatoId, int usuarioId, String forbiddenMessage) {
+        JsonObject invalidIds = validatePositiveIds(relatoId, usuarioId);
+        if (invalidIds != null) {
+            return invalidIds;
+        }
+
+        JsonObject existingStory = StoryDao.findById(relatoId);
+        if (!hasOkStatus(existingStory)) {
+            return buildErrorResponse("El relato no existe", 404);
+        }
+
+        JsonObject storyData = existingStory.getAsJsonObject("relato");
+        if (storyData.get("usuarioId").getAsInt() != usuarioId) {
+            return buildErrorResponse(forbiddenMessage, 403);
+        }
+
+        return existingStory;
+    }
+
+    private static JsonObject validatePositiveIds(int relatoId, int usuarioId) {
+        if (relatoId <= 0 || usuarioId <= 0) {
+            return buildErrorResponse("IDs inválidos", 400);
+        }
+
+        return null;
+    }
+
+    private static JsonObject resolveModelIfNeeded(int usuarioId, String originMode, Integer modelId,
+            boolean failIfUnavailable) {
+        if (!MODE_ARTIFICIAL.equals(originMode) && modelId == null) {
+            return null;
+        }
+
+        return SettingsService.resolveModeloIA(usuarioId, modelId, failIfUnavailable);
+    }
+
+    private static Integer extractResolvedModelId(JsonObject modelResolution, Integer fallbackModelId) {
+        if (modelResolution == null || !hasOkStatus(modelResolution) || !modelResolution.has("modelo")) {
+            return fallbackModelId;
+        }
+
+        JsonObject resolvedModel = modelResolution.getAsJsonObject("modelo");
+        return resolvedModel.has("id") ? resolvedModel.get("id").getAsInt() : fallbackModelId;
+    }
+
+    private static Integer getOptionalInt(JsonObject source, String field) {
+        return source.has(field) ? source.get(field).getAsInt() : null;
+    }
+
+    private static LocalDateTime parseStoryCreatedAt(JsonObject storyData) {
+        return LocalDateTime.parse(storyData.get("fechaCreacion").getAsString().replace(" ", "T"));
+    }
+
+    private static boolean isValidOriginMode(String originMode) {
+        return MODE_ARTIFICIAL.equals(originMode) || MODE_CREATIVE.equals(originMode);
+    }
+
+    private static boolean hasOkStatus(JsonObject response) {
+        return response != null && response.has("status") && response.get("status").getAsInt() == 200;
+    }
+
+    private static boolean isErrorResponse(JsonObject response) {
+        return response != null && response.has("status") && response.get("status").getAsInt() != 200;
+    }
+
+    private static JsonObject buildErrorResponse(String message, int status) {
+        JsonObject response = new JsonObject();
+        response.addProperty("Mensaje", message);
+        response.addProperty("status", status);
         return response;
     }
 }

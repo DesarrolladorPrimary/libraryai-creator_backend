@@ -188,6 +188,9 @@ public class EmailService {
         return enviarCorreo(correoDestino, asunto, cuerpo);
     }
 
+    /**
+     * Construye URLs absolutas del frontend para correos y redirecciones externas.
+     */
     public static String buildFrontendUrl(String path) {
         String normalizedPath = path.startsWith("/") ? path : "/" + path;
         return FRONTEND_BASE_URL + normalizedPath;

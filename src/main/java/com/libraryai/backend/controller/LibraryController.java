@@ -17,6 +17,9 @@ import com.sun.net.httpserver.HttpHandler;
  */
 public class LibraryController {
 
+    /**
+     * Lista los documentos exportados del usuario y permite filtrar por estantería.
+     */
     public static HttpHandler listDocuments() {
         return exchange -> {
             int userId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
@@ -31,6 +34,9 @@ public class LibraryController {
         };
     }
 
+    /**
+     * Elimina un documento exportado de la biblioteca del usuario.
+     */
     public static HttpHandler deleteDocument() {
         return exchange -> {
             int userId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));
@@ -50,6 +56,9 @@ public class LibraryController {
         };
     }
 
+    /**
+     * Descarga un documento exportado validando ownership antes de leer disco.
+     */
     public static HttpHandler downloadDocument() {
         return exchange -> {
             int userId = getUserIdFromToken(exchange.getRequestHeaders().getFirst("Authorization"));

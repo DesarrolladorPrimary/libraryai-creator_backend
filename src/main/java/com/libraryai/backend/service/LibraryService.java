@@ -13,6 +13,9 @@ import com.libraryai.backend.dao.UploadedFileDao;
  */
 public class LibraryService {
 
+    /**
+     * Lista documentos exportados del usuario, opcionalmente filtrados por estantería.
+     */
     public static JsonObject listDocuments(int userId, Integer shelfId) {
         if (userId <= 0) {
             JsonObject response = new JsonObject();
@@ -24,6 +27,9 @@ public class LibraryService {
         return UploadedFileDao.listExportedByUser(userId, shelfId);
     }
 
+    /**
+     * Busca un documento exportado concreto que pertenezca al usuario.
+     */
     public static JsonObject getDocument(int fileId, int userId) {
         if (fileId <= 0 || userId <= 0) {
             JsonObject response = new JsonObject();
@@ -35,6 +41,9 @@ public class LibraryService {
         return UploadedFileDao.findByIdAndUserAndOrigin(fileId, userId, "Exportado");
     }
 
+    /**
+     * Elimina un documento exportado tanto de BD como del disco local.
+     */
     public static JsonObject deleteDocument(int fileId, int userId) {
         JsonObject targetFile = getDocument(fileId, userId);
         if (!targetFile.has("status") || targetFile.get("status").getAsInt() != 200 || !targetFile.has("archivo")) {
@@ -58,6 +67,9 @@ public class LibraryService {
         return deleteFile;
     }
 
+    /**
+     * Extrae el arreglo de documentos desde una respuesta estándar de biblioteca.
+     */
     public static JsonArray extractDocuments(JsonObject response) {
         if (response.has("documentos") && response.get("documentos").isJsonArray()) {
             return response.getAsJsonArray("documentos");
@@ -66,6 +78,9 @@ public class LibraryService {
         return new JsonArray();
     }
 
+    /**
+     * Busca un documento por id dentro de un arreglo ya cargado en memoria.
+     */
     public static JsonObject findDocumentInArray(JsonArray documents, int fileId) {
         for (JsonElement item : documents) {
             if (item.isJsonObject()) {

@@ -2,7 +2,6 @@ package com.libraryai.backend.seeders;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import com.libraryai.backend.config.DatabaseConnection;
@@ -12,13 +11,19 @@ import com.libraryai.backend.config.DatabaseConnection;
  */
 public class SeedForbiddenWords {
 
-    private static final String SQL_COUNT = "SELECT COUNT(*) FROM PalabraProhibida";
+    private static final String SQL_EXISTS = "SELECT 1 FROM PalabraProhibida WHERE Palabra = ? LIMIT 1";
 
     private static final String SQL_INSERT = "INSERT INTO PalabraProhibida(Palabra) VALUES(?)";
 
     private static final String[] DEFAULT_WORDS = new String[] {
             "pornografia",
+            "porno",
+            "contenido adulto",
+            "xxx",
+            "sexo",
             "sexo explicito",
+            "erotico",
+            "erotica",
             "violacion",
             "incesto",
             "zoofilia",
@@ -26,24 +31,26 @@ public class SeedForbiddenWords {
     };
 
     public static void insertForbiddenWords() {
-        try (
-                Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement countStmt = conn.prepareStatement(SQL_COUNT);
-                ResultSet rs = countStmt.executeQuery()) {
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement existsStmt = conn.prepareStatement(SQL_EXISTS);
+                PreparedStatement insertStmt = conn.prepareStatement(SQL_INSERT)) {
 
-            if (rs.next() && rs.getInt(1) > 0) {
-                System.out.println("La lista de palabras prohibidas ya existe en la base de datos");
-                return;
-            }
+            int inserted = 0;
+            for (String word : DEFAULT_WORDS) {
+                existsStmt.setString(1, word);
+                boolean exists;
 
-            try (PreparedStatement insertStmt = conn.prepareStatement(SQL_INSERT)) {
-                int inserted = 0;
-                for (String word : DEFAULT_WORDS) {
+                try (var rs = existsStmt.executeQuery()) {
+                    exists = rs.next();
+                }
+
+                if (!exists) {
                     insertStmt.setString(1, word);
                     inserted += insertStmt.executeUpdate();
                 }
-                System.out.println("Total de palabras prohibidas insertadas: " + inserted);
             }
+
+            System.out.println("Palabras prohibidas agregadas o verificadas. Nuevas inserciones: " + inserted);
         } catch (SQLException e) {
             System.err.println("Error al insertar palabras prohibidas: " + e.getMessage());
         }
