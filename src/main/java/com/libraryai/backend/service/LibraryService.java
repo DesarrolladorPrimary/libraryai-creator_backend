@@ -51,6 +51,11 @@ public class LibraryService {
         }
 
         JsonObject file = targetFile.getAsJsonObject("archivo");
+        JsonObject deleteLinks = UploadedFileDao.deleteLinksByFile(fileId);
+        if (!deleteLinks.has("status") || deleteLinks.get("status").getAsInt() != 200) {
+            return deleteLinks;
+        }
+
         JsonObject deleteFile = UploadedFileDao.deleteByUser(fileId, userId);
         if (!deleteFile.has("status") || deleteFile.get("status").getAsInt() != 200) {
             return deleteFile;

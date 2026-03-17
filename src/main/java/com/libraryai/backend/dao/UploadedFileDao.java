@@ -84,6 +84,11 @@ public class UploadedFileDao {
             WHERE FK_RelatoID = ? AND FK_ArchivoID = ?
             """;
 
+    private static final String SQL_DELETE_LINKS_BY_FILE = """
+            DELETE FROM Relato_ArchivoFuente
+            WHERE FK_ArchivoID = ?
+            """;
+
     private static final String SQL_COUNT_STORY_LINKS = """
             SELECT COUNT(*) AS total
             FROM Relato_ArchivoFuente
@@ -359,6 +364,31 @@ public class UploadedFileDao {
             return response;
         } catch (SQLException e) {
             response.addProperty("Mensaje", "Error al desvincular archivo del relato: " + e.getMessage());
+            response.addProperty("status", 500);
+            return response;
+        }
+    }
+
+    /**
+     * Elimina todos los vínculos de un archivo con cualquier relato.
+     */
+    public static JsonObject deleteLinksByFile(int fileId) {
+        JsonObject response = new JsonObject();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(SQL_DELETE_LINKS_BY_FILE)) {
+
+            pstmt.setInt(1, fileId);
+            int deletedRows = pstmt.executeUpdate();
+
+            response.addProperty("filasAfectadas", deletedRows);
+            response.addProperty("Mensaje", deletedRows > 0
+                    ? "Vínculos del archivo eliminados correctamente"
+                    : "No había vínculos asociados al archivo");
+            response.addProperty("status", 200);
+            return response;
+        } catch (SQLException e) {
+            response.addProperty("Mensaje", "Error al eliminar vínculos del archivo: " + e.getMessage());
             response.addProperty("status", 500);
             return response;
         }

@@ -97,8 +97,26 @@ public class StoryService {
             ahora
         );
         
-        // Guardar en la base de datos
-        return StoryDao.create(story);
+        JsonObject createResult = StoryDao.create(story);
+        if (!createResult.has("status") || createResult.get("status").getAsInt() != 201 || !createResult.has("id")) {
+            return createResult;
+        }
+
+        JsonObject versionResult = StoryVersionDao.createVersion(
+                createResult.get("id").getAsInt(),
+                normalizedDescription,
+                buildInitialVersionNote(modoOrigen),
+                false);
+
+        if (versionResult.has("status") && versionResult.get("status").getAsInt() == 201) {
+            createResult.addProperty("version", versionResult.get("version").getAsInt());
+            createResult.addProperty("Mensaje", "Relato creado y versionado correctamente");
+            return createResult;
+        }
+
+        createResult.addProperty("Mensaje", "Relato creado, pero no se pudo guardar la versión inicial");
+        createResult.add("detalleVersion", versionResult);
+        return createResult;
     }
 
     /**
@@ -365,6 +383,16 @@ public class StoryService {
             return response;
         }
 
+        JsonObject deleteConfig = AIConfigurationDao.deleteByStory(relatoId);
+        if (isErrorResponse(deleteConfig)) {
+            return deleteConfig;
+        }
+
+        JsonObject deleteVersions = StoryVersionDao.deleteByStory(relatoId);
+        if (isErrorResponse(deleteVersions)) {
+            return deleteVersions;
+        }
+
         return StoryDao.delete(relatoId);
     }
 
@@ -583,6 +611,18 @@ public class StoryService {
         }
 
         return "Guardado de borrador";
+    }
+
+    private static String buildInitialVersionNote(String originMode) {
+        if (MODE_ARTIFICIAL.equals(originMode)) {
+            return "Creación inicial del relato desde Poly";
+        }
+
+        if (MODE_CREATIVE.equals(originMode)) {
+            return "Creación inicial del relato desde Creativo";
+        }
+
+        return "Creación inicial del relato";
     }
 
     private static JsonObject buildDefaultAIConfig(int storyId) {

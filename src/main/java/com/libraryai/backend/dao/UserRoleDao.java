@@ -10,27 +10,31 @@ import com.libraryai.backend.config.DatabaseConnection;
  * DAO para relacion usuario-rol.
  */
 public class UserRoleDao {
-    private static final int ROL_USUARIO_DEFAULT = 2;
+    private static final String DEFAULT_ROLE_NAME = "Gratuito";
 
     // language=sql
     private static final String SQL_INSERT_ROL = """
-            INSERT INTO UsuarioRol(FK_UsuarioID, FK_RolID) VALUES(?, ?);
+            INSERT INTO UsuarioRol(FK_UsuarioID, FK_RolID)
+            SELECT ?, PK_RolID
+            FROM Rol
+            WHERE NombreRol = ?
+            LIMIT 1;
             """;
     
     /**
      * Asigna el rol por defecto a un usuario recien creado.
      */
-    public static void assignRole(int id){
+    public static boolean assignRole(int id){
         try (
             Connection conn = DatabaseConnection.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT_ROL);
         ) {
-            // FK_UsuarioID y FK_RolID.
             pstmt.setInt(1, id);
-            pstmt.setInt(2, ROL_USUARIO_DEFAULT);
-            pstmt.executeUpdate();
+            pstmt.setString(2, DEFAULT_ROLE_NAME);
+            return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error: " + e.getMessage());
+            return false;
         }
     }
     

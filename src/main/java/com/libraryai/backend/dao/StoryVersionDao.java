@@ -24,6 +24,11 @@ public class StoryVersionDao {
             VALUES (?, ?, ?, ?, ?)
             """;
 
+    private static final String SQL_DELETE_BY_STORY = """
+            DELETE FROM RelatoVersion
+            WHERE FK_RelatoID = ?
+            """;
+
     public static JsonObject createVersion(int storyId, String content, String notes, boolean published) {
         JsonObject response = new JsonObject();
 
@@ -46,6 +51,32 @@ public class StoryVersionDao {
 
         } catch (SQLException e) {
             response.addProperty("Mensaje", "Error al guardar versión del relato: " + e.getMessage());
+            response.addProperty("status", 500);
+            return response;
+        }
+    }
+
+    /**
+     * Elimina todas las versiones asociadas a un relato.
+     */
+    public static JsonObject deleteByStory(int storyId) {
+        JsonObject response = new JsonObject();
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(SQL_DELETE_BY_STORY)) {
+
+            pstmt.setInt(1, storyId);
+            int deletedRows = pstmt.executeUpdate();
+
+            response.addProperty("filasAfectadas", deletedRows);
+            response.addProperty("Mensaje", deletedRows > 0
+                    ? "Versiones del relato eliminadas correctamente"
+                    : "No había versiones asociadas al relato");
+            response.addProperty("status", 200);
+            return response;
+
+        } catch (SQLException e) {
+            response.addProperty("Mensaje", "Error al eliminar versiones del relato: " + e.getMessage());
             response.addProperty("status", 500);
             return response;
         }

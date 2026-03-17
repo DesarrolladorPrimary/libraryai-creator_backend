@@ -33,7 +33,7 @@ CREATE TABLE Correo (
     Cuerpo TEXT,
     FechaEnvio DATETIME DEFAULT CURRENT_TIMESTAMP,
     Estado ENUM('Pendiente', 'Enviado', 'Fallido') DEFAULT 'Pendiente',
-    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE
+    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT
 );
 
 CREATE TABLE Rol (
@@ -63,14 +63,14 @@ CREATE TABLE TokenAcceso (
     FechaCreacion DATETIME DEFAULT CURRENT_TIMESTAMP,
     FechaExpiracion DATETIME NOT NULL,
     Usado BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE
+    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT
 );
 
 CREATE TABLE Estanteria (
     PK_EstanteriaID INT AUTO_INCREMENT PRIMARY KEY,
     FK_UsuarioID INT NOT NULL,
     NombreCategoria VARCHAR(150) NOT NULL,
-    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE,
+    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT,
     UNIQUE (FK_UsuarioID, NombreCategoria)
 );
 
@@ -82,7 +82,7 @@ CREATE TABLE Suscripcion (
     FechaFin DATETIME,
     Estado ENUM('Activa', 'Cancelada', 'Vencida') DEFAULT 'Activa',
     RenovacionAutomatica BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE,
+    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT,
     FOREIGN KEY (FK_PlanID) REFERENCES PlanSuscripcion(PK_PlanID),
     CHECK (FechaFin IS NULL OR FechaFin >= FechaInicio)
 );
@@ -96,7 +96,7 @@ CREATE TABLE ArchivoSubido (
     RutaAlmacenamiento TEXT NOT NULL,
     TamanoBytes BIGINT NOT NULL,
     FechaSubida DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE,
+    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT,
     CHECK (TamanoBytes > 0)
 );
 
@@ -104,24 +104,24 @@ CREATE TABLE UsuarioRol (
     FK_UsuarioID INT,
     FK_RolID INT,
     PRIMARY KEY (FK_UsuarioID, FK_RolID),
-    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE,
-    FOREIGN KEY (FK_RolID) REFERENCES Rol(PK_RolID) ON DELETE CASCADE
+    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT,
+    FOREIGN KEY (FK_RolID) REFERENCES Rol(PK_RolID) ON DELETE RESTRICT
 );
 
 CREATE TABLE RolPermiso (
     FK_RolID INT,
     FK_PermisoID INT,
     PRIMARY KEY (FK_RolID, FK_PermisoID),
-    FOREIGN KEY (FK_RolID) REFERENCES Rol(PK_RolID) ON DELETE CASCADE,
-    FOREIGN KEY (FK_PermisoID) REFERENCES Permiso(PK_PermisoID) ON DELETE CASCADE
+    FOREIGN KEY (FK_RolID) REFERENCES Rol(PK_RolID) ON DELETE RESTRICT,
+    FOREIGN KEY (FK_PermisoID) REFERENCES Permiso(PK_PermisoID) ON DELETE RESTRICT
 );
 
 CREATE TABLE PlanRol (
     FK_PlanID INT,
     FK_RolID INT,
     PRIMARY KEY (FK_PlanID, FK_RolID),
-    FOREIGN KEY (FK_PlanID) REFERENCES PlanSuscripcion(PK_PlanID) ON DELETE CASCADE,
-    FOREIGN KEY (FK_RolID) REFERENCES Rol(PK_RolID) ON DELETE CASCADE
+    FOREIGN KEY (FK_PlanID) REFERENCES PlanSuscripcion(PK_PlanID) ON DELETE RESTRICT,
+    FOREIGN KEY (FK_RolID) REFERENCES Rol(PK_RolID) ON DELETE RESTRICT
 );
 
 CREATE TABLE Pago (
@@ -132,7 +132,7 @@ CREATE TABLE Pago (
     ReferenciaExterna VARCHAR(255),
     Monto DECIMAL(10, 2) CHECK (Monto >= 0),
     FechaPago DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (FK_SuscripcionID) REFERENCES Suscripcion(PK_SuscripcionID) ON DELETE CASCADE
+    FOREIGN KEY (FK_SuscripcionID) REFERENCES Suscripcion(PK_SuscripcionID) ON DELETE RESTRICT
 );
 
 CREATE TABLE Relato (
@@ -145,7 +145,7 @@ CREATE TABLE Relato (
     Descripcion TEXT,
     FechaCreacion DATETIME DEFAULT CURRENT_TIMESTAMP,
     FechaModificacion DATETIME,
-    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE,
+    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT,
     FOREIGN KEY (FK_EstanteriaID) REFERENCES Estanteria(PK_EstanteriaID) ON DELETE SET NULL,
     FOREIGN KEY (FK_ModeloUsadoID) REFERENCES ModeloIA(PK_ModeloID) ON DELETE SET NULL
 );
@@ -158,7 +158,7 @@ CREATE TABLE RelatoVersion (
     Notas TEXT,
     EsPublicada BOOLEAN DEFAULT FALSE,
     FechaVersion DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE CASCADE,
+    FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE RESTRICT,
     UNIQUE (FK_RelatoID, NumeroVersion)
 );
 
@@ -169,7 +169,7 @@ CREATE TABLE ConfiguracionIA (
     NivelCreatividad ENUM('Bajo', 'Medio', 'Alto', 'Extremo') DEFAULT 'Medio',
     LongitudRespuesta ENUM('Corta', 'Media', 'Larga') DEFAULT 'Media',
     TonoEmocional VARCHAR(50),
-    FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE CASCADE
+    FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE RESTRICT
 );
 
 CREATE TABLE MensajeChat (
@@ -179,15 +179,15 @@ CREATE TABLE MensajeChat (
     ContenidoMensaje TEXT NOT NULL,
     FechaEnvio DATETIME DEFAULT CURRENT_TIMESTAMP,
     Orden INT,
-    FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE CASCADE
+    FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE RESTRICT
 );
 
 CREATE TABLE Relato_ArchivoFuente (
     FK_RelatoID INT,
     FK_ArchivoID INT,
     PRIMARY KEY (FK_RelatoID, FK_ArchivoID),
-    FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE CASCADE,
-    FOREIGN KEY (FK_ArchivoID) REFERENCES ArchivoSubido(PK_ArchivoID) ON DELETE CASCADE
+    FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE RESTRICT,
+    FOREIGN KEY (FK_ArchivoID) REFERENCES ArchivoSubido(PK_ArchivoID) ON DELETE RESTRICT
 );
 
 -- Tabla nueva para auditoria basica de cambio de roles
@@ -198,8 +198,8 @@ CREATE TABLE AuditoriaRolUsuario (
     RolAnterior VARCHAR(50),
     RolNuevo VARCHAR(50) NOT NULL,
     FechaCambio DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (FK_UsuarioAfectadoID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE,
-    FOREIGN KEY (FK_AdminID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE
+    FOREIGN KEY (FK_UsuarioAfectadoID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT,
+    FOREIGN KEY (FK_AdminID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT
 );
 
 -- Tablas nuevas para cumplir el RF_05 (Filtro NSFW)
@@ -214,7 +214,7 @@ CREATE TABLE LogModeracion (
     Motivo VARCHAR(255) NOT NULL,
     ContenidoBloqueadoHash VARCHAR(255),
     Fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE CASCADE
+    FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT
 );
 
 -- Indices para rendimiento

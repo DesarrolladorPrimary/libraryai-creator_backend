@@ -27,6 +27,21 @@ public class SettingsDao {
     private static final BigDecimal PLAN_FREE_PRICE = BigDecimal.ZERO;
     private static final BigDecimal PLAN_PREMIUM_PRICE = new BigDecimal("9.99");
 
+    /**
+     * Garantiza que el catálogo mínimo de planes exista antes de operar con
+     * suscripciones, vistas admin o cambios de plan.
+     */
+    public static void ensureDefaultPlans() {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            findOrCreatePlan(conn, PLAN_FREE_NAME);
+            findOrCreatePlan(conn, PLAN_PREMIUM_NAME);
+            conn.commit();
+        } catch (Exception e) {
+            System.out.println("Error al garantizar planes por defecto: " + e.getMessage());
+        }
+    }
+
 
     /**
      * Obtiene la instrucción permanente de IA del usuario.
@@ -215,6 +230,52 @@ public class SettingsDao {
             System.out.println("Error en simulateSubscriptionChange: " + e.getMessage());
             response.addProperty("status", 500);
             response.addProperty("Mensaje", "Error interno al simular el cambio de plan");
+            return response;
+        }
+    }
+
+    /**
+     * Asigna la suscripción gratuita inicial a un usuario recién creado.
+     * Si el usuario ya tiene una suscripción activa, la conserva.
+     */
+    public static JsonObject assignDefaultFreeSubscription(int userId) {
+        JsonObject response = new JsonObject();
+
+        if (userId <= 0) {
+            response.addProperty("status", 400);
+            response.addProperty("Mensaje", "Usuario inválido para asignar suscripción inicial");
+            return response;
+        }
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                Integer activeSubscriptionId = findActiveSubscriptionId(conn, userId);
+                if (activeSubscriptionId == null) {
+                    int freePlanId = findOrCreatePlan(conn, PLAN_FREE_NAME);
+                    createSubscription(conn, userId, freePlanId);
+                }
+
+                conn.commit();
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+            JsonObject subscription = getSuscripcionActiva(userId);
+            if (!subscription.has("status") || subscription.get("status").getAsInt() != 200) {
+                return subscription;
+            }
+
+            subscription.addProperty("Mensaje", "Suscripción gratuita inicial asignada correctamente");
+            return subscription;
+        } catch (Exception e) {
+            System.out.println("Error en assignDefaultFreeSubscription: " + e.getMessage());
+            response.addProperty("status", 500);
+            response.addProperty("Mensaje", "No fue posible asignar la suscripción gratuita inicial");
             return response;
         }
     }
@@ -435,6 +496,26 @@ public class SettingsDao {
             stmt.setInt(1, userId);
             stmt.executeUpdate();
         }
+    }
+
+    private static Integer findActiveSubscriptionId(Connection conn, int userId) throws SQLException {
+        String sql = """
+            SELECT PK_SuscripcionID
+            FROM Suscripcion
+            WHERE FK_UsuarioID = ? AND Estado = 'Activa'
+            ORDER BY FechaInicio DESC
+            LIMIT 1
+        """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("PK_SuscripcionID");
+            }
+        }
+
+        return null;
     }
 
     private static int createSubscription(Connection conn, int userId, int planId) throws SQLException {

@@ -72,6 +72,9 @@ public class Routes {
         router.get("/api/v1/admin/payments",
                 auth.proteger(AdminController.getPayments(), "Admin"));
 
+        router.get("/api/v1/admin/models",
+                auth.proteger(AdminController.getModels(), "Admin"));
+
         router.post("/api/v1/generar-historias",
                 auth.proteger(AiController.generateStory(), "Gratuito", "Premium"));
 

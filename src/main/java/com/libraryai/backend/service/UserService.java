@@ -10,6 +10,7 @@ import org.mindrot.jbcrypt.BCrypt;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.dao.UserRoleDao;
 import com.libraryai.backend.dao.UserDao;
+import com.libraryai.backend.dao.SettingsDao;
 import com.libraryai.backend.dao.auth.RecuperacionDao;
 import com.libraryai.backend.models.User;
 
@@ -99,7 +100,20 @@ public class UserService {
                 int id = UserDao.save(user);
 
                 if (id != 0) {
-                    UserRoleDao.assignRole(id);
+                    if (!UserRoleDao.assignRole(id)) {
+                        UserDao.deleteById(id);
+                        rJsonObject.addProperty("Mensaje", "No fue posible asignar el rol inicial del usuario");
+                        rJsonObject.addProperty("status", 500);
+                        return rJsonObject;
+                    }
+
+                    JsonObject subscriptionAssignment = SettingsDao.assignDefaultFreeSubscription(id);
+                    if (!subscriptionAssignment.has("status") || subscriptionAssignment.get("status").getAsInt() != 200) {
+                        UserDao.deleteById(id);
+                        rJsonObject.addProperty("Mensaje", "No fue posible asignar el plan gratuito inicial");
+                        rJsonObject.addProperty("status", 500);
+                        return rJsonObject;
+                    }
 
                     // Generar token de verificación de correo
                     String tokenVerificacion = UUID.randomUUID().toString();

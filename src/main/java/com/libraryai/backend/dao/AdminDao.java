@@ -107,9 +107,19 @@ public class AdminDao {
                 p.AlmacenamientoMaxMB,
                 p.Precio,
                 p.Activo,
-                COUNT(DISTINCT CASE WHEN s.Estado = 'Activa' THEN s.FK_UsuarioID END) AS UsuariosActivos
+                COUNT(DISTINCT CASE
+                    WHEN u.Activo = TRUE
+                         AND (
+                            (LOWER(p.NombrePlan) LIKE '%gratuito%' AND r.NombreRol = 'Gratuito')
+                            OR
+                            (LOWER(p.NombrePlan) LIKE '%premium%' AND r.NombreRol = 'Premium')
+                         )
+                    THEN u.PK_UsuarioID
+                END) AS UsuariosActivos
             FROM PlanSuscripcion p
-            LEFT JOIN Suscripcion s ON s.FK_PlanID = p.PK_PlanID
+            LEFT JOIN UsuarioRol ur ON 1 = 1
+            LEFT JOIN Rol r ON r.PK_RolID = ur.FK_RolID
+            LEFT JOIN Usuario u ON u.PK_UsuarioID = ur.FK_UsuarioID
             GROUP BY p.PK_PlanID, p.NombrePlan, p.AlmacenamientoMaxMB, p.Precio, p.Activo
             ORDER BY p.Precio ASC, p.PK_PlanID ASC;
             """;
@@ -320,6 +330,8 @@ public class AdminDao {
      */
     public static JsonArray getPlansSummary() {
         JsonArray plans = new JsonArray();
+
+        SettingsDao.ensureDefaultPlans();
 
         try (
                 Connection conn = DatabaseConnection.getConnection();

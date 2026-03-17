@@ -3,6 +3,7 @@ package com.libraryai.backend.service;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.dao.AdminDao;
+import com.libraryai.backend.dao.SettingsDao;
 
 /**
  * Lógica de negocio del panel de administración.
@@ -76,5 +77,34 @@ public class AdminService {
      */
     public static JsonArray getPaymentHistory() {
         return AdminDao.getPaymentHistory();
+    }
+
+    /**
+     * Devuelve el catálogo completo de modelos IA visible para administración.
+     */
+    public static JsonObject getModelCatalog() {
+        JsonObject response = new JsonObject();
+
+        JsonObject freeModel = SettingsDao.getVersionActual("Gratuito");
+        if (!freeModel.has("status") || freeModel.get("status").getAsInt() != 200) {
+            return freeModel;
+        }
+
+        JsonObject premiumModel = SettingsDao.getVersionActual("Premium");
+        if (!premiumModel.has("status") || premiumModel.get("status").getAsInt() != 200) {
+            return premiumModel;
+        }
+
+        JsonObject availableModels = SettingsDao.getModelosPorPlan("Premium");
+        if (!availableModels.has("status") || availableModels.get("status").getAsInt() != 200) {
+            return availableModels;
+        }
+
+        response.addProperty("status", 200);
+        response.add("modeloGratuito", freeModel);
+        response.add("modeloPremium", premiumModel);
+        response.add("modelos", availableModels.get("modelos"));
+        response.addProperty("total", availableModels.has("total") ? availableModels.get("total").getAsInt() : 0);
+        return response;
     }
 }

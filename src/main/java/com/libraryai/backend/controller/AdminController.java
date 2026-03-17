@@ -158,6 +158,18 @@ public class AdminController {
         };
     }
 
+    /**
+     * Devuelve el catálogo completo de modelos IA disponible para administración.
+     */
+    public static HttpHandler getModels() {
+        return exchange -> {
+            JsonObject response = AdminService.getModelCatalog();
+            int statusCode = response.get("status").getAsInt();
+            response.remove("status");
+            ApiResponse.send(exchange, response.toString(), statusCode);
+        };
+    }
+
     private static int extractAdminId(String authHeader) {
         if (authHeader == null || authHeader.isBlank()) {
             return -1;

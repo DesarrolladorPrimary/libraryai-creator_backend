@@ -1,6 +1,10 @@
 package com.libraryai.backend.dao;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -46,8 +50,137 @@ public class UserDao {
             """;
 
     // language=sql
+    private final static String SQL_SELECT_ID = """
+            SELECT PK_UsuarioID FROM Usuario WHERE PK_UsuarioID = ?;
+            """;
+
+    // language=sql
+    private final static String SQL_SELECT_FILE_PATHS_BY_USER = """
+            SELECT RutaAlmacenamiento FROM ArchivoSubido WHERE FK_UsuarioID = ?;
+            """;
+
+    // language=sql
     private final static String SQL_UPDATE = """
             UPDATE Usuario SET Nombre = ?, Correo = ?, PasswordHash = ? WHERE  PK_UsuarioID=?;
+            """;
+
+    // language=sql
+    private static final String SQL_DELETE_EMAILS_BY_USER = """
+            DELETE FROM Correo WHERE FK_UsuarioID = ?;
+            """;
+
+    // language=sql
+    private static final String SQL_DELETE_TOKENS_BY_USER = """
+            DELETE FROM TokenAcceso WHERE FK_UsuarioID = ?;
+            """;
+
+    // language=sql
+    private static final String SQL_DELETE_SHELVES_BY_USER = """
+            DELETE FROM Estanteria WHERE FK_UsuarioID = ?;
+            """;
+
+    // language=sql
+    private static final String SQL_DELETE_SUBSCRIPTIONS_BY_USER = """
+            DELETE FROM Suscripcion WHERE FK_UsuarioID = ?;
+            """;
+
+    // language=sql
+    private static final String SQL_DELETE_FILES_BY_USER = """
+            DELETE FROM ArchivoSubido WHERE FK_UsuarioID = ?;
+            """;
+
+    // language=sql
+    private static final String SQL_DELETE_USER_ROLES_BY_USER = """
+            DELETE FROM UsuarioRol WHERE FK_UsuarioID = ?;
+            """;
+
+    // language=sql
+    private static final String SQL_DELETE_PAYMENTS_BY_USER = """
+            DELETE FROM Pago
+            WHERE FK_SuscripcionID IN (
+                SELECT PK_SuscripcionID
+                FROM (
+                    SELECT PK_SuscripcionID
+                    FROM Suscripcion
+                    WHERE FK_UsuarioID = ?
+                ) suscripciones_usuario
+            );
+            """;
+
+    // language=sql
+    private static final String SQL_DELETE_STORIES_BY_USER = """
+            DELETE FROM Relato WHERE FK_UsuarioID = ?;
+            """;
+
+    // language=sql
+    private static final String SQL_DELETE_STORY_VERSIONS_BY_USER = """
+            DELETE FROM RelatoVersion
+            WHERE FK_RelatoID IN (
+                SELECT PK_RelatoID
+                FROM (
+                    SELECT PK_RelatoID
+                    FROM Relato
+                    WHERE FK_UsuarioID = ?
+                ) relatos_usuario
+            );
+            """;
+
+    // language=sql
+    private static final String SQL_DELETE_AI_CONFIG_BY_USER = """
+            DELETE FROM ConfiguracionIA
+            WHERE FK_RelatoID IN (
+                SELECT PK_RelatoID
+                FROM (
+                    SELECT PK_RelatoID
+                    FROM Relato
+                    WHERE FK_UsuarioID = ?
+                ) relatos_usuario
+            );
+            """;
+
+    // language=sql
+    private static final String SQL_DELETE_CHAT_MESSAGES_BY_USER = """
+            DELETE FROM MensajeChat
+            WHERE FK_RelatoID IN (
+                SELECT PK_RelatoID
+                FROM (
+                    SELECT PK_RelatoID
+                    FROM Relato
+                    WHERE FK_UsuarioID = ?
+                ) relatos_usuario
+            );
+            """;
+
+    // language=sql
+    private static final String SQL_DELETE_STORY_FILE_LINKS_BY_USER = """
+            DELETE FROM Relato_ArchivoFuente
+            WHERE FK_RelatoID IN (
+                SELECT PK_RelatoID
+                FROM (
+                    SELECT PK_RelatoID
+                    FROM Relato
+                    WHERE FK_UsuarioID = ?
+                ) relatos_usuario
+            )
+               OR FK_ArchivoID IN (
+                SELECT PK_ArchivoID
+                FROM (
+                    SELECT PK_ArchivoID
+                    FROM ArchivoSubido
+                    WHERE FK_UsuarioID = ?
+                ) archivos_usuario
+            );
+            """;
+
+    // language=sql
+    private static final String SQL_DELETE_ROLE_AUDIT_BY_USER = """
+            DELETE FROM AuditoriaRolUsuario
+            WHERE FK_UsuarioAfectadoID = ? OR FK_AdminID = ?;
+            """;
+
+    // language=sql
+    private static final String SQL_DELETE_MODERATION_LOGS_BY_USER = """
+            DELETE FROM LogModeracion WHERE FK_UsuarioID = ?;
             """;
 
     /**
@@ -373,36 +506,118 @@ public class UserDao {
      * Elimina un usuario por id y devuelve resultado con status.
      */
     public static JsonObject deleteById(int id) {
-
         JsonObject response = new JsonObject();
+        List<String> filePaths = new ArrayList<>();
 
-        try (
-                Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(SQL_DELETE);) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
 
-            pstmt.setInt(1, id);
-            int filasAfectadas = pstmt.executeUpdate();
-            boolean exist = false;
+            try {
+                if (!userExists(conn, id)) {
+                    response.addProperty("Mensaje", "El usuario no existe con ese id");
+                    response.addProperty("status", 404);
+                    return response;
+                }
 
-            if (filasAfectadas > 0) {
-                System.out.println("Usuario eliminado");
-                exist = true;
+                filePaths = listUserFilePaths(conn, id);
+
+                executeDelete(conn, SQL_DELETE_MODERATION_LOGS_BY_USER, id);
+                executeDelete(conn, SQL_DELETE_ROLE_AUDIT_BY_USER, id, id);
+                executeDelete(conn, SQL_DELETE_EMAILS_BY_USER, id);
+                executeDelete(conn, SQL_DELETE_TOKENS_BY_USER, id);
+                executeDelete(conn, SQL_DELETE_PAYMENTS_BY_USER, id);
+                executeDelete(conn, SQL_DELETE_SUBSCRIPTIONS_BY_USER, id);
+                executeDelete(conn, SQL_DELETE_USER_ROLES_BY_USER, id);
+                executeDelete(conn, SQL_DELETE_STORY_VERSIONS_BY_USER, id);
+                executeDelete(conn, SQL_DELETE_AI_CONFIG_BY_USER, id);
+                executeDelete(conn, SQL_DELETE_CHAT_MESSAGES_BY_USER, id);
+                executeDelete(conn, SQL_DELETE_STORY_FILE_LINKS_BY_USER, id, id);
+                executeDelete(conn, SQL_DELETE_STORIES_BY_USER, id);
+                executeDelete(conn, SQL_DELETE_FILES_BY_USER, id);
+                executeDelete(conn, SQL_DELETE_SHELVES_BY_USER, id);
+
+                int filasAfectadas = executeDelete(conn, SQL_DELETE, id);
+                if (filasAfectadas <= 0) {
+                    conn.rollback();
+                    response.addProperty("Mensaje", "El usuario no existe con ese id");
+                    response.addProperty("status", 404);
+                    return response;
+                }
+
+                conn.commit();
+                appendFileCleanupWarning(cleanupPhysicalFiles(filePaths), response);
                 response.addProperty("Mensaje", "Usuario eliminado correctamente");
                 response.addProperty("status", 200);
-
-            } else {
-                System.out.println("El usuario no existe con ese id");
-                exist = false;
-                response.addProperty("Mensaje", "El usuario no existe con ese id");
-                response.addProperty("status", 404);
-
+                System.out.println("Usuario eliminado");
+            } catch (SQLException e) {
+                conn.rollback();
+                response.addProperty("Mensaje", "No fue posible eliminar el usuario: " + e.getMessage());
+                response.addProperty("status", 500);
             }
-
         } catch (SQLException e) {
-            e.printStackTrace();
+            response.addProperty("Mensaje", "No fue posible preparar la eliminación del usuario: " + e.getMessage());
+            response.addProperty("status", 500);
         }
 
         return response;
+    }
+
+    private static boolean userExists(Connection conn, int id) throws SQLException {
+        try (PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT_ID)) {
+            pstmt.setInt(1, id);
+            ResultSet rs = pstmt.executeQuery();
+            return rs.next();
+        }
+    }
+
+    private static List<String> listUserFilePaths(Connection conn, int userId) throws SQLException {
+        List<String> filePaths = new ArrayList<>();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT_FILE_PATHS_BY_USER)) {
+            pstmt.setInt(1, userId);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                String path = rs.getString("RutaAlmacenamiento");
+                if (path != null && !path.isBlank()) {
+                    filePaths.add(path);
+                }
+            }
+        }
+
+        return filePaths;
+    }
+
+    private static int executeDelete(Connection conn, String sql, int... params) throws SQLException {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            for (int index = 0; index < params.length; index++) {
+                pstmt.setInt(index + 1, params[index]);
+            }
+            return pstmt.executeUpdate();
+        }
+    }
+
+    private static int cleanupPhysicalFiles(List<String> filePaths) {
+        int failedDeletions = 0;
+
+        for (String filePath : filePaths) {
+            try {
+                Files.deleteIfExists(Path.of(filePath));
+            } catch (Exception e) {
+                failedDeletions++;
+            }
+        }
+
+        return failedDeletions;
+    }
+
+    private static void appendFileCleanupWarning(int failedDeletions, JsonObject response) {
+        if (failedDeletions <= 0) {
+            return;
+        }
+
+        response.addProperty("detalleArchivos",
+                "Se eliminaron los registros del usuario, pero " + failedDeletions
+                        + " archivo(s) no pudieron borrarse del disco");
     }
 
     /**

@@ -307,9 +307,22 @@ public class UploadController {
             }
 
             try {
+                JsonObject unlinkFile = UploadedFileDao.unlinkFromStory(storyId, fileId);
+                if (!unlinkFile.has("status") || unlinkFile.get("status").getAsInt() != 200) {
+                    ApiResponse.send(exchange, unlinkFile.toString(),
+                            unlinkFile.has("status") ? unlinkFile.get("status").getAsInt() : 500);
+                    return;
+                }
+
+                if (UploadedFileDao.countStoryLinks(fileId) > 0) {
+                    ApiResponse.send(exchange, unlinkFile.toString(), 200);
+                    return;
+                }
+
                 JsonObject deleteFile = UploadedFileDao.deleteByUser(fileId, userId);
-                if (deleteFile.get("status").getAsInt() != 200) {
-                    ApiResponse.send(exchange, deleteFile.toString(), deleteFile.get("status").getAsInt());
+                if (!deleteFile.has("status") || deleteFile.get("status").getAsInt() != 200) {
+                    ApiResponse.send(exchange, deleteFile.toString(),
+                            deleteFile.has("status") ? deleteFile.get("status").getAsInt() : 500);
                     return;
                 }
 
