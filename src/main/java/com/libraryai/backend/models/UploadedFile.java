@@ -2,13 +2,10 @@ package com.libraryai.backend.models;
 
 import java.time.LocalDateTime;
 
-//*Clase modelo de la tabla ArchivoSubido
 /**
- * Modelo de dominio para archivo subido.
+ * Representa un archivo persistido del usuario, ya sea subido o exportado.
  */
 public class UploadedFile {
-
-    // **atributos de la tabla privados
     private int archivo_id;
     private int usuario_id;
     private String nombreArchivo;
@@ -17,7 +14,9 @@ public class UploadedFile {
     private int tamanoBytes;
     private LocalDateTime fechaSubida;
 
-    // **Constructor para crear archivos subidos
+    /**
+     * Construye la proyección completa de una fila de {@code ArchivoUsuario}.
+     */
     public UploadedFile(int archivo_id, int usuario_id, String nombreArchivo, String tipoArchivo,
             String rutaAlmacenamiento, int tamanoBytes, LocalDateTime fechaSubida) {
         this.archivo_id = archivo_id;
@@ -28,8 +27,6 @@ public class UploadedFile {
         this.tamanoBytes = tamanoBytes;
         this.fechaSubida = fechaSubida;
     }
-
-    // **Getter y Setter para manipulacion de datos privados
 
     public int getFileId() {
         return archivo_id;

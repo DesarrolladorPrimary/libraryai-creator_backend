@@ -15,12 +15,18 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 
 /**
- * Extrae texto plano desde documentos soportados por Poly.
+ * Extrae texto plano desde documentos fuente soportados por Poly.
+ *
+ * <p>Se usa para construir contexto resumido a partir de archivos PDF, DOC o
+ * DOCX previamente guardados por el usuario.
  */
 public class DocumentTextExtractor {
 
     private static final int MAX_EXTRACTED_CHARS = 12000;
 
+    /**
+     * Abre un archivo almacenado en disco y devuelve una versión textual acotada.
+     */
     public static String extractText(String storagePath, String fileType) {
         if (storagePath == null || storagePath.isBlank() || fileType == null || fileType.isBlank()) {
             return "";
@@ -46,6 +52,10 @@ public class DocumentTextExtractor {
         }
     }
 
+    /**
+     * Resuelve rutas relativas respecto al workspace actual para poder reutilizar
+     * registros almacenados por el backend.
+     */
     private static Path resolvePath(String storagePath) {
         Path path = Paths.get(storagePath);
         if (path.isAbsolute()) {
@@ -55,6 +65,9 @@ public class DocumentTextExtractor {
         return Paths.get("").toAbsolutePath().resolve(storagePath).normalize();
     }
 
+    /**
+     * Extrae texto de documentos PDF usando PDFBox.
+     */
     private static String extractPdfText(Path path) throws IOException {
         try (PDDocument document = Loader.loadPDF(path.toFile())) {
             PDFTextStripper stripper = new PDFTextStripper();
@@ -62,6 +75,9 @@ public class DocumentTextExtractor {
         }
     }
 
+    /**
+     * Extrae texto de documentos Word modernos (`.docx`).
+     */
     private static String extractDocxText(Path path) throws IOException {
         try (InputStream input = Files.newInputStream(path);
                 XWPFDocument document = new XWPFDocument(input);
@@ -70,6 +86,9 @@ public class DocumentTextExtractor {
         }
     }
 
+    /**
+     * Extrae texto de documentos Word binarios clásicos (`.doc`).
+     */
     private static String extractDocText(Path path) throws IOException {
         try (InputStream input = Files.newInputStream(path);
                 HWPFDocument document = new HWPFDocument(input);
@@ -78,6 +97,9 @@ public class DocumentTextExtractor {
         }
     }
 
+    /**
+     * Recorta el texto extraído para no desbordar el contexto enviado al modelo.
+     */
     private static String limit(String rawText) {
         String normalized = rawText == null ? "" : rawText.replace("\u0000", "").trim();
         if (normalized.length() <= MAX_EXTRACTED_CHARS) {

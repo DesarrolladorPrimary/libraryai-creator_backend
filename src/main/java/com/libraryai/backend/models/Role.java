@@ -1,22 +1,19 @@
 package com.libraryai.backend.models;
 
-//*Clase modelo de la tabla Rol
 /**
- * Modelo de dominio para rol.
+ * Representa un rol amplio del sistema, usado para autorización por rutas.
  */
 public class Role {
-
-    // **atributos de la tabla privados
     private int rol_id;
     private String nombreRol;
 
-    // **Constructor para crear roles
+    /**
+     * Construye la proyección completa de una fila de {@code Rol}.
+     */
     public Role(int rol_id, String nombreRol) {
         this.rol_id = rol_id;
         this.nombreRol = nombreRol;
     }
-
-    // **Getter y Setter para manipulacion de datos privados
 
     public int getRoleId() {
         return rol_id;

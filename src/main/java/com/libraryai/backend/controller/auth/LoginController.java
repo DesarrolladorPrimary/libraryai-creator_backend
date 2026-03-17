@@ -8,13 +8,15 @@ import com.libraryai.backend.service.auth.LoginService;
 import com.sun.net.httpserver.HttpHandler;
 
 /**
- * Handlers HTTP para login.
+ * Controlador HTTP del flujo de inicio de sesión.
+ *
+ * <p>Su responsabilidad es mínima: leer el cuerpo JSON, delegar en el servicio y
+ * serializar la respuesta al cliente.
  */
 public class LoginController {
     
     /**
-     * Handler de login.
-     * Lee correo y contrasena del body, valida credenciales y responde con token.
+     * Construye el handler de login.
      */
     public static HttpHandler loginUser(){
         return exchange -> {
@@ -23,7 +25,8 @@ public class LoginController {
 
             System.out.println("\n\nPeticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
 
-            // Parseo del JSON del body.
+            // El controlador mantiene el parsing simple para dejar la lógica de
+            // validación dentro del servicio.
             Gson gson = new Gson();
             JsonObject user = gson.fromJson(body, JsonObject.class);
 

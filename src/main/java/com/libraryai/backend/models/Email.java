@@ -2,13 +2,10 @@ package com.libraryai.backend.models;
 
 import java.time.LocalDateTime;
 
-//*Clase modelo de la tabla Correo
 /**
- * Modelo de dominio para correo.
+ * Representa un correo generado o enviado por el sistema.
  */
 public class Email {
-
-    // **atributos de la tabla privados
     private int correo_id;
     private int usuario_id;
     private String asunto;
@@ -16,7 +13,9 @@ public class Email {
     private LocalDateTime fechaEnvio;
     private String estado;
 
-    // **Constructor para crear correos
+    /**
+     * Construye la proyección completa de una fila de {@code Correo}.
+     */
     public Email(int correo_id, int usuario_id, String asunto, String cuerpo,
             LocalDateTime fechaEnvio, String estado) {
         this.correo_id = correo_id;
@@ -26,8 +25,6 @@ public class Email {
         this.fechaEnvio = fechaEnvio;
         this.estado = estado;
     }
-
-    // **Getter y Setter para manipulacion de datos privados
 
     public int getEmailId() {
         return correo_id;

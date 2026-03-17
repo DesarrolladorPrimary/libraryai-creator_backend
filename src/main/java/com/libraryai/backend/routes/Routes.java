@@ -19,16 +19,24 @@ import com.libraryai.backend.server.Router;
 import com.sun.net.httpserver.HttpHandler;
 
 /**
- * RUTAS - El archivo de configuración de rutas
+ * Registra el mapa completo de endpoints HTTP del backend.
+ *
+ * <p>Aquí se conecta cada controlador con su ruta, verbo HTTP y política de
+ * acceso basada en roles.
  */
 public class Routes {
 
     Router router = new Router();
 
+    /**
+     * Construye el router principal de la aplicación y devuelve el handler raíz
+     * que usará el servidor HTTP.
+     */
     public HttpHandler configureRoutes() {
 
         AuthMiddleware auth = new AuthMiddleware();
 
+        // Rutas públicas de autenticación y recuperación de acceso.
         router.post("/api/v1/login", LoginController.loginUser());
 
         router.post("/api/v1/recuperar", RecuperacionController.solicitarRecuperacion());
@@ -37,6 +45,7 @@ public class Routes {
 
         router.get("/api/v1/verificar", RecuperacionController.verificarCorreo());
 
+        // Gestión de usuarios y administración.
         router.get("/api/v1/usuarios",
                 auth.proteger(UserController.listUsers(), "Admin"));
 
@@ -75,6 +84,7 @@ public class Routes {
         router.get("/api/v1/admin/models",
                 auth.proteger(AdminController.getModels(), "Admin"));
 
+        // Flujos de IA y configuración del usuario autenticado.
         router.post("/api/v1/generar-historias",
                 auth.proteger(AiController.generateStory(), "Gratuito", "Premium"));
 
@@ -99,6 +109,7 @@ public class Routes {
         router.get("/api/v1/settings/sistema",
                 auth.proteger(SettingsController.getInfoSistema(), "Gratuito", "Premium"));
 
+        // Gestión de archivos de perfil y archivos fuente de relatos.
         router.post("/api/v1/upload/perfil",
                 auth.proteger(UploadController.subirFotoPerfil(), "Gratuito", "Premium"));
 
@@ -108,6 +119,7 @@ public class Routes {
         router.delete("/api/v1/upload/relato",
                 auth.proteger(UploadController.eliminarArchivoRelato(), "Gratuito", "Premium"));
 
+        // Biblioteca personal y descargas.
         router.get("/api/v1/library/documents",
                 auth.proteger(LibraryController.listDocuments(), "Gratuito", "Premium"));
 
@@ -117,6 +129,7 @@ public class Routes {
         router.delete("/api/v1/library/documents",
                 auth.proteger(LibraryController.deleteDocument(), "Gratuito", "Premium"));
 
+        // Estanterías del usuario.
         router.get("/api/v1/estanterias",
                 auth.proteger(ShelfController.listShelves(), "Gratuito", "Premium"));
 
@@ -129,6 +142,7 @@ public class Routes {
         router.delete("/api/v1/estanterias",
                 auth.proteger(ShelfController.deleteShelf(), "Gratuito", "Premium"));
 
+        // Relatos, configuración IA por relato y exportación.
         router.post("/api/v1/stories",
                 auth.proteger(StoryController.createStory(), "Gratuito", "Premium"));
 
@@ -156,6 +170,7 @@ public class Routes {
         router.delete("/api/v1/stories/{id}",
                 auth.proteger(StoryController.deleteStory(), "Gratuito", "Premium"));
 
+        // Conversaciones de Poly vinculadas a cada relato artificial.
         router.post("/api/v1/chat/message",
                 auth.proteger(ChatController.sendMessage(), "Gratuito", "Premium"));
 

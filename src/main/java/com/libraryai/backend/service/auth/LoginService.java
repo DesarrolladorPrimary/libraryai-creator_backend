@@ -6,7 +6,10 @@ import com.libraryai.backend.util.JwtUtil;
 import org.mindrot.jbcrypt.BCrypt;
 
 /**
- * Servicio de negocio para login.
+ * Servicio de negocio para autenticación de usuarios.
+ *
+ * <p>Valida formato de entrada, estado del correo, compatibilidad del hash y
+ * finalmente emite el JWT que usa el resto del backend.
  */
 public class LoginService {
 
@@ -42,7 +45,8 @@ public class LoginService {
                 int id = user.get("id").getAsInt();
                 boolean correoVerificado = user.get("correoVerificado").getAsBoolean();
 
-                // Verificar si el correo está verificado
+                // El login reusa el mismo flujo de verificación para reenviar enlaces
+                // cuando el usuario todavía no confirmó su correo.
                 if (!correoVerificado) {
                     // Generar nuevo token de verificación al momento del login
                     JsonObject resultado = com.libraryai.backend.service.auth.RecuperacionService.generarTokenVerificacionLogin(correo, id);
@@ -64,7 +68,7 @@ public class LoginService {
                     return response;
                 }
 
-                // Genera JWT con correo, rol e id.
+                // El token resume identidad, rol e id para autorización posterior.
                 String token = JwtUtil.generateUserToken(correo, rol, id);
                 response.addProperty("Mensaje", "Inicio de sesión correcto");
                 response.addProperty("Token", token);
@@ -83,6 +87,10 @@ public class LoginService {
         }
     }
 
+    /**
+     * Compara la contraseña plana contra el hash persistido tolerando prefijos
+     * bcrypt legados que la librería actual no interpreta directamente.
+     */
     private static boolean matchesPassword(String plainPassword, String storedHash) {
         if (plainPassword == null || storedHash == null || storedHash.isBlank()) {
             return false;
@@ -95,6 +103,10 @@ public class LoginService {
         }
     }
 
+    /**
+     * Normaliza revisiones bcrypt antiguas para mantener compatibilidad con
+     * usuarios sembrados o migrados desde otros entornos.
+     */
     private static String normalizeBcryptRevision(String hash) {
         if (hash.startsWith("$2y$") || hash.startsWith("$2x$")) {
             return "$2a$" + hash.substring(4);

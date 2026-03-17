@@ -2,20 +2,19 @@ package com.libraryai.backend.models;
 
 import java.math.BigDecimal;
 
-//*Clase modelo de la tabla PlanSuscripcion
 /**
- * Modelo de dominio para plan de suscripcion.
+ * Representa un plan de suscripción disponible para los usuarios.
  */
 public class SubscriptionPlan {
-
-    // **atributos de la tabla privados
     private int plan_id;
     private String nombrePlan;
     private int almacenamientoMaxMB;
     private BigDecimal precio;
     private boolean activo;
 
-    // **Constructor para crear planes de suscripcion
+    /**
+     * Construye la proyección completa de una fila de {@code PlanSuscripcion}.
+     */
     public SubscriptionPlan(int plan_id, String nombrePlan, int almacenamientoMaxMB,
             BigDecimal precio, boolean activo) {
         this.plan_id = plan_id;
@@ -24,8 +23,6 @@ public class SubscriptionPlan {
         this.precio = precio;
         this.activo = activo;
     }
-
-    // **Getter y Setter para manipulacion de datos privados
 
     public int getPlanId() {
         return plan_id;

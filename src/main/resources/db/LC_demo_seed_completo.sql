@@ -22,7 +22,8 @@
 -- - demo.diego@example.com / Demo123!
 --
 -- Nota:
--- este script no crea archivos físicos en uploads.
+-- este script no crea archivos físicos en uploads ni inserta registros
+-- en ArchivoUsuario/Relato_ArchivoFuente.
 
 USE LibraryAI_DB;
 

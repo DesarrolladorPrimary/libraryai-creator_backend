@@ -17,13 +17,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Handlers HTTP para funciones de IA.
+ * Controlador HTTP para utilidades de generación directa con IA.
+ *
+ * <p>Se usa en flujos donde no interviene el chat completo de Poly, pero sí se
+ * necesita moderación, resolución de plan y selección de modelo disponible.
  */
 public class AiController {
 
     /**
-     * Handler para generar historias con IA.
-     * Lee mensaje/instrucciones, delega al servicio y normaliza status.
+     * Construye el handler que procesa solicitudes de generación/corrección con
+     * IA.
      */
     public static HttpHandler generateStory() {
         return exchange -> {
@@ -92,6 +95,9 @@ public class AiController {
         };
     }
 
+    /**
+     * Extrae el id del usuario autenticado a partir del header Authorization.
+     */
     private static int getUserIdFromToken(String authorizationHeader) {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             return -1;
@@ -107,6 +113,10 @@ public class AiController {
         return tokenInfo.get("Id").getAsInt();
     }
 
+    /**
+     * Añade restricciones de longitud cuando el usuario pertenece al plan
+     * Gratuito.
+     */
     private static String buildPlanAwareInstructions(int usuarioId, String instruccionesBase) {
         StringBuilder instructions = new StringBuilder();
 
@@ -126,6 +136,10 @@ public class AiController {
         return instructions.toString();
     }
 
+    /**
+     * Construye una lista ordenada de candidatos de modelo a partir del catálogo
+     * visible para el usuario.
+     */
     private static List<String> buildModelCandidates(int usuarioId) {
         JsonObject availableModels = SettingsService.getModeloDisponible(usuarioId);
         List<String> candidates = new ArrayList<>();

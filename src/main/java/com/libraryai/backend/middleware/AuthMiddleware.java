@@ -7,7 +7,11 @@ import com.libraryai.backend.util.QueryParams;
 import com.sun.net.httpserver.HttpHandler;
 
 /**
- * Middleware de autenticación y roles.
+ * Middleware de autenticación y control básico de acceso por rol.
+ *
+ * <p>Valida el JWT de cada petición protegida y permite una excepción controlada
+ * para endpoints centrados en recursos del propio usuario cuando el id del token
+ * coincide con el solicitado por query.
  */
 public class AuthMiddleware {
     /**
@@ -73,6 +77,9 @@ public class AuthMiddleware {
         };
     }
 
+    /**
+     * Determina si la ruta exige exclusivamente el rol Admin.
+     */
     private boolean isAdminOnlyRoute(String... rolesPermitidos) {
         return rolesPermitidos != null
                 && rolesPermitidos.length == 1

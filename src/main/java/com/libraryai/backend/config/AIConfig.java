@@ -3,7 +3,10 @@ package com.libraryai.backend.config;
 import io.github.cdimascio.dotenv.Dotenv;
 
 /**
- * Configuración de cliente IA.
+ * Centraliza la lectura de configuración para el cliente de IA.
+ *
+ * <p>Expone valores listos para usar por servicios y seeders, aplicando valores
+ * por defecto y compatibilidad con variables heredadas del proyecto.
  */
 public class AIConfig {
     public static final Dotenv env = Dotenv.load();
@@ -22,6 +25,9 @@ public class AIConfig {
     public static final int MAX_INPUT_CHARS = parseInteger(env.get("AI_MAX_INPUT_CHARS"), 20000);
     public static final int MAX_OUTPUT_TOKENS = parseInteger(env.get("AI_MAX_OUTPUT_TOKEN"), 1024);
 
+    /**
+     * Limpia el nombre del modelo recibido por entorno y aplica fallback.
+     */
     private static String normalizeModelName(String rawValue, String defaultValue) {
         if (rawValue == null || rawValue.isBlank()) {
             return defaultValue;
@@ -30,6 +36,10 @@ public class AIConfig {
         return rawValue.trim();
     }
 
+    /**
+     * Convierte enteros configurables por entorno sin romper el arranque si el
+     * valor viene ausente o mal formado.
+     */
     private static int parseInteger(String rawValue, int defaultValue) {
         if (rawValue == null || rawValue.isBlank()) {
             return defaultValue;

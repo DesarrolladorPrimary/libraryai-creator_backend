@@ -1,24 +1,21 @@
 package com.libraryai.backend.models;
 
-//*Clase modelo de la tabla Estanteria
 /**
- * Modelo de dominio para estanteria.
+ * Representa una estantería/categoría creada por el usuario para organizar su biblioteca.
  */
 public class Shelf {
-
-    // **atributos de la tabla privados
     private int estanteria_id;
     private int usuario_id;
     private String nombreCategoria;
 
-    // **Constructor para crear estanterias
+    /**
+     * Construye la proyección completa de una fila de {@code Estanteria}.
+     */
     public Shelf(int estanteria_id, int usuario_id, String nombreCategoria) {
         this.estanteria_id = estanteria_id;
         this.usuario_id = usuario_id;
         this.nombreCategoria = nombreCategoria;
     }
-
-    // **Getter y Setter para manipulacion de datos privados
 
     public int getShelfId() {
         return estanteria_id;

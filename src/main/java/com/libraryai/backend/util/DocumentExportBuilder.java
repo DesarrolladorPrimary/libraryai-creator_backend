@@ -14,7 +14,10 @@ import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 
 /**
- * Genera documentos exportables desde el contenido del relato.
+ * Construye archivos exportables a partir del contenido final de un relato.
+ *
+ * <p>Ofrece dos salidas: un documento HTML compatible con Word y un PDF simple
+ * maquetado directamente con PDFBox.
  */
 public class DocumentExportBuilder {
 
@@ -25,6 +28,9 @@ public class DocumentExportBuilder {
     private static final float MARGIN = 56f;
     private static final float LEADING = 18f;
 
+    /**
+     * Genera un documento tipo Word basado en HTML para exportaciones ligeras.
+     */
     public static byte[] buildWordDocument(String title, String content) {
         String html = """
                 <!DOCTYPE html>
@@ -51,6 +57,9 @@ public class DocumentExportBuilder {
         return html.getBytes(StandardCharsets.UTF_8);
     }
 
+    /**
+     * Renderiza un PDF paginado básico con título y cuerpo del relato.
+     */
     public static byte[] buildPdfDocument(String title, String content) throws IOException {
         try (PDDocument document = new PDDocument();
                 ByteArrayOutputStream output = new ByteArrayOutputStream()) {
@@ -90,6 +99,10 @@ public class DocumentExportBuilder {
         }
     }
 
+    /**
+     * Escribe una línea en la posición vertical actual y devuelve la siguiente
+     * coordenada disponible.
+     */
     private static float writeLine(PDPageContentStream stream, float y, String text, PDType1Font font,
             float fontSize) throws IOException {
         stream.beginText();
@@ -100,6 +113,10 @@ public class DocumentExportBuilder {
         return y - LEADING;
     }
 
+    /**
+     * Ajusta párrafos a un ancho máximo sin depender de un motor de maquetación
+     * externo.
+     */
     private static List<String> wrapLines(String text, PDType1Font font, float fontSize, float maxWidth)
             throws IOException {
         List<String> lines = new ArrayList<>();
@@ -132,6 +149,10 @@ public class DocumentExportBuilder {
         return lines;
     }
 
+    /**
+     * Separa el contenido en párrafos lógicos tomando dobles saltos de línea como
+     * delimitador principal.
+     */
     private static List<String> splitParagraphs(String content) {
         String normalized = String.valueOf(content).trim();
         String[] paragraphs = normalized.split("\\n\\s*\\n");
@@ -151,6 +172,9 @@ public class DocumentExportBuilder {
         return list;
     }
 
+    /**
+     * Convierte el contenido del relato a un bloque HTML seguro con párrafos.
+     */
     private static String buildHtmlParagraphs(String content) {
         StringBuilder builder = new StringBuilder();
 
@@ -163,6 +187,9 @@ public class DocumentExportBuilder {
         return builder.toString();
     }
 
+    /**
+     * Escapa caracteres especiales para evitar romper el documento HTML generado.
+     */
     private static String escapeHtml(String value) {
         return String.valueOf(value)
                 .replace("&", "&amp;")

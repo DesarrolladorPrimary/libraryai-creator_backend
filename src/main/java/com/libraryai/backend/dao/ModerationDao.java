@@ -9,7 +9,10 @@ import java.util.List;
 import com.libraryai.backend.config.DatabaseConnection;
 
 /**
- * Acceso a datos para palabras prohibidas y logs de moderación.
+ * DAO de soporte para moderación.
+ *
+ * <p>Lee la blacklist persistida y registra eventos de contenido bloqueado sin
+ * afectar el flujo principal de negocio si falla la auditoría.
  */
 public class ModerationDao {
 
@@ -24,6 +27,9 @@ public class ModerationDao {
             VALUES (?, ?, ?)
             """;
 
+    /**
+     * Devuelve la blacklist completa ordenada alfabéticamente.
+     */
     public static List<String> listForbiddenWords() {
         List<String> words = new ArrayList<>();
 
@@ -44,6 +50,9 @@ public class ModerationDao {
         return words;
     }
 
+    /**
+     * Registra un evento de moderación para trazabilidad operativa.
+     */
     public static void createModerationLog(int userId, String reason, String blockedContentHash) {
         if (userId <= 0 || reason == null || reason.isBlank()) {
             return;

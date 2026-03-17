@@ -2,13 +2,10 @@ package com.libraryai.backend.models;
 
 import java.time.LocalDateTime;
 
-//*Clase modelo de la tabla Suscripcion
 /**
- * Modelo de dominio para suscripcion.
+ * Representa la suscripción vigente o histórica de un usuario a un plan.
  */
 public class Subscription {
-
-    // **atributos de la tabla privados
     private int suscripcion_id;
     private int usuario_id;
     private int plan_id;
@@ -17,7 +14,9 @@ public class Subscription {
     private String estado;
     private boolean renovacionAutomatica;
 
-    // **Constructor para crear suscripciones
+    /**
+     * Construye la proyección completa de una fila de {@code Suscripcion}.
+     */
     public Subscription(int suscripcion_id, int usuario_id, int plan_id,
             LocalDateTime fechaInicio, LocalDateTime fechaFin,
             String estado, boolean renovacionAutomatica) {
@@ -29,8 +28,6 @@ public class Subscription {
         this.estado = estado;
         this.renovacionAutomatica = renovacionAutomatica;
     }
-
-    // **Getter y Setter para manipulacion de datos privados
 
     public int getSubscriptionId() {
         return suscripcion_id;

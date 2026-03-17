@@ -87,7 +87,7 @@ CREATE TABLE Suscripcion (
     CHECK (FechaFin IS NULL OR FechaFin >= FechaInicio)
 );
 
-CREATE TABLE ArchivoSubido (
+CREATE TABLE ArchivoUsuario (
     PK_ArchivoID INT AUTO_INCREMENT PRIMARY KEY,
     FK_UsuarioID INT NOT NULL,
     NombreArchivo VARCHAR(255) NOT NULL,
@@ -187,7 +187,7 @@ CREATE TABLE Relato_ArchivoFuente (
     FK_ArchivoID INT,
     PRIMARY KEY (FK_RelatoID, FK_ArchivoID),
     FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE RESTRICT,
-    FOREIGN KEY (FK_ArchivoID) REFERENCES ArchivoSubido(PK_ArchivoID) ON DELETE RESTRICT
+    FOREIGN KEY (FK_ArchivoID) REFERENCES ArchivoUsuario(PK_ArchivoID) ON DELETE RESTRICT
 );
 
 -- Tabla nueva para auditoria basica de cambio de roles
@@ -222,7 +222,7 @@ CREATE INDEX idx_usuario_correo ON Usuario(Correo);
 CREATE INDEX idx_suscripcion_estado ON Suscripcion(Estado);
 CREATE INDEX idx_relato_titulo ON Relato(Titulo);
 CREATE INDEX idx_pago_referencia ON Pago(ReferenciaExterna);
-CREATE INDEX idx_archivo_nombre ON ArchivoSubido(NombreArchivo);
+CREATE INDEX idx_archivo_nombre ON ArchivoUsuario(NombreArchivo);
 CREATE INDEX idx_modelo_estado ON ModeloIA(Estado);
 CREATE INDEX idx_fk_suscripcion_usuario ON Suscripcion(FK_UsuarioID);
 CREATE INDEX idx_fk_relato_usuario ON Relato(FK_UsuarioID);
@@ -261,7 +261,7 @@ CREATE VIEW V_ArchivosPorRelato AS
 SELECT r.Titulo AS Relato, a.NombreArchivo, a.TipoArchivo, a.TamanoBytes, a.Origen
 FROM Relato_ArchivoFuente raf
 JOIN Relato r ON raf.FK_RelatoID = r.PK_RelatoID
-JOIN ArchivoSubido a ON raf.FK_ArchivoID = a.PK_ArchivoID;
+JOIN ArchivoUsuario a ON raf.FK_ArchivoID = a.PK_ArchivoID;
 
 CREATE VIEW V_EstadisticasSistema AS
 SELECT 

@@ -56,7 +56,7 @@ public class UserDao {
 
     // language=sql
     private final static String SQL_SELECT_FILE_PATHS_BY_USER = """
-            SELECT RutaAlmacenamiento FROM ArchivoSubido WHERE FK_UsuarioID = ?;
+            SELECT RutaAlmacenamiento FROM ArchivoUsuario WHERE FK_UsuarioID = ?;
             """;
 
     // language=sql
@@ -86,7 +86,7 @@ public class UserDao {
 
     // language=sql
     private static final String SQL_DELETE_FILES_BY_USER = """
-            DELETE FROM ArchivoSubido WHERE FK_UsuarioID = ?;
+            DELETE FROM ArchivoUsuario WHERE FK_UsuarioID = ?;
             """;
 
     // language=sql
@@ -166,7 +166,7 @@ public class UserDao {
                 SELECT PK_ArchivoID
                 FROM (
                     SELECT PK_ArchivoID
-                    FROM ArchivoSubido
+                    FROM ArchivoUsuario
                     WHERE FK_UsuarioID = ?
                 ) archivos_usuario
             );

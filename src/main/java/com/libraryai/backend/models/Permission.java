@@ -1,24 +1,21 @@
 package com.libraryai.backend.models;
 
-//*Clase modelo de la tabla Permiso
 /**
- * Modelo de dominio para permiso.
+ * Representa un permiso fino dentro del esquema RBAC de la base de datos.
  */
 public class Permission {
-
-    // **atributos de la tabla privados
     private int permiso_id;
     private String clavePermiso;
     private String descripcion;
 
-    // **Constructor para crear permisos
+    /**
+     * Construye la proyección completa de una fila de {@code Permiso}.
+     */
     public Permission(int permiso_id, String clavePermiso, String descripcion) {
         this.permiso_id = permiso_id;
         this.clavePermiso = clavePermiso;
         this.descripcion = descripcion;
     }
-
-    // **Getter y Setter para manipulacion de datos privados
 
     public int getPermissionId() {
         return permiso_id;

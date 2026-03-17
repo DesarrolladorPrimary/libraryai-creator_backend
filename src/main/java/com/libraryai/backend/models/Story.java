@@ -2,13 +2,10 @@ package com.libraryai.backend.models;
 
 import java.time.LocalDateTime;
 
-//*Clase modelo de la tabla Relato
 /**
- * Modelo de dominio para relato.
+ * Representa el estado actual de un relato dentro del sistema.
  */
 public class Story {
-
-    // **atributos de la tabla privados
     private int relato_id;
     private int usuario_id;
     private Integer estanteria_id;
@@ -19,7 +16,9 @@ public class Story {
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaModificacion;
 
-    // **Constructor para crear relatos
+    /**
+     * Construye la proyección completa de una fila de {@code Relato}.
+     */
     public Story(int relato_id, int usuario_id, Integer estanteria_id, Integer modeloUsado_id,
             String titulo, String modoOrigen, String descripcion,
             LocalDateTime fechaCreacion, LocalDateTime fechaModificacion) {
@@ -33,8 +32,6 @@ public class Story {
         this.fechaCreacion = fechaCreacion;
         this.fechaModificacion = fechaModificacion;
     }
-
-    // **Getter y Setter para manipulacion de datos privados
 
     public int getStoryId() {
         return relato_id;

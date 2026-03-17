@@ -10,7 +10,10 @@ import com.sun.net.httpserver.HttpServer;
 import io.github.cdimascio.dotenv.Dotenv;
 
 /**
- * Punto de inicio del servidor HTTP.
+ * Inicializa y expone el servidor HTTP embebido de la aplicación.
+ *
+ * <p>Su responsabilidad es preparar el puerto, crear contextos y conectar el
+ * router principal con el servidor nativo de Java.
  */
 public class ServerMain {
 
@@ -20,6 +23,10 @@ public class ServerMain {
 
     public static HttpServer server;
 
+    /**
+     * Levanta el servidor HTTP y registra el router principal más el acceso a
+     * archivos estáticos subidos por los usuarios.
+     */
     public static void startServer() throws IOException {
         try {
             System.out.println("\nIniciando servidor...");
@@ -41,6 +48,10 @@ public class ServerMain {
         }
     }
 
+    /**
+     * Resuelve el puerto configurado por entorno y hace fallback al valor por
+     * defecto cuando es inválido.
+     */
     private static int resolvePort() {
         String configuredPort = ENV.get("SERVER_PORT");
 

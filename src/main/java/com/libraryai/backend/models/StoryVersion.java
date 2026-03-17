@@ -2,13 +2,10 @@ package com.libraryai.backend.models;
 
 import java.time.LocalDateTime;
 
-//*Clase modelo de la tabla RelatoVersion
 /**
- * Modelo de dominio para version de relato.
+ * Representa un snapshot versionado del contenido de un relato.
  */
 public class StoryVersion {
-
-    // **atributos de la tabla privados
     private int version_id;
     private int relato_id;
     private float numeroVersion;
@@ -17,7 +14,9 @@ public class StoryVersion {
     private boolean esPublicada;
     private LocalDateTime fechaVersion;
 
-    // **Constructor para crear versiones de relato
+    /**
+     * Construye la proyección completa de una fila de {@code RelatoVersion}.
+     */
     public StoryVersion(int version_id, int relato_id, float numeroVersion, String contenido,
             String notas, boolean esPublicada, LocalDateTime fechaVersion) {
         this.version_id = version_id;
@@ -28,8 +27,6 @@ public class StoryVersion {
         this.esPublicada = esPublicada;
         this.fechaVersion = fechaVersion;
     }
-
-    // **Getter y Setter para manipulacion de datos privados
 
     public int getVersionId() {
         return version_id;

@@ -9,7 +9,10 @@ import com.google.gson.JsonObject;
 import com.libraryai.backend.config.DatabaseConnection;
 
 /**
- * DAO para versionado de relatos.
+ * DAO encargado del historial de versiones de relatos.
+ *
+ * <p>Trabaja sobre snapshots del contenido para que el relato actual y su
+ * trazabilidad histórica permanezcan separados.
  */
 public class StoryVersionDao {
 
@@ -29,6 +32,10 @@ public class StoryVersionDao {
             WHERE FK_RelatoID = ?
             """;
 
+    /**
+     * Inserta una nueva versión y asigna el siguiente número correlativo del
+     * relato.
+     */
     public static JsonObject createVersion(int storyId, String content, String notes, boolean published) {
         JsonObject response = new JsonObject();
 
@@ -82,6 +89,10 @@ public class StoryVersionDao {
         }
     }
 
+    /**
+     * Calcula el próximo número de versión dentro del relato usando el máximo
+     * actual almacenado.
+     */
     private static int getNextVersion(Connection conn, int storyId) throws SQLException {
         try (PreparedStatement pstmt = conn.prepareStatement(SQL_NEXT_VERSION)) {
             pstmt.setInt(1, storyId);

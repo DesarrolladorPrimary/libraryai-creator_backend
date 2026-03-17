@@ -2,13 +2,10 @@ package com.libraryai.backend.models;
 
 import java.time.LocalDateTime;
 
-//*Clase modelo de la tabla TokenAcceso
 /**
- * Modelo de dominio para token de acceso.
+ * Representa un token persistido para verificación, recuperación o acceso.
  */
 public class AccessToken {
-
-    // **atributos de la tabla privados
     private int token_id;
     private int usuario_id;
     private String tipoToken;
@@ -17,7 +14,9 @@ public class AccessToken {
     private LocalDateTime fechaExpiracion;
     private boolean usado;
 
-    // **Constructor para crear tokens de acceso
+    /**
+     * Construye la proyección completa de una fila de {@code TokenAcceso}.
+     */
     public AccessToken(int token_id, int usuario_id, String tipoToken, String token,
             LocalDateTime fechaCreacion, LocalDateTime fechaExpiracion, boolean usado) {
         this.token_id = token_id;
@@ -28,8 +27,6 @@ public class AccessToken {
         this.fechaExpiracion = fechaExpiracion;
         this.usado = usado;
     }
-
-    // **Getter y Setter para manipulacion de datos privados
 
     public int getTokenId() {
         return token_id;

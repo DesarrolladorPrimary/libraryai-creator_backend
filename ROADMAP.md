@@ -152,7 +152,7 @@ Su función es evidenciar:
 **Estado:** `MVP FUNCIONAL`
 
 #### Ya implementado
-- `ArchivoSubido` y relaciones con relatos
+- `ArchivoUsuario` y relaciones con relatos
 - Subida de archivos fuente para IA
 - Descarga y eliminación de documentos exportados
 - Biblioteca separando `Borradores` y `Libros`

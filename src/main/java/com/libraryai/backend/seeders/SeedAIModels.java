@@ -9,7 +9,10 @@ import com.libraryai.backend.config.AIConfig;
 import com.libraryai.backend.config.DatabaseConnection;
 
 /**
- * Inserta un catálogo mínimo de modelos IA para instalaciones nuevas.
+ * Sincroniza el catálogo mínimo de modelos IA del sistema.
+ *
+ * <p>No asume una base vacía: si el modelo ya existe lo actualiza y si falta lo
+ * inserta, manteniendo coherencia con la configuración actual de entorno.
  */
 public class SeedAIModels {
 
@@ -35,6 +38,10 @@ public class SeedAIModels {
             WHERE PK_ModeloID = ?
             """;
 
+    /**
+     * Garantiza que existan al menos un modelo gratuito y uno premium para que el
+     * backend pueda resolver disponibilidad por plan desde el primer arranque.
+     */
     public static void insertModels() {
         try (Connection conn = DatabaseConnection.getConnection()) {
             String freeModel = normalizeModelName(AIConfig.FREE_MODEL);
@@ -69,6 +76,9 @@ public class SeedAIModels {
         }
     }
 
+    /**
+     * Inserta o actualiza un modelo puntual del catálogo base.
+     */
     private static void ensureModel(Connection conn, String modelName, boolean isFreeTier, String description,
             String releaseNotes) throws SQLException {
         Integer existingId = findModelIdByName(conn, modelName);
@@ -80,6 +90,9 @@ public class SeedAIModels {
         insertModel(conn, modelName, isFreeTier, description, releaseNotes);
     }
 
+    /**
+     * Busca coincidencias por nombre sin depender de mayúsculas/minúsculas.
+     */
     private static Integer findModelIdByName(Connection conn, String modelName) throws SQLException {
         try (PreparedStatement pstmt = conn.prepareStatement(SQL_FIND_BY_NAME)) {
             pstmt.setString(1, modelName);
@@ -93,6 +106,10 @@ public class SeedAIModels {
         return null;
     }
 
+    /**
+     * Inserta un modelo nuevo con la metadata mínima visible para el usuario y el
+     * panel admin.
+     */
     private static void insertModel(Connection conn, String modelName, boolean isFreeTier, String description,
             String releaseNotes) throws SQLException {
         try (PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT)) {
@@ -105,6 +122,10 @@ public class SeedAIModels {
         }
     }
 
+    /**
+     * Mantiene sincronizado un modelo ya existente con la configuración esperada
+     * por el backend.
+     */
     private static void updateModel(Connection conn, int modelId, String modelName, boolean isFreeTier, String description,
             String releaseNotes) throws SQLException {
         try (PreparedStatement pstmt = conn.prepareStatement(SQL_UPDATE)) {
@@ -117,10 +138,17 @@ public class SeedAIModels {
         }
     }
 
+    /**
+     * Limpia espacios y evita nulls antes de persistir nombres de modelos.
+     */
     private static String normalizeModelName(String modelName) {
         return String.valueOf(modelName == null ? "" : modelName).trim();
     }
 
+    /**
+     * Deriva una versión legible a partir del nombre del modelo para poblar el
+     * catálogo sin depender de otro origen externo.
+     */
     private static String buildVersion(String modelName) {
         String normalized = normalizeModelName(modelName);
         if (normalized.startsWith("gemini-")) {

@@ -9,7 +9,10 @@ import com.google.gson.JsonObject;
 import com.libraryai.backend.config.DatabaseConnection;
 
 /**
- * DAO para configuraciones de IA por relato.
+ * DAO para configuraciones de IA asociadas a un relato.
+ *
+ * <p>Permite leer, crear, actualizar y eliminar los ajustes editoriales que
+ * modulan el comportamiento de la IA sobre un relato concreto.
  */
 public class AIConfigurationDao {
 
@@ -36,6 +39,9 @@ public class AIConfigurationDao {
             WHERE FK_RelatoID = ?
             """;
 
+    /**
+     * Recupera la configuración IA actualmente asociada a un relato.
+     */
     public static JsonObject findByStoryId(int storyId) {
         JsonObject response = new JsonObject();
 
@@ -70,6 +76,9 @@ public class AIConfigurationDao {
         }
     }
 
+    /**
+     * Inserta o actualiza la configuración IA del relato con una sola operación.
+     */
     public static JsonObject upsert(int storyId, String writingStyle, String creativityLevel,
             String responseLength, String emotionalTone) {
         JsonObject response = new JsonObject();

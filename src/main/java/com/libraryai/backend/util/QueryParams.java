@@ -3,13 +3,17 @@ package com.libraryai.backend.util;
 import com.google.gson.JsonObject;
 
 /**
- * Parser de query params.
+ * Utilidad mínima para parsear query params simples usados por el backend.
+ *
+ * <p>La clase existe para mantener consistencia en respuestas de error cuando la
+ * aplicación espera identificadores por query string.
  */
 public class QueryParams {
 
     /**
      * Extrae el parametro id desde una query tipo "id=123".
-     * Retorna un JsonObject con:
+     *
+     * <p>Retorna un JsonObject con:
      * - id: valor parseado
      * - status: 200 si es válido, 404 si es inválido o vacío
      * - Mensaje: descripcion del error cuando aplica

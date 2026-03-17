@@ -7,13 +7,16 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
 
 /**
- * Handler para servir archivos estáticos (imágenes, css, js, etc.)
+ * Handler para servir archivos estáticos del backend.
+ *
+ * <p>Se usa principalmente para exponer recursos subidos por los usuarios desde
+ * la carpeta de uploads.
  */
 public class StaticFileHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        // Obtener la ruta solicitada
+        // Resuelve la ruta solicitada directamente desde la URL.
         String path = exchange.getRequestURI().getPath();
         
         // Si es la raíz, redirigir o mostrar algo
@@ -26,7 +29,7 @@ public class StaticFileHandler implements HttpHandler {
             return;
         }
         
-        // Quitar el slash inicial para buscar el archivo
+        // Elimina el slash inicial para convertir la URL en una ruta local.
         String filePath = path.substring(1);
         
         // Buscar el archivo
@@ -55,6 +58,9 @@ public class StaticFileHandler implements HttpHandler {
         }
     }
     
+    /**
+     * Deriva el content type a partir de la extensión del archivo.
+     */
     private String getContentType(String path) {
         if (path.endsWith(".html")) return "text/html; charset=UTF-8";
         if (path.endsWith(".css")) return "text/css; charset=UTF-8";

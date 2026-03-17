@@ -2,13 +2,10 @@ package com.libraryai.backend.models;
 
 import java.time.LocalDate;
 
-//*Clase modelo de la tabla Usuarios
 /**
- * Modelo de dominio para usuario.
+ * Representa una cuenta de usuario persistida en el sistema.
  */
 public class User {
-
-    // **atributos de la tabla y del usuario privados
     private int usuarioId;
     private String nombre;
     private String correo;
@@ -16,7 +13,9 @@ public class User {
     private LocalDate fechaRegistro;
     private boolean activo;
 
-    // **Constructor para crear usuarios
+    /**
+     * Construye la proyección completa de una fila de {@code Usuario}.
+     */
     public User(int usuarioId, String nombre, String correo, String contrasenaHash, LocalDate fechaRegistro,
             boolean activo) {
         this.usuarioId = usuarioId;
@@ -27,8 +26,6 @@ public class User {
         this.activo = activo;
     }
 
-    // **Getter y Setter para manipulacion de datos privados
-    
     public int getUserId() {
         return usuarioId;
     }

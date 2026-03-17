@@ -10,10 +10,21 @@ import com.google.gson.JsonObject;
 import com.libraryai.backend.dao.ModerationDao;
 
 /**
- * Moderación básica de texto basada en la tabla PalabraProhibida.
+ * Servicio de moderación básica de texto.
+ *
+ * <p>Normaliza el texto recibido, detecta marcadores explícitos y compara contra
+ * la blacklist persistida. Si detecta contenido prohibido, responde con error y
+ * registra trazabilidad en auditoría.
  */
 public class ModerationService {
 
+    /**
+     * Valida un texto de entrada y devuelve una respuesta de error lista para el
+     * controlador si el contenido no está permitido.
+     *
+     * @return {@code null} cuando el texto es válido; un {@link JsonObject} con
+     *         estado 400 cuando debe bloquearse.
+     */
     public static JsonObject validateText(String text, int userId, String userMessage, String logReason) {
         TextVariants variants = buildVariants(text);
         if (variants.spaced.isBlank() && variants.collapsed.isBlank()) {
@@ -32,6 +43,10 @@ public class ModerationService {
         return null;
     }
 
+    /**
+     * Detecta marcadores explícitos conocidos incluso después de la normalización
+     * de espacios y caracteres ofuscados.
+     */
     private static boolean containsExplicitMarkers(TextVariants variants) {
         if (variants == null) {
             return false;
@@ -52,6 +67,10 @@ public class ModerationService {
                 || collapsed.contains("xxx");
     }
 
+    /**
+     * Busca coincidencias de la blacklist tanto en versión espaciada como en su
+     * variante colapsada para cubrir ofuscaciones simples.
+     */
     private static boolean containsForbiddenWord(TextVariants variants, List<String> forbiddenWords) {
         if (variants == null) {
             return false;
@@ -84,6 +103,11 @@ public class ModerationService {
         return false;
     }
 
+    /**
+     * Construye dos representaciones del texto:
+     * una legible para búsquedas por palabra y otra colapsada para detectar
+     * variantes con separadores o símbolos intermedios.
+     */
     private static TextVariants buildVariants(String value) {
         String normalized = String.valueOf(value == null ? "" : value).trim().toLowerCase();
         normalized = Normalizer.normalize(normalized, Normalizer.Form.NFD);
@@ -103,6 +127,9 @@ public class ModerationService {
         return new TextVariants(spaced, collapsed);
     }
 
+    /**
+     * Traduce sustituciones comunes usadas para disimular palabras prohibidas.
+     */
     private static char mapLeetCharacter(char current) {
         return switch (current) {
             case '@', '4' -> 'a';
@@ -116,6 +143,10 @@ public class ModerationService {
         };
     }
 
+    /**
+     * Genera un hash del contenido bloqueado para auditar intentos sin guardar el
+     * texto sensible en claro.
+     */
     private static String hash(String value) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -132,6 +163,9 @@ public class ModerationService {
         }
     }
 
+    /**
+     * Contenedor inmutable con las variantes normalizadas usadas por la detección.
+     */
     private static final class TextVariants {
         private final String spaced;
         private final String collapsed;

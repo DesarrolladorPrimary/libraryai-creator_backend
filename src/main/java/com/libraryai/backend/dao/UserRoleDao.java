@@ -7,7 +7,10 @@ import java.sql.SQLException;
 import com.libraryai.backend.config.DatabaseConnection;
 
 /**
- * DAO para relacion usuario-rol.
+ * DAO para la relación usuario-rol.
+ *
+ * <p>Actualmente se usa sobre todo durante el registro para asignar el rol base
+ * del sistema a cuentas recién creadas.
  */
 public class UserRoleDao {
     private static final String DEFAULT_ROLE_NAME = "Gratuito";
@@ -22,7 +25,10 @@ public class UserRoleDao {
             """;
     
     /**
-     * Asigna el rol por defecto a un usuario recien creado.
+     * Asigna el rol Gratuito a un usuario recién creado.
+     *
+     * @return {@code true} cuando la inserción encontró el rol y pudo persistir la
+     *         relación.
      */
     public static boolean assignRole(int id){
         try (

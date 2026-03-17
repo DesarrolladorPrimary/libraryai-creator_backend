@@ -7,7 +7,10 @@ import java.sql.SQLException;
 import io.github.cdimascio.dotenv.Dotenv;
 
 /**
- * Manejo de conexión a base de datos.
+ * Fábrica central de conexiones JDBC del proyecto.
+ *
+ * <p>La clase encapsula la lectura de credenciales desde variables de entorno y
+ * emite trazas simples de diagnóstico para el arranque y las operaciones DAO.
  */
 public class DatabaseConnection {
     private static final Dotenv ENV = Dotenv.load();
@@ -39,6 +42,10 @@ public class DatabaseConnection {
         return connection;
     }
 
+    /**
+     * Evita repetir validaciones de cadenas nulas o vacías al verificar la
+     * configuración mínima de conexión.
+     */
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
     }

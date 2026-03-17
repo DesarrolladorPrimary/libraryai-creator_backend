@@ -8,11 +8,18 @@ import com.libraryai.backend.seeders.SeedRoles;
 import com.libraryai.backend.server.ServerMain;
 
 /**
- * Clase principal de la aplicación.
+ * Punto de entrada del backend.
+ *
+ * <p>Centraliza la secuencia mínima de arranque: validar la configuración de IA,
+ * sincronizar catálogos base en la base de datos y levantar el servidor HTTP.
  */
 public class App {
     /**
-     * Punto de entrada de la aplicación.
+     * Ejecuta la secuencia de arranque del backend.
+     *
+     * <p>El orden importa: primero se validan dependencias críticas, luego se
+     * garantizan los datos semilla necesarios para que la aplicación responda con
+     * un catálogo mínimo coherente.
      */
     public static void main(String[] args) throws Exception {
         try {
@@ -23,6 +30,7 @@ public class App {
                         + ", premium=" + AIConfig.PREMIUM_MODEL);
             }
 
+            // Los catálogos mínimos se sincronizan antes de aceptar tráfico HTTP.
             SeedRoles.insertRoles();
             SettingsDao.ensureDefaultPlans();
             SeedAIModels.insertModels();

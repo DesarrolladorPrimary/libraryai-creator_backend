@@ -11,12 +11,12 @@ import com.google.gson.JsonObject;
 import com.libraryai.backend.config.DatabaseConnection;
 
 /**
- * DAO para archivos subidos y su relación con relatos.
+ * DAO para archivos del usuario y su relación con relatos.
  */
 public class UploadedFileDao {
 
     private static final String SQL_INSERT = """
-            INSERT INTO ArchivoSubido (
+            INSERT INTO ArchivoUsuario (
                 FK_UsuarioID, NombreArchivo, TipoArchivo, Origen, RutaAlmacenamiento, TamanoBytes
             ) VALUES (?, ?, ?, ?, ?, ?)
             """;
@@ -30,13 +30,13 @@ public class UploadedFileDao {
             SELECT a.PK_ArchivoID, a.FK_UsuarioID, a.NombreArchivo, a.TipoArchivo,
                    a.Origen, a.RutaAlmacenamiento, a.TamanoBytes, a.FechaSubida
             FROM Relato_ArchivoFuente raf
-            JOIN ArchivoSubido a ON raf.FK_ArchivoID = a.PK_ArchivoID
+            JOIN ArchivoUsuario a ON raf.FK_ArchivoID = a.PK_ArchivoID
             WHERE raf.FK_RelatoID = ?
             ORDER BY a.FechaSubida DESC, a.PK_ArchivoID DESC
             """;
 
     private static final String SQL_DELETE_BY_USER = """
-            DELETE FROM ArchivoSubido
+            DELETE FROM ArchivoUsuario
             WHERE PK_ArchivoID = ? AND FK_UsuarioID = ?
             """;
 
@@ -44,20 +44,20 @@ public class UploadedFileDao {
             SELECT a.PK_ArchivoID, a.FK_UsuarioID, a.NombreArchivo, a.TipoArchivo,
                    a.Origen, a.RutaAlmacenamiento, a.TamanoBytes, a.FechaSubida
             FROM Relato_ArchivoFuente raf
-            JOIN ArchivoSubido a ON raf.FK_ArchivoID = a.PK_ArchivoID
+            JOIN ArchivoUsuario a ON raf.FK_ArchivoID = a.PK_ArchivoID
             WHERE raf.FK_RelatoID = ? AND a.Origen = ?
             ORDER BY a.FechaSubida DESC, a.PK_ArchivoID DESC
             """;
 
     private static final String SQL_SUM_BYTES_BY_USER_AND_ORIGIN = """
             SELECT COALESCE(SUM(TamanoBytes), 0) AS totalBytes
-            FROM ArchivoSubido
+            FROM ArchivoUsuario
             WHERE FK_UsuarioID = ? AND Origen = ?
             """;
 
     private static final String SQL_SUM_BYTES_BY_USER = """
             SELECT COALESCE(SUM(TamanoBytes), 0) AS totalBytes
-            FROM ArchivoSubido
+            FROM ArchivoUsuario
             WHERE FK_UsuarioID = ?
             """;
 
@@ -65,7 +65,7 @@ public class UploadedFileDao {
             SELECT a.PK_ArchivoID, a.FK_UsuarioID, a.NombreArchivo, a.TipoArchivo,
                    a.Origen, a.RutaAlmacenamiento, a.TamanoBytes, a.FechaSubida,
                    r.PK_RelatoID, r.Titulo, r.FK_EstanteriaID, e.NombreCategoria
-            FROM ArchivoSubido a
+            FROM ArchivoUsuario a
             JOIN Relato_ArchivoFuente raf ON a.PK_ArchivoID = raf.FK_ArchivoID
             JOIN Relato r ON raf.FK_RelatoID = r.PK_RelatoID
             LEFT JOIN Estanteria e ON r.FK_EstanteriaID = e.PK_EstanteriaID
@@ -75,8 +75,16 @@ public class UploadedFileDao {
     private static final String SQL_SELECT_BY_ID_AND_USER_AND_ORIGIN = """
             SELECT PK_ArchivoID, FK_UsuarioID, NombreArchivo, TipoArchivo, Origen,
                    RutaAlmacenamiento, TamanoBytes, FechaSubida
-            FROM ArchivoSubido
+            FROM ArchivoUsuario
             WHERE PK_ArchivoID = ? AND FK_UsuarioID = ? AND Origen = ?
+            """;
+
+    private static final String SQL_EXISTS_BY_USER_AND_ORIGIN_AND_NAME = """
+            SELECT 1
+            FROM ArchivoUsuario
+            WHERE FK_UsuarioID = ? AND Origen = ?
+              AND LOWER(TRIM(NombreArchivo)) = LOWER(TRIM(?))
+            LIMIT 1
             """;
 
     private static final String SQL_DELETE_LINK = """
@@ -96,7 +104,7 @@ public class UploadedFileDao {
             """;
 
     /**
-     * Registra metadatos de un archivo subido o exportado.
+     * Registra metadatos de un archivo del usuario, ya sea subido o exportado.
      */
     public static JsonObject create(int userId, String fileName, String fileType, String origin,
             String storagePath, long sizeBytes) {
@@ -343,6 +351,30 @@ public class UploadedFileDao {
             response.addProperty("Mensaje", "Error al obtener archivo: " + e.getMessage());
             response.addProperty("status", 500);
             return response;
+        }
+    }
+
+    /**
+     * Valida si el usuario ya tiene un archivo registrado con el mismo nombre y
+     * origen.
+     */
+    public static boolean existsByUserAndOriginAndName(int userId, String origin, String fileName) {
+        if (userId <= 0 || origin == null || origin.isBlank() || fileName == null || fileName.isBlank()) {
+            return false;
+        }
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(SQL_EXISTS_BY_USER_AND_ORIGIN_AND_NAME)) {
+
+            pstmt.setInt(1, userId);
+            pstmt.setString(2, origin.trim());
+            pstmt.setString(3, fileName.trim());
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            return false;
         }
     }
 

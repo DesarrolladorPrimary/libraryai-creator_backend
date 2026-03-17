@@ -9,7 +9,10 @@ import com.google.gson.JsonObject;
 import com.libraryai.backend.config.DatabaseConnection;
 
 /**
- * DAO para autenticacion de usuarios.
+ * DAO de autenticación orientado al login.
+ *
+ * <p>Recupera la información mínima necesaria para validar credenciales y
+ * construir el token de acceso del usuario.
  */
 public class LoginDao {
 
@@ -23,8 +26,11 @@ public class LoginDao {
                         """;
 
     /**
-     * Busca un usuario por correo y devuelve hash, rol, id y estado de verificación.
-     * Retorna status 200 si encuentra, 404 si no existe.
+     * Busca un usuario por correo y devuelve hash, rol, id y estado de
+     * verificación.
+     *
+     * <p>La consulta usa joins con rol porque el login necesita conocer desde el
+     * inicio qué permisos amplios tendrá el token emitido.
      */
     public static JsonObject findUserByEmail(String correo) {
         JsonObject user = new JsonObject();

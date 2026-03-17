@@ -485,6 +485,19 @@ public class StoryService {
             return response;
         }
 
+        JsonObject exportDescriptor = resolveExportDescriptor(normalizedTitle, normalizedFormat, exportFileName,
+                exportFileType, exportFileBase64);
+        if (isErrorResponse(exportDescriptor)) {
+            return exportDescriptor;
+        }
+
+        JsonObject duplicateValidation = validateExportFileNameAvailable(
+                usuarioId,
+                exportDescriptor.get("nombreArchivo").getAsString());
+        if (duplicateValidation != null) {
+            return duplicateValidation;
+        }
+
         JsonObject moderationResult = ModerationService.validateText(
                 normalizedContent,
                 usuarioId,
@@ -552,7 +565,10 @@ public class StoryService {
                 response.addProperty("Mensaje", "Libro generado, versionado y archivo registrado correctamente");
             } else {
                 response.addProperty("Mensaje",
-                        "Libro generado y versionado, pero no se pudo registrar el archivo exportado");
+                        exportFileResult.has("Mensaje")
+                                ? exportFileResult.get("Mensaje").getAsString()
+                                : "No se pudo registrar el archivo exportado");
+                response.addProperty("status", exportFileResult.get("status").getAsInt());
                 response.add("detalleArchivo", exportFileResult);
             }
         }
@@ -657,41 +673,31 @@ public class StoryService {
         }
 
         try {
-            String normalizedType;
-            String sanitizedName;
-            byte[] fileBytes;
-
-            boolean hasClientFile = fileName != null && !fileName.trim().isEmpty()
-                    && fileType != null && !fileType.trim().isEmpty()
-                    && fileBase64 != null && !fileBase64.trim().isEmpty();
-
-            if (hasClientFile) {
-                // Si el frontend ya generó el archivo, registramos exactamente
-                // ese binario en vez de reconstruirlo en backend.
-                normalizedType = fileType.trim().toUpperCase();
-                if (!normalizedType.equals("DOC") && !normalizedType.equals("DOCX") && !normalizedType.equals("PDF")) {
-                    JsonObject response = new JsonObject();
-                    response.addProperty("Mensaje", "Tipo de archivo exportado inválido");
-                    response.addProperty("status", 400);
-                    return response;
-                }
-
-                String rawBase64 = fileBase64.contains(",") ? fileBase64.split(",")[1] : fileBase64;
-                fileBytes = Base64.getDecoder().decode(rawBase64);
-                sanitizedName = sanitizeExportFileName(fileName, normalizedType);
-            } else {
-                normalizedType = normalizedFormat.equals("pdf") ? "PDF" : "DOC";
-                sanitizedName = sanitizeExportFileName(title, normalizedType);
-                fileBytes = normalizedType.equals("PDF")
-                        ? DocumentExportBuilder.buildPdfDocument(title, content)
-                        : DocumentExportBuilder.buildWordDocument(title, content);
+            JsonObject exportDescriptor = resolveExportDescriptor(title, normalizedFormat, fileName, fileType,
+                    fileBase64);
+            if (isErrorResponse(exportDescriptor)) {
+                return exportDescriptor;
             }
+
+            String normalizedType = exportDescriptor.get("tipoArchivo").getAsString();
+            String sanitizedName = exportDescriptor.get("nombreArchivo").getAsString();
+            boolean hasClientFile = exportDescriptor.get("usaArchivoCliente").getAsBoolean();
+            byte[] fileBytes = hasClientFile
+                    ? decodeExportedFileBase64(fileBase64)
+                    : normalizedType.equals("PDF")
+                            ? DocumentExportBuilder.buildPdfDocument(title, content)
+                            : DocumentExportBuilder.buildWordDocument(title, content);
 
             if (fileBytes.length <= 0) {
                 JsonObject response = new JsonObject();
                 response.addProperty("Mensaje", "Archivo exportado inválido");
                 response.addProperty("status", 400);
                 return response;
+            }
+
+            JsonObject duplicateValidation = validateExportFileNameAvailable(userId, sanitizedName);
+            if (duplicateValidation != null) {
+                return duplicateValidation;
             }
 
             // La cuota se valida justo antes de persistir para contar el peso
@@ -742,6 +748,52 @@ public class StoryService {
             response.addProperty("status", 500);
             return response;
         }
+    }
+
+    private static JsonObject resolveExportDescriptor(String title, String normalizedFormat, String fileName,
+            String fileType, String fileBase64) {
+        JsonObject descriptor = new JsonObject();
+
+        boolean hasClientFile = fileName != null && !fileName.trim().isEmpty()
+                && fileType != null && !fileType.trim().isEmpty()
+                && fileBase64 != null && !fileBase64.trim().isEmpty();
+
+        String normalizedType;
+        String sanitizedName;
+
+        if (hasClientFile) {
+            normalizedType = fileType.trim().toUpperCase();
+            if (!normalizedType.equals("DOC") && !normalizedType.equals("DOCX") && !normalizedType.equals("PDF")) {
+                return buildErrorResponse("Tipo de archivo exportado inválido", 400);
+            }
+
+            sanitizedName = sanitizeExportFileName(fileName, normalizedType);
+        } else {
+            normalizedType = normalizedFormat.equals("pdf") ? "PDF" : "DOC";
+            sanitizedName = sanitizeExportFileName(title, normalizedType);
+        }
+
+        descriptor.addProperty("tipoArchivo", normalizedType);
+        descriptor.addProperty("nombreArchivo", sanitizedName);
+        descriptor.addProperty("usaArchivoCliente", hasClientFile);
+        return descriptor;
+    }
+
+    private static byte[] decodeExportedFileBase64(String fileBase64) {
+        String rawBase64 = fileBase64.contains(",") ? fileBase64.split(",")[1] : fileBase64;
+        return Base64.getDecoder().decode(rawBase64);
+    }
+
+    private static JsonObject validateExportFileNameAvailable(int userId, String fileName) {
+        if (!UploadedFileDao.existsByUserAndOriginAndName(userId, "Exportado", fileName)) {
+            return null;
+        }
+
+        JsonObject response = new JsonObject();
+        response.addProperty("Mensaje", "Ya tienes un libro con ese nombre en la biblioteca");
+        response.addProperty("status", 409);
+        response.addProperty("nombreArchivo", fileName);
+        return response;
     }
 
     private static String sanitizeExportFileName(String fileName, String normalizedType) {
