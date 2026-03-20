@@ -193,7 +193,7 @@ public class UserService {
                     RecuperacionDao.guardarToken(id, tokenVerificacion, expiracion, "Verificacion_Registro");
 
                     // Enviar correo de verificación
-                    EmailService.enviarCorreoVerificacion(correo, tokenVerificacion);
+                    EmailService.enviarCorreoVerificacion(id, correo, tokenVerificacion);
 
                     // Preparamos respuesta de éxito
                     rJsonObject.addProperty("Mensaje", "Usuario registrado correctamente. Revisa tu correo real y verifica la cuenta.");

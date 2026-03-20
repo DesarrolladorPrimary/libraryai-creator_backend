@@ -5,6 +5,8 @@ import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
+import com.libraryai.backend.dao.EmailDao;
+
 import io.github.cdimascio.dotenv.Dotenv;
 
 /**
@@ -27,7 +29,8 @@ public class EmailService {
      * @param cuerpo Contenido del correo.
      * @return true si se envió correctamente, false si hubo error.
      */
-    public static boolean enviarCorreo(String correoDestino, String asunto, String cuerpo) {
+    public static boolean enviarCorreo(int usuarioId, String tipoCorreo, String correoDestino, String asunto, String cuerpo) {
+        int emailLogId = EmailDao.createEmailLog(usuarioId, tipoCorreo, correoDestino, asunto, cuerpo);
         
         // Configuración del servidor SMTP
         Properties propiedades = new Properties();
@@ -61,10 +64,12 @@ public class EmailService {
             Transport.send(mensaje);
             
             System.out.println("Correo enviado exitosamente a: " + correoDestino);
+            EmailDao.updateEmailStatus(emailLogId, "Enviado", null);
             return true;
             
         } catch (Exception e) {
             System.err.println("Error al enviar correo: " + e.getMessage());
+            EmailDao.updateEmailStatus(emailLogId, "Fallido", e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -77,7 +82,7 @@ public class EmailService {
      * @param token Token de recuperación.
      * @return true si se envió correctamente.
      */
-    public static boolean enviarCorreoRecuperacion(String correoDestino, String token) {
+    public static boolean enviarCorreoRecuperacion(int usuarioId, String correoDestino, String token) {
         String link = buildFrontendUrl("/auth/recovery_passwd_change.html?token=" + token);
         
         String asunto = "Recuperación de contraseña - Library Creator";
@@ -103,7 +108,7 @@ public class EmailService {
             </html>
             """.formatted(link, link);
         
-        return enviarCorreo(correoDestino, asunto, cuerpo);
+        return enviarCorreo(usuarioId, "Recuperacion", correoDestino, asunto, cuerpo);
     }
 
     /**
@@ -114,7 +119,7 @@ public class EmailService {
      * @param token Token de verificación.
      * @return true si se envió correctamente.
      */
-    public static boolean enviarCorreoVerificacionMejorado(String correoDestino, String token) {
+    public static boolean enviarCorreoVerificacionMejorado(int usuarioId, String correoDestino, String token) {
         String link = buildFrontendUrl("/auth/verificar.html?token=" + token);
         
         String asunto = "🔔 Verifica tu cuenta - Library Creator";
@@ -153,13 +158,13 @@ public class EmailService {
             </html>
             """.formatted(link, link);
         
-        return enviarCorreo(correoDestino, asunto, cuerpo);
+        return enviarCorreo(usuarioId, "Verificacion", correoDestino, asunto, cuerpo);
     }
 
     /**
      * Envía correo de verificación de registro.
      */
-    public static boolean enviarCorreoVerificacion(String correoDestino, String token) {
+    public static boolean enviarCorreoVerificacion(int usuarioId, String correoDestino, String token) {
         String link = buildFrontendUrl("/auth/verificar.html?token=" + token);
         
         String asunto = "Verifica tu correo - Library Creator";
@@ -185,7 +190,7 @@ public class EmailService {
             </html>
             """.formatted(link, link);
         
-        return enviarCorreo(correoDestino, asunto, cuerpo);
+        return enviarCorreo(usuarioId, "Verificacion", correoDestino, asunto, cuerpo);
     }
 
     /**

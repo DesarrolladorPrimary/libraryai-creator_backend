@@ -1,4 +1,5 @@
 -- Active: 1.769801523439e+12@@127.0.0.1@3306@mysql
+drop database if exists libraryai_db;
 CREATE DATABASE IF NOT EXISTS LibraryAI_DB;
 USE LibraryAI_DB;
 
@@ -29,10 +30,13 @@ CREATE TABLE Usuario (
 CREATE TABLE Correo (
     PK_CorreoID INT AUTO_INCREMENT PRIMARY KEY,
     FK_UsuarioID INT NOT NULL,
-    Asunto VARCHAR(255),
-    Cuerpo TEXT,
+    TipoCorreo ENUM('Verificacion', 'Recuperacion', 'Notificacion') NOT NULL,
+    Destinatario VARCHAR(255) NOT NULL,
+    Asunto VARCHAR(255) NOT NULL,
+    Cuerpo TEXT NOT NULL,
     FechaEnvio DATETIME DEFAULT CURRENT_TIMESTAMP,
     Estado ENUM('Pendiente', 'Enviado', 'Fallido') DEFAULT 'Pendiente',
+    ErrorDetalle VARCHAR(500),
     FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT
 );
 
@@ -237,6 +241,8 @@ CREATE TABLE LogModeracion (
 
 -- Indices para rendimiento
 CREATE INDEX idx_usuario_correo ON Usuario(Correo);
+CREATE INDEX idx_correo_usuario_fecha ON Correo(FK_UsuarioID, FechaEnvio);
+CREATE INDEX idx_correo_tipo_estado ON Correo(TipoCorreo, Estado);
 CREATE INDEX idx_suscripcion_estado ON Suscripcion(Estado);
 CREATE INDEX idx_relato_titulo ON Relato(Titulo);
 CREATE INDEX idx_pago_referencia ON Pago(ReferenciaExterna);
@@ -300,3 +306,11 @@ FROM Relato r
 JOIN Usuario u ON r.FK_UsuarioID = u.PK_UsuarioID
 LEFT JOIN Estanteria e ON r.FK_EstanteriaID = e.PK_EstanteriaID
 LEFT JOIN ModeloIA m ON r.FK_ModeloUsadoID = m.PK_ModeloID;
+
+use libraryai_db;
+select * from usuario;
+select * from configuracionia;
+select * from relato;
+select * from estanteria;
+select * from correo ;
+describe table correo;

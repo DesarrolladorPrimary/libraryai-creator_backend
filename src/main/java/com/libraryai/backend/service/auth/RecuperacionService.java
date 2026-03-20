@@ -37,7 +37,7 @@ public class RecuperacionService {
             RecuperacionDao.guardarToken(usuarioId, token, expiracion, "Verificacion_Registro");
             
             // Enviar correo con diseño mejorado
-            boolean correoEnviado = EmailService.enviarCorreoVerificacionMejorado(correo, token);
+            boolean correoEnviado = EmailService.enviarCorreoVerificacionMejorado(usuarioId, correo, token);
             
             if (correoEnviado) {
                 response.addProperty("status", 200);
@@ -91,7 +91,7 @@ public class RecuperacionService {
         RecuperacionDao.guardarToken(usuarioId, token, expiracion);
         
         // Enviar correo con el enlace de recuperación
-        boolean correoEnviado = EmailService.enviarCorreoRecuperacion(correo, token);
+        boolean correoEnviado = EmailService.enviarCorreoRecuperacion(usuarioId, correo, token);
         
         // Responde al cliente
         if (correoEnviado) {
