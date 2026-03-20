@@ -20,8 +20,11 @@ import com.libraryai.backend.models.User;
 public class UserService {
 
     private static final String EMAIL_PATTERN = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,100}";
-    private static final String NAME_PATTERN = "[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+";
+    private static final String NAME_PATTERN = "^[\\p{L}][\\p{L}' -]*$";
     private static final String PASSWORD_COMPLEXITY_PATTERN = ".*[\\d\\W_].*";
+    private static final int EMAIL_MAX_LENGTH = 120;
+    private static final int NAME_MIN_LENGTH = 3;
+    private static final int NAME_MAX_LENGTH = 25;
 
     /**
      * Valida la política de contraseñas usada en registro, actualización y
@@ -55,6 +58,74 @@ public class UserService {
     }
 
     /**
+     * Valida la política de nombres usada en registro y actualización.
+     *
+     * @param nombre Nombre sin normalizar.
+     * @return JsonObject con error o {@code null} si el nombre es válido.
+     */
+    public static JsonObject validateNamePolicy(String nombre) {
+        JsonObject response = new JsonObject();
+        String normalizedName = nombre == null ? "" : nombre.trim();
+
+        if (normalizedName.isBlank()) {
+            response.addProperty("Mensaje", "El nombre es obligatorio");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        if (normalizedName.length() < NAME_MIN_LENGTH) {
+            response.addProperty("Mensaje", "El nombre debe tener al menos 3 caracteres");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        if (normalizedName.length() > NAME_MAX_LENGTH) {
+            response.addProperty("Mensaje", "El nombre no puede superar los 25 caracteres");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        if (!normalizedName.matches(NAME_PATTERN)) {
+            response.addProperty("Mensaje", "El nombre solo puede contener letras, espacios, apóstrofes o guiones");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        return null;
+    }
+
+    /**
+     * Valida la política de correos usada en registro y actualización.
+     *
+     * @param correo Correo sin normalizar.
+     * @return JsonObject con error o {@code null} si el correo es válido.
+     */
+    public static JsonObject validateEmailPolicy(String correo) {
+        JsonObject response = new JsonObject();
+        String normalizedEmail = correo == null ? "" : correo.trim();
+
+        if (normalizedEmail.isBlank()) {
+            response.addProperty("Mensaje", "El correo es obligatorio");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        if (normalizedEmail.length() > EMAIL_MAX_LENGTH) {
+            response.addProperty("Mensaje", "El correo no puede superar los 120 caracteres");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        if (!normalizedEmail.matches(EMAIL_PATTERN)) {
+            response.addProperty("Mensaje", "Correo no válido");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        return null;
+    }
+
+    /**
      * Valida los datos del usuario y coordina la creación si todo es correcto.
      *
      * @param nombre     Nombre del usuario.
@@ -70,13 +141,14 @@ public class UserService {
         // Validamos que los datos básicos no sean null y la contraseña sea positiva
         if (nombre != null && correo != null && contraseña != null && !contraseña.isBlank()) {
 
-            if (nombre.matches(NAME_PATTERN) && nombre.trim().length() > 2) {
-                if (!correo.matches(EMAIL_PATTERN)) {
-                    // Error: correo sin @
-                    rJsonObject.addProperty("Mensaje", "Correo no válido");
-                    rJsonObject.addProperty("status", 400); // Bad Request
-                    return rJsonObject;
+            JsonObject nameValidation = validateNamePolicy(nombre);
+            if (nameValidation == null) {
+                nombre = nombre.trim();
+                JsonObject emailValidation = validateEmailPolicy(correo);
+                if (emailValidation != null) {
+                    return emailValidation;
                 }
+                correo = correo.trim();
 
                 if (UserDao.existsByEmail(correo)) {
                     // Error: El usuario ya existe
@@ -124,16 +196,14 @@ public class UserService {
                     EmailService.enviarCorreoVerificacion(correo, tokenVerificacion);
 
                     // Preparamos respuesta de éxito
-                    rJsonObject.addProperty("Mensaje", "Usuario registrado correctamente. Verifica tu correo.");
+                    rJsonObject.addProperty("Mensaje", "Usuario registrado correctamente. Revisa tu correo real y verifica la cuenta.");
                     rJsonObject.addProperty("status", 201); // Created
                 } else {
                     rJsonObject.addProperty("Mensaje", "Error del servidor");
                     rJsonObject.addProperty("status", 500); // Error
                 }
             } else {
-                // Error: Algún dato venía nulo o incorrecto
-                rJsonObject.addProperty("Mensaje", "Nombre de usuario incorrecto");
-                rJsonObject.addProperty("status", 400); // Bad Request
+                return nameValidation;
             }
 
         } else {
@@ -181,10 +251,22 @@ public class UserService {
             // Si el cliente no envia un campo, se conserva el actual.
             if (nombre.isEmpty()) {
                 nombre = nombreDB;
+            } else {
+                JsonObject nameValidation = validateNamePolicy(nombre);
+                if (nameValidation != null) {
+                    return nameValidation;
+                }
+                nombre = nombre.trim();
             }
 
             if (correo.isEmpty()) {
                 correo = correoDB;
+            } else {
+                JsonObject emailValidation = validateEmailPolicy(correo);
+                if (emailValidation != null) {
+                    return emailValidation;
+                }
+                correo = correo.trim();
             }
 
             if (contraseña.isBlank()) {
@@ -198,15 +280,7 @@ public class UserService {
                 contraseña = BCrypt.hashpw(contraseña, BCrypt.gensalt());
             }
 
-            if (correo.matches(EMAIL_PATTERN)) {
-
-                response = UserDao.updateUser(nombre, correo, contraseña, id);
-            }
-
-            else {
-                response.addProperty("Mensaje", "Correo no válido");
-                response.addProperty("status", 400);
-            }
+            response = UserDao.updateUser(nombre, correo, contraseña, id);
         }
 
         return response;
@@ -225,13 +299,21 @@ public class UserService {
         
         // Validaciones según el campo
         if (campo.equalsIgnoreCase("correo")) {
-            if (!valor.matches(EMAIL_PATTERN)) {
-                response.addProperty("Mensaje", "Correo no válido");
-                response.addProperty("status", 400);
-                return response;
+            JsonObject emailValidation = validateEmailPolicy(valor);
+            if (emailValidation != null) {
+                return emailValidation;
             }
+            valor = valor.trim();
         }
-        
+
+        if (campo.equalsIgnoreCase("nombre")) {
+            JsonObject nameValidation = validateNamePolicy(valor);
+            if (nameValidation != null) {
+                return nameValidation;
+            }
+            valor = valor.trim();
+        }
+
         if (campo.equalsIgnoreCase("contraseña")) {
             JsonObject passwordValidation = validatePasswordPolicy(valor);
             if (passwordValidation != null) {
@@ -240,7 +322,7 @@ public class UserService {
 
             valor = BCrypt.hashpw(valor, BCrypt.gensalt());
         }
-        
+
         return UserDao.updateCampo(campo, valor, id);
     }
 

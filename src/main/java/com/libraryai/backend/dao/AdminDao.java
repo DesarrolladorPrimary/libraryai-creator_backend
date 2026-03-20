@@ -51,10 +51,17 @@ public class AdminDao {
             """;
 
     private static final String SQL_SELECT_USER_ROLE = """
-            SELECT r.NombreRol
+            SELECT r.PK_RolID, r.NombreRol
             FROM UsuarioRol ur
             INNER JOIN Rol r ON r.PK_RolID = ur.FK_RolID
             WHERE ur.FK_UsuarioID = ?
+            LIMIT 1;
+            """;
+
+    private static final String SQL_SELECT_ROLE_ID = """
+            SELECT PK_RolID
+            FROM Rol
+            WHERE NombreRol = ?
             LIMIT 1;
             """;
 
@@ -71,8 +78,15 @@ public class AdminDao {
             """;
 
     private static final String SQL_INSERT_ROLE_AUDIT = """
-            INSERT INTO AuditoriaRolUsuario(FK_UsuarioAfectadoID, FK_AdminID, RolAnterior, RolNuevo)
-            VALUES(?, ?, ?, ?);
+            INSERT INTO AuditoriaRolUsuario(
+                FK_UsuarioAfectadoID,
+                FK_AdminID,
+                FK_RolAnteriorID,
+                FK_RolNuevoID,
+                RolAnterior,
+                RolNuevo
+            )
+            VALUES(?, ?, ?, ?, ?, ?);
             """;
 
     private static final String SQL_SYSTEM_STATS = """
@@ -84,7 +98,7 @@ public class AdminDao {
                     AND FK_PlanID = (
                         SELECT PK_PlanID
                         FROM PlanSuscripcion
-                        WHERE LOWER(NombrePlan) LIKE '%premium%'
+                        WHERE CodigoPlan = 'PREMIUM'
                         LIMIT 1
                     )
                 ) AS UsuariosPremium,
@@ -110,9 +124,9 @@ public class AdminDao {
                 COUNT(DISTINCT CASE
                     WHEN u.Activo = TRUE
                          AND (
-                            (LOWER(p.NombrePlan) LIKE '%gratuito%' AND r.NombreRol = 'Gratuito')
+                            (p.CodigoPlan = 'GRATUITO' AND r.NombreRol = 'Gratuito')
                             OR
-                            (LOWER(p.NombrePlan) LIKE '%premium%' AND r.NombreRol = 'Premium')
+                            (p.CodigoPlan = 'PREMIUM' AND r.NombreRol = 'Premium')
                          )
                     THEN u.PK_UsuarioID
                 END) AS UsuariosActivos
@@ -137,6 +151,20 @@ public class AdminDao {
             INNER JOIN Suscripcion s ON s.PK_SuscripcionID = pg.FK_SuscripcionID
             INNER JOIN Usuario u ON u.PK_UsuarioID = s.FK_UsuarioID
             ORDER BY pg.FechaPago DESC, pg.PK_PagoID DESC;
+            """;
+
+    private static final String SQL_MODERATION_LOGS = """
+            SELECT
+                lm.PK_LogID,
+                lm.Motivo,
+                lm.ContenidoBloqueadoHash,
+                lm.Fecha,
+                u.PK_UsuarioID,
+                u.Nombre,
+                u.Correo
+            FROM LogModeracion lm
+            INNER JOIN Usuario u ON u.PK_UsuarioID = lm.FK_UsuarioID
+            ORDER BY lm.Fecha DESC, lm.PK_LogID DESC;
             """;
 
     /**
@@ -217,10 +245,12 @@ public class AdminDao {
             conn.setAutoCommit(false);
 
             String currentRole = null;
+            Integer currentRoleId = null;
             try (PreparedStatement selectStmt = conn.prepareStatement(SQL_SELECT_USER_ROLE)) {
                 selectStmt.setInt(1, userId);
                 try (ResultSet rs = selectStmt.executeQuery()) {
                     if (rs.next()) {
+                        currentRoleId = rs.getInt("PK_RolID");
                         currentRole = rs.getString("NombreRol");
                     }
                 }
@@ -259,11 +289,25 @@ public class AdminDao {
                 return response;
             }
 
+            Integer newRoleId = findRoleIdByName(conn, newRole);
+            if (newRoleId == null) {
+                conn.rollback();
+                response.addProperty("Mensaje", "Rol no válido");
+                response.addProperty("status", 400);
+                return response;
+            }
+
             try (PreparedStatement auditStmt = conn.prepareStatement(SQL_INSERT_ROLE_AUDIT)) {
                 auditStmt.setInt(1, userId);
                 auditStmt.setInt(2, adminId);
-                auditStmt.setString(3, currentRole);
-                auditStmt.setString(4, newRole);
+                if (currentRoleId == null) {
+                    auditStmt.setNull(3, java.sql.Types.INTEGER);
+                } else {
+                    auditStmt.setInt(3, currentRoleId);
+                }
+                auditStmt.setInt(4, newRoleId);
+                auditStmt.setString(5, currentRole);
+                auditStmt.setString(6, newRole);
                 auditStmt.executeUpdate();
             }
 
@@ -290,6 +334,18 @@ public class AdminDao {
                 }
             }
         }
+    }
+
+    private static Integer findRoleIdByName(Connection conn, String roleName) throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement(SQL_SELECT_ROLE_ID)) {
+            stmt.setString(1, roleName);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("PK_RolID");
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -395,5 +451,39 @@ public class AdminDao {
         }
 
         return payments;
+    }
+
+    /**
+     * Obtiene el historial de bloqueos por moderación para auditoría admin.
+     */
+    public static JsonArray getModerationLogs() {
+        JsonArray logs = new JsonArray();
+
+        try (
+                Connection conn = DatabaseConnection.getConnection();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(SQL_MODERATION_LOGS)) {
+
+            while (rs.next()) {
+                JsonObject log = new JsonObject();
+                log.addProperty("PK_LogID", rs.getInt("PK_LogID"));
+                log.addProperty("Motivo", rs.getString("Motivo"));
+                log.addProperty(
+                        "ContenidoBloqueadoHash",
+                        rs.getString("ContenidoBloqueadoHash") == null ? "" : rs.getString("ContenidoBloqueadoHash"));
+                log.addProperty("Fecha", rs.getTimestamp("Fecha").toString());
+                log.addProperty("PK_UsuarioID", rs.getInt("PK_UsuarioID"));
+                log.addProperty("Nombre", rs.getString("Nombre"));
+                log.addProperty("Correo", rs.getString("Correo"));
+                logs.add(log);
+            }
+        } catch (SQLException e) {
+            JsonObject error = new JsonObject();
+            error.addProperty("Mensaje", "Error al obtener el historial de moderación");
+            error.addProperty("status", 500);
+            logs.add(error);
+        }
+
+        return logs;
     }
 }

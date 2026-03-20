@@ -34,16 +34,16 @@ SET @demo_hash = '$2a$10$Ka5IDG6s7g2jGVsnMkXzJ.Mf57hx5CjabKB7uXNaj9LnF7/QyXR2W';
 INSERT IGNORE INTO Rol (NombreRol)
 VALUES ('Admin'), ('Gratuito'), ('Premium');
 
-INSERT INTO PlanSuscripcion (NombrePlan, AlmacenamientoMaxMB, Precio, Activo)
-SELECT 'Plan Gratuito', 500, 0.00, TRUE
+INSERT INTO PlanSuscripcion (CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, Activo)
+SELECT 'GRATUITO', 'Plan Gratuito', 500, 0.00, TRUE
 WHERE NOT EXISTS (
-    SELECT 1 FROM PlanSuscripcion WHERE NombrePlan = 'Plan Gratuito'
+    SELECT 1 FROM PlanSuscripcion WHERE CodigoPlan = 'GRATUITO'
 );
 
-INSERT INTO PlanSuscripcion (NombrePlan, AlmacenamientoMaxMB, Precio, Activo)
-SELECT 'Plan Premium', 2048, 9.99, TRUE
+INSERT INTO PlanSuscripcion (CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, Activo)
+SELECT 'PREMIUM', 'Plan Premium', 2048, 9.99, TRUE
 WHERE NOT EXISTS (
-    SELECT 1 FROM PlanSuscripcion WHERE NombrePlan = 'Plan Premium'
+    SELECT 1 FROM PlanSuscripcion WHERE CodigoPlan = 'PREMIUM'
 );
 
 INSERT INTO Usuario (
@@ -91,10 +91,10 @@ WHERE NOT EXISTS (
 );
 
 SET @free_plan_id = (
-    SELECT PK_PlanID FROM PlanSuscripcion WHERE NombrePlan = 'Plan Gratuito' LIMIT 1
+    SELECT PK_PlanID FROM PlanSuscripcion WHERE CodigoPlan = 'GRATUITO' LIMIT 1
 );
 SET @premium_plan_id = (
-    SELECT PK_PlanID FROM PlanSuscripcion WHERE NombrePlan = 'Plan Premium' LIMIT 1
+    SELECT PK_PlanID FROM PlanSuscripcion WHERE CodigoPlan = 'PREMIUM' LIMIT 1
 );
 SET @flash_model_id = (
     SELECT PK_ModeloID FROM ModeloIA

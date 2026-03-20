@@ -49,10 +49,13 @@ CREATE TABLE Permiso (
 
 CREATE TABLE PlanSuscripcion (
     PK_PlanID INT AUTO_INCREMENT PRIMARY KEY,
+    CodigoPlan VARCHAR(30) NOT NULL UNIQUE,
     NombrePlan VARCHAR(100) NOT NULL UNIQUE,
     AlmacenamientoMaxMB BIGINT,
     Precio DECIMAL(10, 2) CHECK (Precio >= 0),
-    Activo BOOLEAN DEFAULT TRUE
+    Activo BOOLEAN DEFAULT TRUE,
+    CHECK (CHAR_LENGTH(TRIM(CodigoPlan)) > 0),
+    CHECK (CHAR_LENGTH(TRIM(NombrePlan)) > 0)
 );
 
 CREATE TABLE TokenAcceso (
@@ -71,7 +74,9 @@ CREATE TABLE Estanteria (
     FK_UsuarioID INT NOT NULL,
     NombreCategoria VARCHAR(150) NOT NULL,
     FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT,
-    UNIQUE (FK_UsuarioID, NombreCategoria)
+    UNIQUE (FK_UsuarioID, NombreCategoria),
+    UNIQUE (PK_EstanteriaID, FK_UsuarioID),
+    CHECK (CHAR_LENGTH(TRIM(NombreCategoria)) > 0)
 );
 
 CREATE TABLE Suscripcion (
@@ -81,10 +86,17 @@ CREATE TABLE Suscripcion (
     FechaInicio DATETIME NOT NULL,
     FechaFin DATETIME,
     Estado ENUM('Activa', 'Cancelada', 'Vencida') DEFAULT 'Activa',
+    UsuarioActivoUnico INT GENERATED ALWAYS AS (
+        CASE
+            WHEN Estado = 'Activa' THEN FK_UsuarioID
+            ELSE NULL
+        END
+    ) STORED,
     RenovacionAutomatica BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT,
     FOREIGN KEY (FK_PlanID) REFERENCES PlanSuscripcion(PK_PlanID),
-    CHECK (FechaFin IS NULL OR FechaFin >= FechaInicio)
+    CHECK (FechaFin IS NULL OR FechaFin >= FechaInicio),
+    UNIQUE (UsuarioActivoUnico)
 );
 
 CREATE TABLE ArchivoUsuario (
@@ -101,24 +113,24 @@ CREATE TABLE ArchivoUsuario (
 );
 
 CREATE TABLE UsuarioRol (
-    FK_UsuarioID INT,
-    FK_RolID INT,
+    FK_UsuarioID INT NOT NULL,
+    FK_RolID INT NOT NULL,
     PRIMARY KEY (FK_UsuarioID, FK_RolID),
     FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT,
     FOREIGN KEY (FK_RolID) REFERENCES Rol(PK_RolID) ON DELETE RESTRICT
 );
 
 CREATE TABLE RolPermiso (
-    FK_RolID INT,
-    FK_PermisoID INT,
+    FK_RolID INT NOT NULL,
+    FK_PermisoID INT NOT NULL,
     PRIMARY KEY (FK_RolID, FK_PermisoID),
     FOREIGN KEY (FK_RolID) REFERENCES Rol(PK_RolID) ON DELETE RESTRICT,
     FOREIGN KEY (FK_PermisoID) REFERENCES Permiso(PK_PermisoID) ON DELETE RESTRICT
 );
 
 CREATE TABLE PlanRol (
-    FK_PlanID INT,
-    FK_RolID INT,
+    FK_PlanID INT NOT NULL,
+    FK_RolID INT NOT NULL,
     PRIMARY KEY (FK_PlanID, FK_RolID),
     FOREIGN KEY (FK_PlanID) REFERENCES PlanSuscripcion(PK_PlanID) ON DELETE RESTRICT,
     FOREIGN KEY (FK_RolID) REFERENCES Rol(PK_RolID) ON DELETE RESTRICT
@@ -144,10 +156,11 @@ CREATE TABLE Relato (
     ModoOrigen ENUM('Seccion_Artificial', 'Seccion_Creativa') NOT NULL,
     Descripcion TEXT,
     FechaCreacion DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FechaModificacion DATETIME,
+    FechaModificacion DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT,
-    FOREIGN KEY (FK_EstanteriaID) REFERENCES Estanteria(PK_EstanteriaID) ON DELETE SET NULL,
-    FOREIGN KEY (FK_ModeloUsadoID) REFERENCES ModeloIA(PK_ModeloID) ON DELETE SET NULL
+    FOREIGN KEY (FK_EstanteriaID, FK_UsuarioID) REFERENCES Estanteria(PK_EstanteriaID, FK_UsuarioID) ON DELETE RESTRICT,
+    FOREIGN KEY (FK_ModeloUsadoID) REFERENCES ModeloIA(PK_ModeloID) ON DELETE SET NULL,
+    CHECK (CHAR_LENGTH(TRIM(Titulo)) > 0)
 );
 
 CREATE TABLE RelatoVersion (
@@ -178,13 +191,14 @@ CREATE TABLE MensajeChat (
     Emisor ENUM('Usuario', 'Poly', 'Sistema') NOT NULL,
     ContenidoMensaje TEXT NOT NULL,
     FechaEnvio DATETIME DEFAULT CURRENT_TIMESTAMP,
-    Orden INT,
-    FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE RESTRICT
+    Orden INT NOT NULL,
+    FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE RESTRICT,
+    UNIQUE (FK_RelatoID, Orden)
 );
 
 CREATE TABLE Relato_ArchivoFuente (
-    FK_RelatoID INT,
-    FK_ArchivoID INT,
+    FK_RelatoID INT NOT NULL,
+    FK_ArchivoID INT NOT NULL,
     PRIMARY KEY (FK_RelatoID, FK_ArchivoID),
     FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE RESTRICT,
     FOREIGN KEY (FK_ArchivoID) REFERENCES ArchivoUsuario(PK_ArchivoID) ON DELETE RESTRICT
@@ -195,11 +209,15 @@ CREATE TABLE AuditoriaRolUsuario (
     PK_AuditoriaID INT AUTO_INCREMENT PRIMARY KEY,
     FK_UsuarioAfectadoID INT NOT NULL,
     FK_AdminID INT NOT NULL,
+    FK_RolAnteriorID INT,
+    FK_RolNuevoID INT NOT NULL,
     RolAnterior VARCHAR(50),
     RolNuevo VARCHAR(50) NOT NULL,
     FechaCambio DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (FK_UsuarioAfectadoID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT,
-    FOREIGN KEY (FK_AdminID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT
+    FOREIGN KEY (FK_AdminID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT,
+    FOREIGN KEY (FK_RolAnteriorID) REFERENCES Rol(PK_RolID) ON DELETE RESTRICT,
+    FOREIGN KEY (FK_RolNuevoID) REFERENCES Rol(PK_RolID) ON DELETE RESTRICT
 );
 
 -- Tablas nuevas para cumplir el RF_05 (Filtro NSFW)
@@ -266,7 +284,7 @@ JOIN ArchivoUsuario a ON raf.FK_ArchivoID = a.PK_ArchivoID;
 CREATE VIEW V_EstadisticasSistema AS
 SELECT 
     (SELECT COUNT(*) FROM Usuario WHERE Activo = TRUE) AS UsuariosActivos,
-    (SELECT COUNT(*) FROM Suscripcion WHERE Estado = 'Activa' AND FK_PlanID = (SELECT PK_PlanID FROM PlanSuscripcion WHERE NombrePlan = 'Plan Premium')) AS UsuariosPremium,
+    (SELECT COUNT(*) FROM Suscripcion WHERE Estado = 'Activa' AND FK_PlanID = (SELECT PK_PlanID FROM PlanSuscripcion WHERE CodigoPlan = 'PREMIUM')) AS UsuariosPremium,
     (SELECT COUNT(*) FROM Relato) AS TotalRelatosCreados,
     (SELECT COUNT(*) FROM MensajeChat WHERE Emisor = 'Usuario' AND MONTH(FechaEnvio) = MONTH(CURRENT_DATE()) AND YEAR(FechaEnvio) = YEAR(CURRENT_DATE())) AS SolicitudesIAMesActual;
 

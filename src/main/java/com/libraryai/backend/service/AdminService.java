@@ -80,6 +80,13 @@ public class AdminService {
     }
 
     /**
+     * Obtiene el historial de eventos bloqueados por moderación.
+     */
+    public static JsonArray getModerationLogs() {
+        return AdminDao.getModerationLogs();
+    }
+
+    /**
      * Devuelve el catálogo completo de modelos IA visible para administración.
      */
     public static JsonObject getModelCatalog() {

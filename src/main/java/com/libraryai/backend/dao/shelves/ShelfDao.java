@@ -34,6 +34,13 @@ public class ShelfDao {
                         """;
 
         // language=sql
+        private static String SQL_UNLINK_STORIES = """
+                        UPDATE Relato
+                           SET FK_EstanteriaID = NULL
+                         WHERE FK_EstanteriaID = ?;
+                        """;
+
+        // language=sql
         private static String SQL_DELETE = """
                         DELETE FROM  Estanteria WHERE PK_EstanteriaID = ?;
                         """;
@@ -159,17 +166,28 @@ public class ShelfDao {
                 JsonObject response = new JsonObject();
                 try (
                         Connection conn = DatabaseConnection.getConnection();
-                        PreparedStatement pstmt = conn.prepareStatement(SQL_DELETE);
                 ) {
-                        pstmt.setInt(1, idEstanteria);
+                        conn.setAutoCommit(false);
+                        int filasAfect;
 
-                        int filasAfect = pstmt.executeUpdate();
+                        try (
+                                PreparedStatement unlinkStmt = conn.prepareStatement(SQL_UNLINK_STORIES);
+                                PreparedStatement deleteStmt = conn.prepareStatement(SQL_DELETE);
+                        ) {
+                                unlinkStmt.setInt(1, idEstanteria);
+                                unlinkStmt.executeUpdate();
+
+                                deleteStmt.setInt(1, idEstanteria);
+                                filasAfect = deleteStmt.executeUpdate();
+                        }
 
                         if (filasAfect > 0) {
+                                conn.commit();
                                 response.addProperty("Mensaje", "Se eliminó correctamente");
                                 response.addProperty("status", 200);
                         }
                         else{
+                                conn.rollback();
                                 response.addProperty("Mensaje", "No se pudo eliminar la estantería");
                                 response.addProperty("status", 404);
                         }

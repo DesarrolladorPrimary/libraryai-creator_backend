@@ -159,6 +159,17 @@ public class AdminController {
     }
 
     /**
+     * Devuelve el historial de contenido bloqueado por moderación.
+     */
+    public static HttpHandler getModerationLogs() {
+        return exchange -> {
+            JsonArray response = AdminService.getModerationLogs();
+            int statusCode = extractArrayStatus(response);
+            ApiResponse.send(exchange, response.toString(), statusCode);
+        };
+    }
+
+    /**
      * Devuelve el catálogo completo de modelos IA disponible para administración.
      */
     public static HttpHandler getModels() {

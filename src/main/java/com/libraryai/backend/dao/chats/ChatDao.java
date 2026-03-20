@@ -16,6 +16,12 @@ public class ChatDao {
     static String SQL_INSERT = """
             INSERT INTO MensajeChat (FK_RelatoID, Emisor, ContenidoMensaje, Orden) VALUES (?, ?, ?, ?)
             """;;
+
+    static String SQL_NEXT_ORDER = """
+            SELECT COALESCE(MAX(Orden), 0) + 1 AS SiguienteOrden
+            FROM MensajeChat
+            WHERE FK_RelatoID = ?
+            """;
     
     static String SQL_SELECT_BY_RELATO = """
             SELECT PK_MensajeID, Emisor, ContenidoMensaje, Orden, FechaEnvio 
@@ -33,24 +39,66 @@ public class ChatDao {
      * Guarda un mensaje dentro del historial del chat del relato.
      */
     public static void save(int idRelato, String emisor, String mensaje, int orden){
-        try (
-            Connection conn = DatabaseConnection.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT);
-        ) {
-            pstmt.setInt(1, idRelato);
-            pstmt.setString(2, emisor);
-            pstmt.setString(3, mensaje);
-            pstmt.setInt(4, orden);
-            int filasAfectadas = pstmt.executeUpdate();
-
-            if (filasAfectadas > 0) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            if (insertMessage(conn, idRelato, emisor, mensaje, orden)) {
                 System.out.println("Mensaje recibido correctamente");
+                return;
             }
 
+            int retryOrder = getNextOrder(conn, idRelato);
+            if (insertMessage(conn, idRelato, emisor, mensaje, retryOrder)) {
+                System.out.println("Mensaje recibido correctamente");
+            }
         } catch (SQLException e) {
             System.err.println("Error al crear o recibir los mensajes. E: "+ e.getMessage());
         }
 
+    }
+
+    private static boolean insertMessage(Connection conn, int idRelato, String emisor, String mensaje, int orden)
+            throws SQLException {
+        try (PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT)) {
+            pstmt.setInt(1, idRelato);
+            pstmt.setString(2, emisor);
+            pstmt.setString(3, mensaje);
+            pstmt.setInt(4, orden);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            if (isDuplicateOrderError(e)) {
+                return false;
+            }
+
+            throw e;
+        }
+    }
+
+    private static int getNextOrder(Connection conn, int idRelato) throws SQLException {
+        try (PreparedStatement pstmt = conn.prepareStatement(SQL_NEXT_ORDER)) {
+            pstmt.setInt(1, idRelato);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("SiguienteOrden");
+            }
+        }
+
+        return 1;
+    }
+
+    private static boolean isDuplicateOrderError(SQLException exception) {
+        String sqlState = exception.getSQLState();
+        String message = exception.getMessage();
+
+        if (!"23000".equals(sqlState) && !"23505".equals(sqlState)) {
+            return false;
+        }
+
+        if (message == null) {
+            return true;
+        }
+
+        String normalizedMessage = message.toLowerCase();
+        return normalizedMessage.contains("duplicate")
+                && normalizedMessage.contains("orden");
     }
 
     /**

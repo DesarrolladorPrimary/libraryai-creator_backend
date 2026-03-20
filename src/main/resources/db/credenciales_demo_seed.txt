@@ -1,0 +1,23 @@
+Credenciales demo para LibraryAI_DB
+
+Usuarios creados por LC_demo_seed_completo.sql:
+
+demo.admin@example.com
+Demo123!
+
+demo.ana@example.com
+Demo123!
+
+demo.bruno@example.com
+Demo123!
+
+demo.carla@example.com
+Demo123!
+
+demo.diego@example.com
+Demo123!
+
+Notas:
+- Estas credenciales corresponden al seed demo oficial.
+- El hash usado por el seed ya está preparado para esa contraseña.
+- Si vuelves a cargar el seed, las cuentas se conservan por correo.

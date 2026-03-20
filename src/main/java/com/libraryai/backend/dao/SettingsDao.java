@@ -18,6 +18,8 @@ import java.util.Locale;
  * - getSuscripcionActiva: Lee Suscripcion + PlanSuscripcion del usuario activo
  */
 public class SettingsDao {
+    private static final String PLAN_FREE_CODE = "GRATUITO";
+    private static final String PLAN_PREMIUM_CODE = "PREMIUM";
     private static final String PLAN_FREE_NAME = "Plan Gratuito";
     private static final String PLAN_PREMIUM_NAME = "Plan Premium";
     private static final String ROLE_FREE = "Gratuito";
@@ -34,8 +36,8 @@ public class SettingsDao {
     public static void ensureDefaultPlans() {
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
-            findOrCreatePlan(conn, PLAN_FREE_NAME);
-            findOrCreatePlan(conn, PLAN_PREMIUM_NAME);
+            findOrCreatePlan(conn, PLAN_FREE_CODE, PLAN_FREE_NAME);
+            findOrCreatePlan(conn, PLAN_PREMIUM_CODE, PLAN_PREMIUM_NAME);
             conn.commit();
         } catch (Exception e) {
             System.out.println("Error al garantizar planes por defecto: " + e.getMessage());
@@ -116,7 +118,7 @@ public class SettingsDao {
         JsonObject response = new JsonObject();
         String sql = """
             SELECT s.FechaInicio, s.FechaFin, s.Estado, s.RenovacionAutomatica,
-                   p.NombrePlan, p.AlmacenamientoMaxMB, p.Precio
+                   p.CodigoPlan, p.NombrePlan, p.AlmacenamientoMaxMB, p.Precio
             FROM Suscripcion s
             JOIN PlanSuscripcion p ON s.FK_PlanID = p.PK_PlanID
             WHERE s.FK_UsuarioID = ? AND s.Estado = 'Activa'
@@ -131,14 +133,16 @@ public class SettingsDao {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
+                String planCode = resolvePlanCode(rs.getString("CodigoPlan"), rs.getString("NombrePlan"));
                 String planName = rs.getString("NombrePlan");
-                String normalizedPlan = normalizePlanName(planName);
+                String normalizedPlan = planCodeToRoleName(planCode);
                 Long almacenamientoMax = rs.getObject("AlmacenamientoMaxMB") == null
-                        ? (isPremiumPlan(planName) ? PLAN_PREMIUM_STORAGE_MB : null)
+                        ? (PLAN_PREMIUM_CODE.equals(planCode) ? PLAN_PREMIUM_STORAGE_MB : null)
                         : ((Number) rs.getObject("AlmacenamientoMaxMB")).longValue();
                 boolean almacenamientoIlimitado = almacenamientoMax == null || almacenamientoMax <= 0;
                 double usedStorageMb = bytesToMb(UploadedFileDao.sumBytesByUser(userId));
                 response.addProperty("status", 200);
+                response.addProperty("codigoPlan", planCode);
                 response.addProperty("plan", normalizedPlan);
                 response.addProperty("nombrePlan", planName);
                 response.addProperty("limiteAlmacenamientoMb", almacenamientoIlimitado ? 0 : almacenamientoMax);
@@ -155,7 +159,9 @@ public class SettingsDao {
                 // Sin suscripción activa: valores por defecto
                 double usedStorageMb = bytesToMb(UploadedFileDao.sumBytesByUser(userId));
                 response.addProperty("status", 200);
+                response.addProperty("codigoPlan", PLAN_FREE_CODE);
                 response.addProperty("plan", "Gratuito");
+                response.addProperty("nombrePlan", PLAN_FREE_NAME);
                 response.addProperty("limiteAlmacenamientoMb", 500);
                 response.addProperty("almacenamientoUsadoMb", usedStorageMb);
                 response.addProperty("almacenamiento", 500);
@@ -190,6 +196,7 @@ public class SettingsDao {
         }
 
         boolean premiumRequested = isPremiumPlan(normalizedPlan);
+        String planCode = premiumRequested ? PLAN_PREMIUM_CODE : PLAN_FREE_CODE;
         String planName = premiumRequested ? PLAN_PREMIUM_NAME : PLAN_FREE_NAME;
         String roleName = premiumRequested ? ROLE_PREMIUM : ROLE_FREE;
 
@@ -197,7 +204,7 @@ public class SettingsDao {
             conn.setAutoCommit(false);
 
             try {
-                int planId = findOrCreatePlan(conn, planName);
+                int planId = findOrCreatePlan(conn, planCode, planName);
                 cancelActiveSubscriptions(conn, userId);
                 int subscriptionId = createSubscription(conn, userId, planId);
 
@@ -253,7 +260,7 @@ public class SettingsDao {
             try {
                 Integer activeSubscriptionId = findActiveSubscriptionId(conn, userId);
                 if (activeSubscriptionId == null) {
-                    int freePlanId = findOrCreatePlan(conn, PLAN_FREE_NAME);
+                    int freePlanId = findOrCreatePlan(conn, PLAN_FREE_CODE, PLAN_FREE_NAME);
                     createSubscription(conn, userId, freePlanId);
                 }
 
@@ -432,20 +439,20 @@ public class SettingsDao {
         return response;
     }
 
-    private static int findOrCreatePlan(Connection conn, String planName) throws SQLException {
-        Integer existingId = findPlanByName(conn, planName);
+    private static int findOrCreatePlan(Connection conn, String planCode, String planName) throws SQLException {
+        Integer existingId = findPlanByCode(conn, planCode);
         if (existingId != null) {
             return existingId;
         }
 
-        return createDefaultPlan(conn, planName);
+        return createDefaultPlan(conn, planCode, planName);
     }
 
-    private static Integer findPlanByName(Connection conn, String planName) throws SQLException {
-        String sql = "SELECT PK_PlanID FROM PlanSuscripcion WHERE NombrePlan = ? LIMIT 1";
+    private static Integer findPlanByCode(Connection conn, String planCode) throws SQLException {
+        String sql = "SELECT PK_PlanID FROM PlanSuscripcion WHERE CodigoPlan = ? LIMIT 1";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, planName);
+            stmt.setString(1, planCode);
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
@@ -456,21 +463,22 @@ public class SettingsDao {
         return null;
     }
 
-    private static int createDefaultPlan(Connection conn, String planName) throws SQLException {
+    private static int createDefaultPlan(Connection conn, String planCode, String planName) throws SQLException {
         String sql = """
-            INSERT INTO PlanSuscripcion(NombrePlan, AlmacenamientoMaxMB, Precio, Activo)
-            VALUES (?, ?, ?, TRUE)
+            INSERT INTO PlanSuscripcion(CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, Activo)
+            VALUES (?, ?, ?, ?, TRUE)
         """;
 
         try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setString(1, planName);
+            stmt.setString(1, planCode);
+            stmt.setString(2, planName);
 
-            if (isPremiumPlan(planName)) {
-                stmt.setLong(2, PLAN_PREMIUM_STORAGE_MB);
-                stmt.setBigDecimal(3, PLAN_PREMIUM_PRICE);
+            if (PLAN_PREMIUM_CODE.equals(planCode)) {
+                stmt.setLong(3, PLAN_PREMIUM_STORAGE_MB);
+                stmt.setBigDecimal(4, PLAN_PREMIUM_PRICE);
             } else {
-                stmt.setLong(2, PLAN_FREE_STORAGE_MB);
-                stmt.setBigDecimal(3, PLAN_FREE_PRICE);
+                stmt.setLong(3, PLAN_FREE_STORAGE_MB);
+                stmt.setBigDecimal(4, PLAN_FREE_PRICE);
             }
 
             stmt.executeUpdate();
@@ -581,6 +589,19 @@ public class SettingsDao {
     }
 
     private static String normalizePlanName(String plan) {
+        String planCode = normalizePlanCode(plan);
+        if (PLAN_PREMIUM_CODE.equals(planCode)) {
+            return ROLE_PREMIUM;
+        }
+
+        if (PLAN_FREE_CODE.equals(planCode)) {
+            return ROLE_FREE;
+        }
+
+        return null;
+    }
+
+    private static String normalizePlanCode(String plan) {
         if (plan == null) {
             return null;
         }
@@ -592,19 +613,32 @@ public class SettingsDao {
         }
 
         if (normalized.contains("premium")) {
-            return ROLE_PREMIUM;
+            return PLAN_PREMIUM_CODE;
         }
 
         if (normalized.contains("gratuito") || normalized.contains("basico") || normalized.contains("básico")
                 || normalized.contains("free") || normalized.contains("basic")) {
-            return ROLE_FREE;
+            return PLAN_FREE_CODE;
         }
 
         return null;
     }
 
     private static boolean isPremiumPlan(String plan) {
-        return normalizePlanName(plan) != null && ROLE_PREMIUM.equals(normalizePlanName(plan));
+        return PLAN_PREMIUM_CODE.equals(normalizePlanCode(plan));
+    }
+
+    private static String resolvePlanCode(String storedCode, String planName) {
+        if (storedCode != null && !storedCode.isBlank()) {
+            return storedCode.trim().toUpperCase(Locale.ROOT);
+        }
+
+        String normalizedCode = normalizePlanCode(planName);
+        return normalizedCode == null ? PLAN_FREE_CODE : normalizedCode;
+    }
+
+    private static String planCodeToRoleName(String planCode) {
+        return PLAN_PREMIUM_CODE.equals(resolvePlanCode(planCode, null)) ? ROLE_PREMIUM : ROLE_FREE;
     }
 
     private static JsonObject buildModelJson(ResultSet rs) throws java.sql.SQLException {
