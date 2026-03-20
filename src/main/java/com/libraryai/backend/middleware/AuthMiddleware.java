@@ -1,6 +1,7 @@
 package com.libraryai.backend.middleware;
 
 import com.google.gson.JsonObject;
+import com.libraryai.backend.dao.auth.LoginDao;
 import com.libraryai.backend.server.http.ApiResponse;
 import com.libraryai.backend.util.JwtUtil;
 import com.libraryai.backend.util.QueryParams;
@@ -46,6 +47,25 @@ public class AuthMiddleware {
                 }
                 String rolToken = infoToken.get("Rol").getAsString();
                 int idToken = infoToken.get("Id").getAsInt();
+
+                JsonObject userStatus = LoginDao.findUserActiveStatus(idToken);
+                if (userStatus.has("status") && userStatus.get("status").getAsInt() != 200) {
+                    JsonObject response = new JsonObject();
+                    response.addProperty("Mensaje", "No fue posible validar tu sesion. Inicia sesion de nuevo.");
+                    response.addProperty("status", 401);
+                    response.addProperty("code", "TOKEN_INVALID");
+                    ApiResponse.send(exchange, response.toString(), 401);
+                    return;
+                }
+
+                if (userStatus.has("activo") && !userStatus.get("activo").getAsBoolean()) {
+                    JsonObject response = new JsonObject();
+                    response.addProperty("Mensaje", "Tu cuenta fue desactivada por un administrador.");
+                    response.addProperty("status", 401);
+                    response.addProperty("code", "USER_DISABLED");
+                    ApiResponse.send(exchange, response.toString(), 401);
+                    return;
+                }
 
                 String query = exchange.getRequestURI().getQuery();
                 int idSolicitado = -1;

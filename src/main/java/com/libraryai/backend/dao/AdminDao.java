@@ -223,7 +223,7 @@ public class AdminDao {
                 return response;
             }
 
-            response.addProperty("Mensaje", active ? "Usuario reactivado" : "Usuario suspendido");
+            response.addProperty("Mensaje", active ? "Usuario reactivado" : "Usuario desactivado");
             response.addProperty("status", 200);
             return response;
         } catch (SQLException e) {
