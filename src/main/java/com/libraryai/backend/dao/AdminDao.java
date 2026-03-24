@@ -82,11 +82,9 @@ public class AdminDao {
                 FK_UsuarioAfectadoID,
                 FK_AdminID,
                 FK_RolAnteriorID,
-                FK_RolNuevoID,
-                RolAnterior,
-                RolNuevo
+                FK_RolNuevoID
             )
-            VALUES(?, ?, ?, ?, ?, ?);
+            VALUES(?, ?, ?, ?);
             """;
 
     private static final String SQL_SYSTEM_STATS = """
@@ -306,8 +304,6 @@ public class AdminDao {
                     auditStmt.setInt(3, currentRoleId);
                 }
                 auditStmt.setInt(4, newRoleId);
-                auditStmt.setString(5, currentRole);
-                auditStmt.setString(6, newRole);
                 auditStmt.executeUpdate();
             }
 

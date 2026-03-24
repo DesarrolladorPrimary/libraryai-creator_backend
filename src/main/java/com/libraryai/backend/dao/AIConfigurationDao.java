@@ -78,6 +78,9 @@ public class AIConfigurationDao {
 
     /**
      * Inserta o actualiza la configuración IA del relato con una sola operación.
+     *
+     * <p>La tabla mantiene una única configuración por relato, por eso se usa
+     * {@code ON DUPLICATE KEY UPDATE} en vez de separar create/update.
      */
     public static JsonObject upsert(int storyId, String writingStyle, String creativityLevel,
             String responseLength, String emotionalTone) {

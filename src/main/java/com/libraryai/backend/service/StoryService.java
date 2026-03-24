@@ -493,6 +493,7 @@ public class StoryService {
 
         JsonObject duplicateValidation = validateExportFileNameAvailable(
                 usuarioId,
+                relatoId,
                 exportDescriptor.get("nombreArchivo").getAsString());
         if (duplicateValidation != null) {
             return duplicateValidation;
@@ -557,12 +558,34 @@ public class StoryService {
             response.addProperty("version", createVersion.get("version").getAsInt());
         }
 
+        int previousExportCount = countExportedFiles(relatoId);
+
         JsonObject exportFileResult = persistExportedFile(relatoId, usuarioId, normalizedTitle, normalizedContent,
                 normalizedFormat, exportFileName, exportFileType, exportFileBase64);
         if (exportFileResult != null) {
             if (exportFileResult.get("status").getAsInt() == 201) {
-                response.addProperty("archivoExportadoId", exportFileResult.get("id").getAsInt());
-                response.addProperty("Mensaje", "Libro generado, versionado y archivo registrado correctamente");
+                int exportedFileId = exportFileResult.get("id").getAsInt();
+                response.addProperty("archivoExportadoId", exportedFileId);
+
+                JsonObject cleanupOldExports = removePreviousExportedFiles(relatoId, usuarioId, exportedFileId);
+                if (cleanupOldExports != null && cleanupOldExports.has("status")
+                        && cleanupOldExports.get("status").getAsInt() != 200) {
+                    response.addProperty("Mensaje", cleanupOldExports.get("Mensaje").getAsString());
+                    response.addProperty("status", cleanupOldExports.get("status").getAsInt());
+                    response.add("detalleArchivo", cleanupOldExports);
+                    return response;
+                }
+
+                boolean replacedExistingExport = previousExportCount > 0;
+                response.addProperty("archivoSobrescrito", replacedExistingExport);
+                response.addProperty("Mensaje", replacedExistingExport
+                        ? "Libro generado, versionado y archivo actualizado correctamente"
+                        : "Libro generado, versionado y archivo registrado correctamente");
+
+                if (cleanupOldExports != null && cleanupOldExports.has("detalleArchivos")) {
+                    response.addProperty("detalleArchivos",
+                            cleanupOldExports.get("detalleArchivos").getAsString());
+                }
             } else {
                 response.addProperty("Mensaje",
                         exportFileResult.has("Mensaje")
@@ -695,7 +718,7 @@ public class StoryService {
                 return response;
             }
 
-            JsonObject duplicateValidation = validateExportFileNameAvailable(userId, sanitizedName);
+            JsonObject duplicateValidation = validateExportFileNameAvailable(userId, storyId, sanitizedName);
             if (duplicateValidation != null) {
                 return duplicateValidation;
             }
@@ -784,8 +807,8 @@ public class StoryService {
         return Base64.getDecoder().decode(rawBase64);
     }
 
-    private static JsonObject validateExportFileNameAvailable(int userId, String fileName) {
-        if (!UploadedFileDao.existsByUserAndOriginAndName(userId, "Exportado", fileName)) {
+    private static JsonObject validateExportFileNameAvailable(int userId, int storyId, String fileName) {
+        if (!UploadedFileDao.existsByUserAndOriginAndNameExcludingStory(userId, "Exportado", fileName, storyId)) {
             return null;
         }
 
@@ -820,6 +843,70 @@ public class StoryService {
         }
 
         return sanitizedName;
+    }
+
+    private static int countExportedFiles(int storyId) {
+        JsonObject filesResult = UploadedFileDao.listByStoryAndOrigin(storyId, "Exportado");
+        if (!hasOkStatus(filesResult) || !filesResult.has("archivos")) {
+            return 0;
+        }
+
+        return filesResult.getAsJsonArray("archivos").size();
+    }
+
+    private static JsonObject removePreviousExportedFiles(int storyId, int userId, int keepFileId) {
+        JsonObject filesResult = UploadedFileDao.listByStoryAndOrigin(storyId, "Exportado");
+        if (!hasOkStatus(filesResult) || !filesResult.has("archivos")) {
+            return filesResult;
+        }
+
+        int failedPhysicalDeletes = 0;
+
+        for (JsonElement element : filesResult.getAsJsonArray("archivos")) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+
+            JsonObject file = element.getAsJsonObject();
+            int fileId = file.get("id").getAsInt();
+            if (fileId == keepFileId) {
+                continue;
+            }
+
+            JsonObject unlinkFile = UploadedFileDao.unlinkFromStory(storyId, fileId);
+            if (!hasOkStatus(unlinkFile)) {
+                return unlinkFile;
+            }
+
+            if (UploadedFileDao.countStoryLinks(fileId) > 0) {
+                continue;
+            }
+
+            JsonObject deleteFile = UploadedFileDao.deleteByUser(fileId, userId);
+            if (!hasOkStatus(deleteFile)) {
+                return deleteFile;
+            }
+
+            String filePath = file.has("rutaAlmacenamiento") && !file.get("rutaAlmacenamiento").isJsonNull()
+                    ? file.get("rutaAlmacenamiento").getAsString()
+                    : "";
+            if (!filePath.isBlank()) {
+                try {
+                    Files.deleteIfExists(Path.of(filePath));
+                } catch (Exception e) {
+                    failedPhysicalDeletes++;
+                }
+            }
+        }
+
+        JsonObject response = new JsonObject();
+        response.addProperty("status", 200);
+        if (failedPhysicalDeletes > 0) {
+            response.addProperty("detalleArchivos",
+                    "Se actualizó el libro, pero " + failedPhysicalDeletes
+                            + " archivo(s) exportado(s) antiguos no pudieron borrarse del disco");
+        }
+        return response;
     }
 
     private static JsonArray extractFilesByOrigin(int storyId, String origin) {

@@ -87,6 +87,16 @@ public class UploadedFileDao {
             LIMIT 1
             """;
 
+    private static final String SQL_EXISTS_BY_USER_AND_ORIGIN_AND_NAME_EXCLUDING_STORY = """
+            SELECT 1
+            FROM ArchivoUsuario a
+            JOIN Relato_ArchivoFuente raf ON raf.FK_ArchivoID = a.PK_ArchivoID
+            WHERE a.FK_UsuarioID = ? AND a.Origen = ?
+              AND LOWER(TRIM(a.NombreArchivo)) = LOWER(TRIM(?))
+              AND raf.FK_RelatoID <> ?
+            LIMIT 1
+            """;
+
     private static final String SQL_DELETE_LINK = """
             DELETE FROM Relato_ArchivoFuente
             WHERE FK_RelatoID = ? AND FK_ArchivoID = ?
@@ -369,6 +379,34 @@ public class UploadedFileDao {
             pstmt.setInt(1, userId);
             pstmt.setString(2, origin.trim());
             pstmt.setString(3, fileName.trim());
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Valida si ya existe un archivo con el mismo nombre para el usuario,
+     * ignorando los exportados que pertenecen al relato que se está
+     * reconvirtiendo.
+     */
+    public static boolean existsByUserAndOriginAndNameExcludingStory(int userId, String origin, String fileName,
+            int storyId) {
+        if (userId <= 0 || storyId <= 0 || origin == null || origin.isBlank() || fileName == null
+                || fileName.isBlank()) {
+            return false;
+        }
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement pstmt = conn.prepareStatement(SQL_EXISTS_BY_USER_AND_ORIGIN_AND_NAME_EXCLUDING_STORY)) {
+
+            pstmt.setInt(1, userId);
+            pstmt.setString(2, origin.trim());
+            pstmt.setString(3, fileName.trim());
+            pstmt.setInt(4, storyId);
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 return rs.next();

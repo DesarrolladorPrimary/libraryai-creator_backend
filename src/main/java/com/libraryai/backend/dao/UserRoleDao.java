@@ -13,6 +13,9 @@ import com.libraryai.backend.config.DatabaseConnection;
  * del sistema a cuentas recién creadas.
  */
 public class UserRoleDao {
+    /**
+     * Rol funcional que se asigna por defecto a cuentas recién registradas.
+     */
     private static final String DEFAULT_ROLE_NAME = "Gratuito";
 
     // language=sql
@@ -26,6 +29,9 @@ public class UserRoleDao {
     
     /**
      * Asigna el rol Gratuito a un usuario recién creado.
+     *
+     * <p>La consulta resuelve el rol por nombre para no depender de ids fijos
+     * sembrados en la base de datos.
      *
      * @return {@code true} cuando la inserción encontró el rol y pudo persistir la
      *         relación.

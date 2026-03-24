@@ -52,6 +52,10 @@ public class ModerationDao {
 
     /**
      * Registra un evento de moderación para trazabilidad operativa.
+     *
+     * <p>No obliga a asociar una palabra exacta porque algunos bloqueos vienen
+     * de heurísticas o patrones más amplios que una coincidencia literal de la
+     * blacklist.
      */
     public static void createModerationLog(int userId, String reason, String blockedContentHash) {
         if (userId <= 0 || reason == null || reason.isBlank()) {

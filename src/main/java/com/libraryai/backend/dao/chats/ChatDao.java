@@ -10,6 +10,10 @@ import com.libraryai.backend.config.DatabaseConnection;
 
 /**
  * DAO para persistir y consultar el historial de mensajes asociado a un relato.
+ *
+ * <p>Trabaja con un orden secuencial por relato. Si la inserción colisiona con
+ * la restricción única de {@code (FK_RelatoID, Orden)}, recalcula el siguiente
+ * orden y reintenta una vez.
  */
 public class ChatDao {
     // language=sql;
@@ -55,6 +59,11 @@ public class ChatDao {
 
     }
 
+    /**
+     * Intenta persistir el mensaje con el orden recibido.
+     *
+     * @return {@code false} solo cuando detecta una colisión recuperable de orden.
+     */
     private static boolean insertMessage(Connection conn, int idRelato, String emisor, String mensaje, int orden)
             throws SQLException {
         try (PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT)) {
@@ -72,6 +81,9 @@ public class ChatDao {
         }
     }
 
+    /**
+     * Calcula el siguiente orden disponible dentro del historial del relato.
+     */
     private static int getNextOrder(Connection conn, int idRelato) throws SQLException {
         try (PreparedStatement pstmt = conn.prepareStatement(SQL_NEXT_ORDER)) {
             pstmt.setInt(1, idRelato);
@@ -84,6 +96,9 @@ public class ChatDao {
         return 1;
     }
 
+    /**
+     * Detecta si el error SQL corresponde a la unicidad del orden por relato.
+     */
     private static boolean isDuplicateOrderError(SQLException exception) {
         String sqlState = exception.getSQLState();
         String message = exception.getMessage();

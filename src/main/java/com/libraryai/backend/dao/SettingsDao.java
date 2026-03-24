@@ -550,8 +550,8 @@ public class SettingsDao {
     private static void createSimulatedPayment(Connection conn, int subscriptionId) throws SQLException {
         String sql = """
             INSERT INTO Pago(FK_SuscripcionID, Pasarela, EstadoPago, ReferenciaExterna, Monto, FechaPago)
-            VALUES (?, 'Simulada', 'Completado', ?, ?, CURRENT_TIMESTAMP)
-        """;
+            VALUES (?, 'Otra', 'Completado', ?, ?, CURRENT_TIMESTAMP)
+            """;
 
         String reference = "SIM-" + subscriptionId + "-" + System.currentTimeMillis();
 

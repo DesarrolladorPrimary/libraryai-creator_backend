@@ -290,7 +290,7 @@ WHERE user_id IS NOT NULL
 INSERT INTO Pago (
     FK_SuscripcionID, Pasarela, EstadoPago, ReferenciaExterna, Monto, FechaPago
 )
-SELECT s.PK_SuscripcionID, 'Simulada', 'Completado', ref.referencia, 9.99, ref.fecha_pago
+SELECT s.PK_SuscripcionID, 'Otra', 'Completado', ref.referencia, 9.99, ref.fecha_pago
 FROM (
     SELECT 'demo.carla@example.com' AS correo, 'DEMO-CARLA-001' AS referencia, NOW() - INTERVAL 11 DAY AS fecha_pago
     UNION ALL
@@ -508,8 +508,6 @@ INSERT INTO AuditoriaRolUsuario (
     FK_AdminID,
     FK_RolAnteriorID,
     FK_RolNuevoID,
-    RolAnterior,
-    RolNuevo,
     FechaCambio
 )
 SELECT
@@ -517,8 +515,6 @@ SELECT
     @demo_admin_id,
     (SELECT PK_RolID FROM Rol WHERE NombreRol = 'Gratuito' LIMIT 1),
     (SELECT PK_RolID FROM Rol WHERE NombreRol = 'Premium' LIMIT 1),
-    'Gratuito',
-    'Premium',
     NOW() - INTERVAL 11 DAY
 WHERE @demo_carla_id IS NOT NULL
   AND @demo_admin_id IS NOT NULL
@@ -527,7 +523,7 @@ WHERE @demo_carla_id IS NOT NULL
       FROM AuditoriaRolUsuario aru
       WHERE aru.FK_UsuarioAfectadoID = @demo_carla_id
         AND aru.FK_AdminID = @demo_admin_id
-        AND aru.RolNuevo = 'Premium'
+        AND aru.FK_RolNuevoID = (SELECT PK_RolID FROM Rol WHERE NombreRol = 'Premium' LIMIT 1)
   );
 
 COMMIT;

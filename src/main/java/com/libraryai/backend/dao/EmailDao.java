@@ -28,6 +28,9 @@ public class EmailDao {
     /**
      * Crea un registro inicial del correo antes del intento de envio.
      *
+     * <p>El historial nace como {@code Pendiente} para que luego el servicio de
+     * correo pueda marcarlo como enviado o fallido sin perder trazabilidad.
+     *
      * @return id generado o 0 si no pudo registrarse.
      */
     public static int createEmailLog(int userId, String tipoCorreo, String destinatario, String asunto, String cuerpo) {
@@ -84,6 +87,9 @@ public class EmailDao {
         }
     }
 
+    /**
+     * Ajusta mensajes largos de error al límite persistido por la tabla Correo.
+     */
     private static String truncate(String value, int maxLength) {
         if (value == null || value.length() <= maxLength) {
             return value;

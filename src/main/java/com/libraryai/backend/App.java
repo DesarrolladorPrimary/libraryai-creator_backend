@@ -24,7 +24,8 @@ public class App {
     public static void main(String[] args) throws Exception {
         try {
             if (AIConfig.API_KEY == null || AIConfig.API_KEY.isBlank()) {
-                System.err.println("Aviso: GEMINI_API_KEY no está configurada. Poly responderá con el fallback local.");
+                System.err.println(
+                        "Aviso: GEMINI_API_KEY no está configurada. Las funciones asistidas por IA responderán con un error controlado.");
             } else {
                 System.out.println("Gemini configurado con modelos: gratuito=" + AIConfig.FREE_MODEL
                         + ", premium=" + AIConfig.PREMIUM_MODEL);

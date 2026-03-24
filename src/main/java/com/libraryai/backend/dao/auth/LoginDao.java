@@ -36,6 +36,9 @@ public class LoginDao {
     /**
      * Busca un usuario por correo y devuelve hash, rol, id, estado de
      * verificacion y si la cuenta sigue activa.
+     *
+     * <p>La consulta usa {@code INNER JOIN} con {@code UsuarioRol} y {@code Rol},
+     * así que una cuenta sin rol asignado no se considera válida para el login.
      */
     public static JsonObject findUserByEmail(String correo) {
         JsonObject user = new JsonObject();
@@ -74,6 +77,9 @@ public class LoginDao {
 
     /**
      * Consulta si la cuenta del usuario sigue activa.
+     *
+     * <p>Se usa en revalidaciones posteriores al login cuando ya se conoce el id
+     * del usuario autenticado.
      */
     public static JsonObject findUserActiveStatus(int userId) {
         JsonObject userStatus = new JsonObject();

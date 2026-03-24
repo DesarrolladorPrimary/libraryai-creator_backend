@@ -14,6 +14,12 @@ import com.libraryai.backend.config.AIConfig;
  */
 public class GeminiAI {
 
+    private static final String CODE_GEMINI_MISCONFIGURED = "GEMINI_MISCONFIGURED";
+    private static final String CODE_GEMINI_EMPTY_RESPONSE = "GEMINI_EMPTY_RESPONSE";
+    private static final String CODE_GEMINI_TIMEOUT = "GEMINI_TIMEOUT";
+    private static final String CODE_GEMINI_RATE_LIMIT = "GEMINI_RATE_LIMIT";
+    private static final String CODE_GEMINI_UNAVAILABLE = "GEMINI_UNAVAILABLE";
+
     /**
      * Llama al SDK de Gemini para generar texto a partir de un prompt.
      */
@@ -37,6 +43,7 @@ public class GeminiAI {
         if (AIConfig.API_KEY == null || AIConfig.API_KEY.isBlank()) {
             response.addProperty("Mensaje", "GEMINI_API_KEY no está configurada");
             response.addProperty("status", 500);
+            response.addProperty("code", CODE_GEMINI_MISCONFIGURED);
             return response;
         }
 
@@ -93,6 +100,7 @@ public class GeminiAI {
             if (generatedText == null || generatedText.isBlank()) {
                 response.addProperty("Mensaje", "Gemini devolvió una respuesta vacía");
                 response.addProperty("status", 502);
+                response.addProperty("code", CODE_GEMINI_EMPTY_RESPONSE);
                 response.addProperty("detalle", "Respuesta vacía del modelo " + runtimeModel);
                 response.addProperty("modelo", runtimeModel);
                 return response;
@@ -106,17 +114,55 @@ public class GeminiAI {
 
         } catch (RuntimeException e) {
             String detail = buildErrorDetail(e);
-            int status = detail.toLowerCase().contains("timeout") || detail.toLowerCase().contains("timed out")
-                    ? 504
-                    : 502;
+            GeminiFailure failure = classifyFailure(detail);
 
             System.err.println("Error Gemini [" + e.getClass().getSimpleName() + "]: " + detail);
-            response.addProperty("Mensaje", "Error al comunicarse con Gemini");
-            response.addProperty("status", status);
+            response.addProperty("Mensaje", failure.userMessage);
+            response.addProperty("status", failure.status);
+            response.addProperty("code", failure.code);
             response.addProperty("detalle", detail);
             response.addProperty("modelo", runtimeModel);
             return response;
         }
+    }
+
+    private static GeminiFailure classifyFailure(String detail) {
+        String normalized = detail == null ? "" : detail.toLowerCase();
+
+        if (containsAny(normalized, "timeout", "timed out", "deadline exceeded")) {
+            return new GeminiFailure(
+                    504,
+                    CODE_GEMINI_TIMEOUT,
+                    "Gemini tardó demasiado en responder. Intenta de nuevo en unos segundos.");
+        }
+
+        if (containsAny(normalized,
+                "429",
+                "resource_exhausted",
+                "rate limit",
+                "quota",
+                "exceeded your current quota",
+                "too many requests")) {
+            return new GeminiFailure(
+                    429,
+                    CODE_GEMINI_RATE_LIMIT,
+                    "Se agotó temporalmente la cuota de Gemini. Intenta de nuevo más tarde.");
+        }
+
+        return new GeminiFailure(
+                502,
+                CODE_GEMINI_UNAVAILABLE,
+                "Error al comunicarse con Gemini");
+    }
+
+    private static boolean containsAny(String source, String... tokens) {
+        for (String token : tokens) {
+            if (source.contains(token)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static String buildErrorDetail(RuntimeException error) {
@@ -126,6 +172,18 @@ public class GeminiAI {
         }
 
         return error.getClass().getSimpleName() + ": " + message;
+    }
+
+    private static final class GeminiFailure {
+        private final int status;
+        private final String code;
+        private final String userMessage;
+
+        private GeminiFailure(int status, String code, String userMessage) {
+            this.status = status;
+            this.code = code;
+            this.userMessage = userMessage;
+        }
     }
 
 }

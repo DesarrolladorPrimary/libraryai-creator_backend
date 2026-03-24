@@ -212,7 +212,7 @@ public class ChatService {
             if (!isUsablePolyPayload(payload)) {
                 int siguienteOrden = getSiguienteOrden(relatoId);
                 ChatDao.save(relatoId, "Sistema",
-                        "Poly no pudo generar una respuesta en este intento. Intenta de nuevo en unos segundos o reformula la instrucción.",
+                        buildPolyFailureMessage(geminiResponse),
                         siguienteOrden);
                 return;
             }
@@ -242,12 +242,41 @@ public class ChatService {
             try {
                 int siguienteOrden = getSiguienteOrden(relatoId);
                 ChatDao.save(relatoId, "Sistema",
-                        "Poly no pudo generar una respuesta en este intento. Intenta de nuevo en unos segundos o reformula la instrucción.",
+                        "Poly no pudo generar una respuesta en este intento. Intenta de nuevo en unos segundos.",
                         siguienteOrden);
             } catch (Exception ex) {
                 System.err.println("Error al enviar mensaje de sistema: " + ex.getMessage());
             }
         }
+    }
+
+    private static String buildPolyFailureMessage(JsonObject geminiResponse) {
+        if (geminiResponse == null || geminiResponse.isJsonNull()) {
+            return "Poly no pudo generar una respuesta en este intento. Intenta de nuevo en unos segundos.";
+        }
+
+        String code = geminiResponse.has("code") ? geminiResponse.get("code").getAsString() : "";
+
+        if ("GEMINI_RATE_LIMIT".equals(code)) {
+            return "Poly no pudo responder porque se agotó temporalmente la cuota de Gemini. Espera un momento y vuelve a intentarlo.";
+        }
+
+        if ("GEMINI_TIMEOUT".equals(code)) {
+            return "Poly tardó demasiado en responder. Intenta de nuevo en unos segundos.";
+        }
+
+        if ("GEMINI_MISCONFIGURED".equals(code)) {
+            return "Poly no está disponible en este momento por una configuración pendiente del servicio de IA.";
+        }
+
+        if (geminiResponse.has("Mensaje")) {
+            String message = geminiResponse.get("Mensaje").getAsString().trim();
+            if (!message.isBlank()) {
+                return message;
+            }
+        }
+
+        return "Poly no pudo generar una respuesta en este intento. Intenta de nuevo en unos segundos.";
     }
 
     private static String buildGeminiPrompt(int relatoId, String mensajeUsuario, JsonObject archivoContexto) {

@@ -309,12 +309,14 @@ SELECT
     a.PK_AuditoriaID,
     ua.Correo AS UsuarioAfectado,
     ad.Correo AS AdminQueCambio,
-    a.RolAnterior,
-    a.RolNuevo,
+    ra.NombreRol AS RolAnterior,
+    rn.NombreRol AS RolNuevo,
     a.FechaCambio
 FROM AuditoriaRolUsuario a
 JOIN Usuario ua ON ua.PK_UsuarioID = a.FK_UsuarioAfectadoID
 JOIN Usuario ad ON ad.PK_UsuarioID = a.FK_AdminID
+LEFT JOIN Rol ra ON ra.PK_RolID = a.FK_RolAnteriorID
+JOIN Rol rn ON rn.PK_RolID = a.FK_RolNuevoID
 ORDER BY a.PK_AuditoriaID DESC;
 
 -- =========================================================

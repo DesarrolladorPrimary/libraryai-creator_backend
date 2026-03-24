@@ -92,6 +92,9 @@ public class StoryVersionDao {
     /**
      * Calcula el próximo número de versión dentro del relato usando el máximo
      * actual almacenado.
+     *
+     * <p>El correlativo queda aislado en DAO para que todos los flujos que crean
+     * versiones respeten la misma secuencia.
      */
     private static int getNextVersion(Connection conn, int storyId) throws SQLException {
         try (PreparedStatement pstmt = conn.prepareStatement(SQL_NEXT_VERSION)) {
