@@ -61,6 +61,29 @@ public class SettingsService {
     }
 
     /**
+     * Devuelve el catálogo visible de planes para el usuario junto con su
+     * suscripción actual. El frontend usa este contrato para renderizar tarjetas
+     * dinámicas y permitir cambiar al plan recién creado desde admin.
+     */
+    public static JsonObject getPlanesDisponibles(int userId) {
+        JsonObject subscription = SettingsDao.getSuscripcionActiva(userId);
+        if (!isOkResponse(subscription)) {
+            return subscription;
+        }
+
+        String currentPlanCode = subscription.has("codigoPlan")
+                ? subscription.get("codigoPlan").getAsString()
+                : DEFAULT_PLAN;
+        JsonObject catalog = SettingsDao.getPlanCatalog(readPlanId(subscription), currentPlanCode);
+        if (!isOkResponse(catalog)) {
+            return catalog;
+        }
+
+        catalog.add("suscripcion", subscription.deepCopy());
+        return catalog;
+    }
+
+    /**
      * Resuelve el nombre de plan efectivo con fallback seguro a Gratuito.
      */
     public static String getNormalizedPlanName(int userId) {
@@ -83,12 +106,12 @@ public class SettingsService {
     /**
      * Simula el cambio de suscripción y devuelve un JWT actualizado con el nuevo rol.
      */
-    public static JsonObject simulateSuscripcion(String plan, int userId) {
-        if (plan == null || plan.trim().isEmpty()) {
-            return buildErrorResponse(400, "Debes indicar el plan a simular");
+    public static JsonObject simulateSuscripcion(Integer planId, String plan, int userId) {
+        if ((planId == null || planId <= 0) && (plan == null || plan.trim().isEmpty())) {
+            return buildErrorResponse(400, "Debes indicar el plan que deseas activar");
         }
 
-        JsonObject result = SettingsDao.simulateSubscriptionChange(userId, plan.trim());
+        JsonObject result = SettingsDao.simulateSubscriptionChange(userId, planId, plan == null ? "" : plan.trim());
         if (!isOkResponse(result)) {
             return result;
         }

@@ -31,16 +31,16 @@ SET @demo_hash = '$2a$10$Ka5IDG6s7g2jGVsnMkXzJ.Mf57hx5CjabKB7uXNaj9LnF7/QyXR2W';
 INSERT IGNORE INTO Rol (NombreRol)
 VALUES ('Admin'), ('Gratuito'), ('Premium');
 
-INSERT INTO PlanSuscripcion (CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, ColorHex, Activo)
+INSERT INTO Plan (CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, ColorHex, Activo)
 SELECT 'GRATUITO', 'Plan Gratuito', 500, 0.00, '#4ECDC4', TRUE
 WHERE NOT EXISTS (
-    SELECT 1 FROM PlanSuscripcion WHERE CodigoPlan = 'GRATUITO'
+    SELECT 1 FROM Plan WHERE CodigoPlan = 'GRATUITO'
 );
 
-INSERT INTO PlanSuscripcion (CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, ColorHex, Activo)
+INSERT INTO Plan (CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, ColorHex, Activo)
 SELECT 'PREMIUM', 'Plan Premium', 2048, 9.99, '#FFD700', TRUE
 WHERE NOT EXISTS (
-    SELECT 1 FROM PlanSuscripcion WHERE CodigoPlan = 'PREMIUM'
+    SELECT 1 FROM Plan WHERE CodigoPlan = 'PREMIUM'
 );
 
 INSERT INTO ModeloIA (
@@ -125,10 +125,10 @@ WHERE NOT EXISTS (
 );
 
 SET @free_plan_id = (
-    SELECT PK_PlanID FROM PlanSuscripcion WHERE CodigoPlan = 'GRATUITO' LIMIT 1
+    SELECT PK_PlanID FROM Plan WHERE CodigoPlan = 'GRATUITO' LIMIT 1
 );
 SET @premium_plan_id = (
-    SELECT PK_PlanID FROM PlanSuscripcion WHERE CodigoPlan = 'PREMIUM' LIMIT 1
+    SELECT PK_PlanID FROM Plan WHERE CodigoPlan = 'PREMIUM' LIMIT 1
 );
 SET @flash_model_id = (
     SELECT PK_ModeloID FROM ModeloIA
@@ -141,12 +141,12 @@ SET @pro_model_id = (
     LIMIT 1
 );
 
-UPDATE PlanSuscripcion
+UPDATE Plan
 SET ColorHex = '#4ECDC4',
     FK_ModeloPreferidoID = @flash_model_id
 WHERE CodigoPlan = 'GRATUITO';
 
-UPDATE PlanSuscripcion
+UPDATE Plan
 SET ColorHex = '#FFD700',
     FK_ModeloPreferidoID = @pro_model_id
 WHERE CodigoPlan = 'PREMIUM';
@@ -221,7 +221,7 @@ WHERE data.user_id IS NOT NULL
 
 INSERT INTO PlanRol (FK_PlanID, FK_RolID)
 SELECT p.PK_PlanID, r.PK_RolID
-FROM PlanSuscripcion p
+FROM Plan p
 JOIN Rol r ON r.NombreRol = 'Gratuito'
 WHERE p.CodigoPlan = 'GRATUITO'
 AND NOT EXISTS (
@@ -233,7 +233,7 @@ AND NOT EXISTS (
 
 INSERT INTO PlanRol (FK_PlanID, FK_RolID)
 SELECT p.PK_PlanID, r.PK_RolID
-FROM PlanSuscripcion p
+FROM Plan p
 JOIN Rol r ON r.NombreRol = 'Premium'
 WHERE p.CodigoPlan = 'PREMIUM'
 AND NOT EXISTS (

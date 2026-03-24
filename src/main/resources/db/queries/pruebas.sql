@@ -67,7 +67,7 @@ SELECT
     ColorHex,
     FK_ModeloPreferidoID,
     Activo
-FROM PlanSuscripcion
+FROM Plan
 ORDER BY PK_PlanID;
 
 -- Suscripción actual de cada usuario.
@@ -84,7 +84,7 @@ FROM Usuario u
 LEFT JOIN Suscripcion s
        ON s.FK_UsuarioID = u.PK_UsuarioID
       AND s.Estado = 'Activa'
-LEFT JOIN PlanSuscripcion p ON p.PK_PlanID = s.FK_PlanID
+LEFT JOIN Plan p ON p.PK_PlanID = s.FK_PlanID
 ORDER BY u.PK_UsuarioID;
 
 -- Historial de suscripciones.
@@ -97,7 +97,7 @@ SELECT
     s.FechaFin
 FROM Suscripcion s
 JOIN Usuario u ON u.PK_UsuarioID = s.FK_UsuarioID
-JOIN PlanSuscripcion p ON p.PK_PlanID = s.FK_PlanID
+JOIN Plan p ON p.PK_PlanID = s.FK_PlanID
 ORDER BY s.PK_SuscripcionID;
 
 -- Pagos registrados.
@@ -112,7 +112,7 @@ SELECT
 FROM Pago pg
 JOIN Suscripcion s ON s.PK_SuscripcionID = pg.FK_SuscripcionID
 JOIN Usuario u ON u.PK_UsuarioID = s.FK_UsuarioID
-JOIN PlanSuscripcion p ON p.PK_PlanID = s.FK_PlanID
+JOIN Plan p ON p.PK_PlanID = s.FK_PlanID
 ORDER BY pg.PK_PagoID;
 
 -- Usuarios con más de una suscripción activa (debería devolver 0 filas).

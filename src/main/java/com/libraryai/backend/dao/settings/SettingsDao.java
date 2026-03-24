@@ -16,7 +16,7 @@ import java.util.Locale;
  * Operaciones:
  * - getInstruccionIA:     Lee InstruccionPermanenteIA de la tabla Usuario
  * - updateInstruccionIA:  Actualiza InstruccionPermanenteIA en la tabla Usuario
- * - getSuscripcionActiva: Lee Suscripcion + PlanSuscripcion del usuario activo
+ * - getSuscripcionActiva: Lee Suscripcion + Plan del usuario activo
  */
 public class SettingsDao {
     private static final String PLAN_FREE_CODE = "GRATUITO";
@@ -116,7 +116,7 @@ public class SettingsDao {
 
     /**
      * Obtiene la suscripción activa del usuario junto con los datos del plan.
-     * Tablas: Suscripcion JOIN PlanSuscripcion
+     * Tablas: Suscripcion JOIN Plan
      * Si no tiene suscripción activa, devuelve estado por defecto (Sin Plan).
      */
     public static JsonObject getSuscripcionActiva(int userId) {
@@ -141,7 +141,7 @@ public class SettingsDao {
                        ELSE 'Gratuito'
                    END) AS RolPlan
             FROM Suscripcion s
-            JOIN PlanSuscripcion p ON s.FK_PlanID = p.PK_PlanID
+            JOIN Plan p ON s.FK_PlanID = p.PK_PlanID
             WHERE s.FK_UsuarioID = ? AND s.Estado = 'Activa'
             ORDER BY s.FechaInicio DESC
             LIMIT 1
@@ -216,37 +216,135 @@ public class SettingsDao {
     }
 
     /**
-     * Simula un cambio de plan creando suscripción, pago simulado y rol efectivo.
+     * Devuelve el catálogo de planes visible para el usuario en settings.
+     * Incluye planes activos y, como respaldo, el plan actual si quedó inactivo.
      */
-    public static JsonObject simulateSubscriptionChange(int userId, String requestedPlan) {
+    public static JsonObject getPlanCatalog(int currentPlanId, String currentPlanCode) {
         JsonObject response = new JsonObject();
-        String normalizedPlan = normalizePlanName(requestedPlan);
+        String normalizedCurrentCode = currentPlanCode == null ? "" : currentPlanCode.trim().toUpperCase(Locale.ROOT);
+        String sql = """
+            SELECT p.PK_PlanID, p.CodigoPlan, p.NombrePlan, p.AlmacenamientoMaxMB, p.Precio,
+                   p.ColorHex, p.Activo, p.FK_ModeloPreferidoID,
+                   COALESCE((
+                       SELECT r.NombreRol
+                       FROM PlanRol pr
+                       INNER JOIN Rol r ON r.PK_RolID = pr.FK_RolID
+                       WHERE pr.FK_PlanID = p.PK_PlanID
+                       ORDER BY CASE
+                           WHEN r.NombreRol = 'Premium' THEN 0
+                           WHEN r.NombreRol = 'Gratuito' THEN 1
+                           ELSE 2
+                       END
+                       LIMIT 1
+                   ), CASE
+                       WHEN UPPER(COALESCE(p.CodigoPlan, '')) = 'PREMIUM' THEN 'Premium'
+                       ELSE 'Gratuito'
+                   END) AS RolBase,
+                   m.NombreModelo AS ModeloPreferidoNombre,
+                   m.Version AS ModeloPreferidoVersion
+            FROM Plan p
+            LEFT JOIN ModeloIA m
+                ON m.PK_ModeloID = p.FK_ModeloPreferidoID
+               AND m.Estado = 'Activo'
+            WHERE p.Activo = TRUE OR p.PK_PlanID = ?
+            ORDER BY CASE
+                       WHEN p.PK_PlanID = ? THEN 0
+                       ELSE 1
+                     END,
+                     CASE
+                       WHEN COALESCE(p.Precio, 0) = 0 THEN 0
+                       ELSE 1
+                     END,
+                     COALESCE(p.Precio, 0) ASC,
+                     p.PK_PlanID ASC
+        """;
 
-        if (normalizedPlan == null) {
-            response.addProperty("status", 400);
-            response.addProperty("Mensaje", "El plan solicitado no es válido");
-            return response;
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, currentPlanId);
+            stmt.setInt(2, currentPlanId);
+            ResultSet rs = stmt.executeQuery();
+
+            JsonArray planes = new JsonArray();
+            while (rs.next()) {
+                JsonObject plan = new JsonObject();
+                String code = resolvePlanCode(rs.getString("CodigoPlan"), rs.getString("NombrePlan"));
+                long storageMb = rs.getObject("AlmacenamientoMaxMB") == null
+                        ? 0L
+                        : ((Number) rs.getObject("AlmacenamientoMaxMB")).longValue();
+                String roleBase = rs.getString("RolBase");
+                boolean current = currentPlanId > 0
+                        ? rs.getInt("PK_PlanID") == currentPlanId
+                        : code.equalsIgnoreCase(normalizedCurrentCode);
+
+                plan.addProperty("id", rs.getInt("PK_PlanID"));
+                plan.addProperty("codigoPlan", code);
+                plan.addProperty("nombrePlan", rs.getString("NombrePlan"));
+                plan.addProperty("rolBase", roleBase == null || roleBase.isBlank() ? planCodeToRoleName(code) : roleBase);
+                plan.addProperty("almacenamientoMaxMb", storageMb);
+                plan.addProperty("almacenamientoIlimitado", storageMb <= 0);
+                plan.addProperty("precio", rs.getBigDecimal("Precio"));
+                plan.addProperty("activo", rs.getBoolean("Activo"));
+                plan.addProperty("esActual", current);
+                plan.addProperty("colorHex", rs.getString("ColorHex") != null
+                        ? rs.getString("ColorHex")
+                        : getDefaultPlanColor(code));
+                if (rs.getObject("FK_ModeloPreferidoID") != null) {
+                    plan.addProperty("modeloPreferidoId", rs.getInt("FK_ModeloPreferidoID"));
+                }
+                plan.addProperty(
+                        "modeloPreferidoNombre",
+                        rs.getString("ModeloPreferidoNombre") == null ? "" : rs.getString("ModeloPreferidoNombre"));
+                plan.addProperty(
+                        "modeloPreferidoVersion",
+                        rs.getString("ModeloPreferidoVersion") == null ? "" : rs.getString("ModeloPreferidoVersion"));
+                planes.add(plan);
+            }
+
+            response.addProperty("status", 200);
+            response.add("planes", planes);
+            response.addProperty("total", planes.size());
+        } catch (Exception e) {
+            System.out.println("Error en getPlanCatalog: " + e.getMessage());
+            response.addProperty("status", 500);
+            response.addProperty("Mensaje", "Error interno al obtener los planes disponibles");
         }
 
-        boolean premiumRequested = isPremiumPlan(normalizedPlan);
-        String planCode = premiumRequested ? PLAN_PREMIUM_CODE : PLAN_FREE_CODE;
-        String planName = premiumRequested ? PLAN_PREMIUM_NAME : PLAN_FREE_NAME;
-        String roleName = premiumRequested ? ROLE_PREMIUM : ROLE_FREE;
+        return response;
+    }
+
+    /**
+     * Simula un cambio de plan creando suscripción, pago simulado y rol efectivo.
+     */
+    public static JsonObject simulateSubscriptionChange(int userId, Integer requestedPlanId, String requestedPlan) {
+        JsonObject response = new JsonObject();
 
         try (Connection conn = DatabaseConnection.getConnection()) {
             conn.setAutoCommit(false);
 
             try {
-                int planId = findOrCreatePlan(conn, planCode, planName);
-                cancelActiveSubscriptions(conn, userId);
-                int subscriptionId = createSubscription(conn, userId, planId);
+                PlanSelection requestedSelection = resolvePlanSelection(conn, requestedPlanId, requestedPlan);
+                if (requestedSelection == null) {
+                    conn.rollback();
+                    response.addProperty("status", 404);
+                    response.addProperty("Mensaje", "El plan solicitado no está disponible");
+                    return response;
+                }
 
-                if (premiumRequested) {
-                    createSimulatedPayment(conn, subscriptionId);
+                String roleName = resolvePlanRole(conn, requestedSelection.id, requestedSelection.code);
+                cancelActiveSubscriptions(conn, userId);
+                int subscriptionId = createSubscription(conn, userId, requestedSelection.id);
+
+                if (requestedSelection.price.compareTo(BigDecimal.ZERO) > 0) {
+                    createSimulatedPayment(conn, subscriptionId, requestedSelection.price);
                 }
 
                 replaceUserRole(conn, userId, roleName);
                 conn.commit();
+            } catch (JsonEarlyReturn earlyReturn) {
+                conn.rollback();
+                return earlyReturn.response;
             } catch (Exception e) {
                 conn.rollback();
                 throw e;
@@ -260,10 +358,10 @@ public class SettingsDao {
             }
 
             subscription.addProperty("Mensaje",
-                    premiumRequested
-                            ? "Plan Premium activado correctamente"
-                            : "Plan Gratuito activado correctamente");
-            subscription.addProperty("rol", roleName);
+                    subscription.has("nombrePlan")
+                            ? "Plan " + subscription.get("nombrePlan").getAsString() + " activado correctamente"
+                            : "Plan activado correctamente");
+            subscription.addProperty("rol", subscription.has("plan") ? subscription.get("plan").getAsString() : ROLE_FREE);
             subscription.addProperty("simulado", true);
             return subscription;
         } catch (Exception e) {
@@ -367,30 +465,31 @@ public class SettingsDao {
         JsonObject response = new JsonObject();
         Integer preferredModelId = findPreferredModelIdByPlan(planId);
 
-        String sql = isPremiumPlan(plan)
-                ? """
-            SELECT PK_ModeloID, NombreModelo, Version, Descripcion, NotasVersion, Estado, EsGratuito
-            FROM ModeloIA
-            WHERE Estado = 'Activo'
-            ORDER BY CASE
-                WHEN PK_ModeloID = ? THEN 0
-                WHEN LOWER(NombreModelo) = LOWER(?) THEN 0
-                WHEN EsGratuito = FALSE THEN 1
-                ELSE 2
-            END, PK_ModeloID ASC
-            LIMIT 1
-        """
-                : """
-            SELECT PK_ModeloID, NombreModelo, Version, Descripcion, NotasVersion, Estado, EsGratuito
-            FROM ModeloIA
-            WHERE Estado = 'Activo' AND EsGratuito = TRUE
-            ORDER BY CASE
-                WHEN PK_ModeloID = ? THEN 0
-                WHEN LOWER(NombreModelo) = LOWER(?) THEN 0
-                ELSE 1
-            END, PK_ModeloID ASC
-            LIMIT 1
-        """;
+        String sql;
+        if (isPremiumPlan(plan)) {
+            sql = """
+                SELECT PK_ModeloID, NombreModelo, Version, Descripcion, NotasVersion, EsGratuito
+                FROM ModeloIA
+                WHERE Estado = 'Activo'
+                ORDER BY CASE
+                    WHEN PK_ModeloID = ? THEN 0
+                    WHEN LOWER(NombreModelo) = LOWER(?) THEN 1
+                    WHEN EsGratuito = FALSE THEN 2
+                    ELSE 3
+                END, PK_ModeloID ASC
+            """;
+        } else {
+            sql = """
+                SELECT PK_ModeloID, NombreModelo, Version, Descripcion, NotasVersion, EsGratuito
+                FROM ModeloIA
+                WHERE Estado = 'Activo' AND EsGratuito = TRUE
+                ORDER BY CASE
+                    WHEN PK_ModeloID = ? THEN 0
+                    WHEN LOWER(NombreModelo) = LOWER(?) THEN 1
+                    ELSE 2
+                END, PK_ModeloID ASC
+            """;
+        }
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -399,16 +498,20 @@ public class SettingsDao {
             stmt.setString(2, getPreferredModelNameForPlan(plan));
             ResultSet rs = stmt.executeQuery();
 
-            if (rs.next()) {
-                response = buildModelJson(rs);
-                response.addProperty("status", 200);
-            } else {
-                return buildConfiguredModelFallback(plan);
+            JsonArray modelos = new JsonArray();
+
+            while (rs.next()) {
+                modelos.add(buildModelJson(rs));
             }
 
+            response.addProperty("status", 200);
+            response.add("modelos", modelos);
+            response.addProperty("total", modelos.size());
+
         } catch (Exception e) {
-            System.out.println("Error en getVersionActual: " + e.getMessage());
-            return buildConfiguredModelFallback(plan);
+            System.out.println("Error en getModelosPorPlan: " + e.getMessage());
+            response.addProperty("status", 500);
+            response.addProperty("Mensaje", "Error interno al obtener modelos");
         }
 
         return response;
@@ -458,7 +561,7 @@ public class SettingsDao {
     }
 
     private static Integer findPlanByCode(Connection conn, String planCode) throws SQLException {
-        String sql = "SELECT PK_PlanID FROM PlanSuscripcion WHERE CodigoPlan = ? LIMIT 1";
+        String sql = "SELECT PK_PlanID FROM Plan WHERE CodigoPlan = ? LIMIT 1";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, planCode);
@@ -474,7 +577,7 @@ public class SettingsDao {
 
     private static int createDefaultPlan(Connection conn, String planCode, String planName) throws SQLException {
         String sql = """
-            INSERT INTO PlanSuscripcion(CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, ColorHex, Activo)
+            INSERT INTO Plan(CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, ColorHex, Activo)
             VALUES (?, ?, ?, ?, ?, TRUE)
         """;
 
@@ -605,7 +708,7 @@ public class SettingsDao {
         throw new SQLException("No fue posible crear la suscripción");
     }
 
-    private static void createSimulatedPayment(Connection conn, int subscriptionId) throws SQLException {
+    private static void createSimulatedPayment(Connection conn, int subscriptionId, BigDecimal amount) throws SQLException {
         String sql = """
             INSERT INTO Pago(FK_SuscripcionID, Pasarela, EstadoPago, ReferenciaExterna, Monto, FechaPago)
             VALUES (?, 'Otra', 'Completado', ?, ?, CURRENT_TIMESTAMP)
@@ -616,7 +719,7 @@ public class SettingsDao {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, subscriptionId);
             stmt.setString(2, reference);
-            stmt.setBigDecimal(3, PLAN_PREMIUM_PRICE);
+            stmt.setBigDecimal(3, amount);
             stmt.executeUpdate();
         }
     }
@@ -644,6 +747,95 @@ public class SettingsDao {
                 throw new SQLException("No fue posible asignar el rol " + roleName);
             }
         }
+    }
+
+    private static PlanSelection resolvePlanSelection(Connection conn, Integer requestedPlanId, String requestedPlan)
+            throws SQLException {
+        if (requestedPlanId != null && requestedPlanId > 0) {
+            return findSelectablePlanById(conn, requestedPlanId);
+        }
+
+        String normalizedPlan = requestedPlan == null ? "" : requestedPlan.trim();
+        if (normalizedPlan.isBlank()) {
+            return null;
+        }
+
+        PlanSelection selection = findSelectablePlanByCodeOrName(conn, normalizedPlan);
+        if (selection != null) {
+            return selection;
+        }
+
+        String normalizedLegacyRole = normalizePlanName(normalizedPlan);
+        if (normalizedLegacyRole == null) {
+            return null;
+        }
+
+        String fallbackCode = ROLE_PREMIUM.equalsIgnoreCase(normalizedLegacyRole) ? PLAN_PREMIUM_CODE : PLAN_FREE_CODE;
+        return findSelectablePlanByCodeOrName(conn, fallbackCode);
+    }
+
+    private static PlanSelection findSelectablePlanById(Connection conn, int planId) throws SQLException {
+        String sql = """
+            SELECT PK_PlanID, CodigoPlan, NombrePlan, Precio, Activo
+            FROM Plan
+            WHERE PK_PlanID = ?
+            LIMIT 1
+        """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, planId);
+            ResultSet rs = stmt.executeQuery();
+            if (!rs.next()) {
+                return null;
+            }
+
+            if (!rs.getBoolean("Activo")) {
+                throw buildPlanSelectionError(409, "El plan seleccionado está inactivo");
+            }
+
+            return new PlanSelection(
+                    rs.getInt("PK_PlanID"),
+                    resolvePlanCode(rs.getString("CodigoPlan"), rs.getString("NombrePlan")),
+                    rs.getString("NombrePlan"),
+                    rs.getBigDecimal("Precio"));
+        }
+    }
+
+    private static PlanSelection findSelectablePlanByCodeOrName(Connection conn, String planValue) throws SQLException {
+        String sql = """
+            SELECT PK_PlanID, CodigoPlan, NombrePlan, Precio, Activo
+            FROM Plan
+            WHERE UPPER(COALESCE(CodigoPlan, '')) = UPPER(?)
+               OR LOWER(COALESCE(NombrePlan, '')) = LOWER(?)
+            ORDER BY Activo DESC, PK_PlanID ASC
+            LIMIT 1
+        """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, planValue);
+            stmt.setString(2, planValue);
+            ResultSet rs = stmt.executeQuery();
+            if (!rs.next()) {
+                return null;
+            }
+
+            if (!rs.getBoolean("Activo")) {
+                throw buildPlanSelectionError(409, "El plan seleccionado está inactivo");
+            }
+
+            return new PlanSelection(
+                    rs.getInt("PK_PlanID"),
+                    resolvePlanCode(rs.getString("CodigoPlan"), rs.getString("NombrePlan")),
+                    rs.getString("NombrePlan"),
+                    rs.getBigDecimal("Precio"));
+        }
+    }
+
+    private static JsonEarlyReturn buildPlanSelectionError(int status, String message) {
+        JsonObject response = new JsonObject();
+        response.addProperty("status", status);
+        response.addProperty("Mensaje", message);
+        return new JsonEarlyReturn(response);
     }
 
     private static String normalizePlanName(String plan) {
@@ -699,6 +891,31 @@ public class SettingsDao {
         return PLAN_PREMIUM_CODE.equals(resolvePlanCode(planCode, null)) ? ROLE_PREMIUM : ROLE_FREE;
     }
 
+    private static String resolvePlanRole(Connection conn, int planId, String planCode) throws SQLException {
+        String sql = """
+            SELECT r.NombreRol
+            FROM PlanRol pr
+            INNER JOIN Rol r ON r.PK_RolID = pr.FK_RolID
+            WHERE pr.FK_PlanID = ?
+            ORDER BY CASE
+                WHEN r.NombreRol = 'Premium' THEN 0
+                WHEN r.NombreRol = 'Gratuito' THEN 1
+                ELSE 2
+            END
+            LIMIT 1
+        """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, planId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("NombreRol");
+            }
+        }
+
+        return planCodeToRoleName(planCode);
+    }
+
     private static JsonObject buildModelJson(ResultSet rs) throws java.sql.SQLException {
         JsonObject modelo = new JsonObject();
         String nombre = rs.getString("NombreModelo");
@@ -723,7 +940,7 @@ public class SettingsDao {
 
         String sql = """
             SELECT m.PK_ModeloID, m.NombreModelo, m.Version, m.Descripcion, m.NotasVersion, m.EsGratuito
-            FROM PlanSuscripcion p
+            FROM Plan p
             INNER JOIN ModeloIA m ON m.PK_ModeloID = p.FK_ModeloPreferidoID
             WHERE p.PK_PlanID = ? AND m.Estado = 'Activo'
             LIMIT 1
@@ -748,7 +965,7 @@ public class SettingsDao {
             return null;
         }
 
-        String sql = "SELECT FK_ModeloPreferidoID FROM PlanSuscripcion WHERE PK_PlanID = ? LIMIT 1";
+        String sql = "SELECT FK_ModeloPreferidoID FROM Plan WHERE PK_PlanID = ? LIMIT 1";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, planId);
@@ -844,5 +1061,27 @@ public class SettingsDao {
         response.addProperty("activo", configuredModel);
         response.addProperty("gratuito", !isPremiumPlan(plan));
         return response;
+    }
+
+    private static final class PlanSelection {
+        private final int id;
+        private final String code;
+        private final String name;
+        private final BigDecimal price;
+
+        private PlanSelection(int id, String code, String name, BigDecimal price) {
+            this.id = id;
+            this.code = code;
+            this.name = name;
+            this.price = price;
+        }
+    }
+
+    private static final class JsonEarlyReturn extends RuntimeException {
+        private final JsonObject response;
+
+        private JsonEarlyReturn(JsonObject response) {
+            this.response = response;
+        }
     }
 }

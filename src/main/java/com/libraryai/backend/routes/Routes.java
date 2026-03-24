@@ -112,6 +112,9 @@ public class Routes {
         router.get("/api/v1/settings/suscripcion",
                 auth.proteger(SettingsController.getSuscripcion(), "Gratuito", "Premium"));
 
+        router.get("/api/v1/settings/planes",
+                auth.proteger(SettingsController.getPlanesDisponibles(), "Gratuito", "Premium"));
+
         router.put("/api/v1/settings/suscripcion/simular",
                 auth.proteger(SettingsController.simulateSuscripcion(), "Gratuito", "Premium"));
 

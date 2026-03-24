@@ -52,7 +52,7 @@ CREATE TABLE Permiso (
     Descripcion VARCHAR(255)
 );
 
-CREATE TABLE PlanSuscripcion (
+CREATE TABLE Plan (
     PK_PlanID INT AUTO_INCREMENT PRIMARY KEY,
     CodigoPlan VARCHAR(30) NOT NULL UNIQUE,
     NombrePlan VARCHAR(100) NOT NULL UNIQUE,
@@ -61,10 +61,10 @@ CREATE TABLE PlanSuscripcion (
     ColorHex VARCHAR(7),
     FK_ModeloPreferidoID INT NULL,
     Activo BOOLEAN NOT NULL DEFAULT TRUE,
-    CONSTRAINT CHK_PlanSuscripcion_Precio CHECK (Precio >= 0),
-    CONSTRAINT CHK_PlanSuscripcion_Almacenamiento CHECK (AlmacenamientoMaxMB IS NULL OR AlmacenamientoMaxMB >= 0),
-    CONSTRAINT CHK_PlanSuscripcion_ColorHex CHECK (ColorHex IS NULL OR ColorHex REGEXP '^#[0-9A-Fa-f]{6}$'),
-    CONSTRAINT FK_PlanSuscripcion_ModeloPreferido
+    CONSTRAINT CHK_Plan_Precio CHECK (Precio >= 0),
+    CONSTRAINT CHK_Plan_Almacenamiento CHECK (AlmacenamientoMaxMB IS NULL OR AlmacenamientoMaxMB >= 0),
+    CONSTRAINT CHK_Plan_ColorHex CHECK (ColorHex IS NULL OR ColorHex REGEXP '^#[0-9A-Fa-f]{6}$'),
+    CONSTRAINT FK_Plan_ModeloPreferido
         FOREIGN KEY (FK_ModeloPreferidoID) REFERENCES ModeloIA(PK_ModeloID) ON DELETE SET NULL
 );
 
@@ -101,7 +101,7 @@ CREATE TABLE Suscripcion (
     CONSTRAINT FK_Suscripcion_Usuario
         FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT,
     CONSTRAINT FK_Suscripcion_Plan
-        FOREIGN KEY (FK_PlanID) REFERENCES PlanSuscripcion(PK_PlanID) ON DELETE RESTRICT,
+        FOREIGN KEY (FK_PlanID) REFERENCES Plan(PK_PlanID) ON DELETE RESTRICT,
     CONSTRAINT CHK_Suscripcion_Fechas CHECK (FechaFin IS NULL OR FechaFin >= FechaInicio),
     CONSTRAINT UQ_Suscripcion_UsuarioActivo UNIQUE (UsuarioActivoUnico)
 );
@@ -145,7 +145,7 @@ CREATE TABLE PlanRol (
     FK_RolID INT NOT NULL,
     PRIMARY KEY (FK_PlanID, FK_RolID),
     CONSTRAINT FK_PlanRol_Plan
-        FOREIGN KEY (FK_PlanID) REFERENCES PlanSuscripcion(PK_PlanID) ON DELETE RESTRICT,
+        FOREIGN KEY (FK_PlanID) REFERENCES Plan(PK_PlanID) ON DELETE RESTRICT,
     CONSTRAINT FK_PlanRol_Rol
         FOREIGN KEY (FK_RolID) REFERENCES Rol(PK_RolID) ON DELETE RESTRICT
 );
@@ -289,7 +289,7 @@ CREATE VIEW V_UsuarioSuscripcion AS
 SELECT u.Nombre, u.Correo, s.FechaInicio, s.FechaFin, s.Estado, p.NombrePlan
 FROM Suscripcion s
 JOIN Usuario u ON s.FK_UsuarioID = u.PK_UsuarioID
-JOIN PlanSuscripcion p ON s.FK_PlanID = p.PK_PlanID;
+JOIN Plan p ON s.FK_PlanID = p.PK_PlanID;
 
 CREATE VIEW V_RelatosEnEstanteria AS
 SELECT r.Titulo, r.ModoOrigen, e.NombreCategoria, u.Nombre AS Autor

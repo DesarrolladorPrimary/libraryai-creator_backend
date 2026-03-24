@@ -49,7 +49,7 @@ public class AdminDao {
                     ON ultima.FK_UsuarioID = s1.FK_UsuarioID
                    AND ultima.UltimaFechaInicio = s1.FechaInicio
             ) s ON s.FK_UsuarioID = u.PK_UsuarioID
-            LEFT JOIN PlanSuscripcion p ON p.PK_PlanID = s.FK_PlanID
+            LEFT JOIN Plan p ON p.PK_PlanID = s.FK_PlanID
             ORDER BY u.FechaRegistro DESC, u.PK_UsuarioID DESC;
             """;
 
@@ -104,7 +104,7 @@ public class AdminDao {
                 (SELECT COUNT(*) FROM Suscripcion WHERE Estado = 'Activa'
                     AND FK_PlanID = (
                         SELECT PK_PlanID
-                        FROM PlanSuscripcion
+                        FROM Plan
                         WHERE CodigoPlan = 'PREMIUM'
                         LIMIT 1
                     )
@@ -152,7 +152,7 @@ public class AdminDao {
                     WHEN s.Estado = 'Activa' AND u.Activo = TRUE
                     THEN s.FK_UsuarioID
                 END) AS UsuariosActivos
-            FROM PlanSuscripcion p
+            FROM Plan p
             LEFT JOIN ModeloIA m ON m.PK_ModeloID = p.FK_ModeloPreferidoID
             LEFT JOIN Suscripcion s ON s.FK_PlanID = p.PK_PlanID AND s.Estado = 'Activa'
             LEFT JOIN Usuario u ON u.PK_UsuarioID = s.FK_UsuarioID
@@ -493,7 +493,7 @@ public class AdminDao {
             int planId;
             try (PreparedStatement stmt = conn.prepareStatement(
                     """
-                        INSERT INTO PlanSuscripcion(
+                        INSERT INTO Plan(
                             CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, ColorHex, FK_ModeloPreferidoID, Activo
                         )
                         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -576,7 +576,7 @@ public class AdminDao {
 
             try (PreparedStatement stmt = conn.prepareStatement(
                     """
-                        UPDATE PlanSuscripcion
+                        UPDATE Plan
                         SET CodigoPlan = ?, NombrePlan = ?, AlmacenamientoMaxMB = ?, Precio = ?,
                             ColorHex = ?, FK_ModeloPreferidoID = ?, Activo = ?
                         WHERE PK_PlanID = ?
@@ -659,7 +659,7 @@ public class AdminDao {
             }
 
             try (PreparedStatement deletePlanRole = conn.prepareStatement("DELETE FROM PlanRol WHERE FK_PlanID = ?");
-                 PreparedStatement deletePlan = conn.prepareStatement("DELETE FROM PlanSuscripcion WHERE PK_PlanID = ?")) {
+                 PreparedStatement deletePlan = conn.prepareStatement("DELETE FROM Plan WHERE PK_PlanID = ?")) {
                 deletePlanRole.setInt(1, planId);
                 deletePlanRole.executeUpdate();
 
@@ -874,7 +874,7 @@ public class AdminDao {
                     WHEN s.Estado = 'Activa' AND u.Activo = TRUE
                     THEN s.FK_UsuarioID
                 END) AS UsuariosActivos
-            FROM PlanSuscripcion p
+            FROM Plan p
             LEFT JOIN ModeloIA m ON m.PK_ModeloID = p.FK_ModeloPreferidoID
             LEFT JOIN Suscripcion s ON s.FK_PlanID = p.PK_PlanID AND s.Estado = 'Activa'
             LEFT JOIN Usuario u ON u.PK_UsuarioID = s.FK_UsuarioID
@@ -932,7 +932,7 @@ public class AdminDao {
 
     private static boolean planExists(Connection conn, int planId) throws SQLException {
         try (PreparedStatement stmt = conn.prepareStatement(
-                "SELECT 1 FROM PlanSuscripcion WHERE PK_PlanID = ? LIMIT 1")) {
+                "SELECT 1 FROM Plan WHERE PK_PlanID = ? LIMIT 1")) {
             stmt.setInt(1, planId);
             ResultSet rs = stmt.executeQuery();
             return rs.next();
@@ -943,7 +943,7 @@ public class AdminDao {
         try (PreparedStatement stmt = conn.prepareStatement(
                 """
                     SELECT PK_PlanID, CodigoPlan, NombrePlan, Precio, Activo
-                    FROM PlanSuscripcion
+                    FROM Plan
                     WHERE PK_PlanID = ?
                     LIMIT 1
                 """)) {

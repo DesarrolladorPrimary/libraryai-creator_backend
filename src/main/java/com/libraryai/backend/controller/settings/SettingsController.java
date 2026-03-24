@@ -16,6 +16,7 @@ import com.sun.net.httpserver.HttpHandler;
  * - GET /api/v1/settings/instruccion-ia?id=X  → obtiene instrucción permanente de Poly
  * - PUT /api/v1/settings/instruccion-ia?id=X  → actualiza instrucción permanente de Poly
  * - GET /api/v1/settings/suscripcion?id=X     → obtiene suscripción activa + datos del plan
+ * - GET /api/v1/settings/planes?id=X          → obtiene catálogo visible de planes para el usuario
  * - PUT /api/v1/settings/suscripcion/simular?id=X → simula cambio de plan del usuario
  * - GET /api/v1/settings/version-ia?id=X      → obtiene versión actual del modelo IA (RF_23)
  * - GET /api/v1/settings/modelo-disponible?id=X → obtiene modelos disponibles según plan (RF_23)
@@ -113,7 +114,7 @@ public class SettingsController {
     /**
      * GET /api/v1/settings/suscripcion?id=X
      * Devuelve la suscripción activa del usuario con datos del plan
-     * (Suscripcion JOIN PlanSuscripcion)
+     * (Suscripcion JOIN Plan)
      */
     public static HttpHandler getSuscripcion() {
         return exchange -> {
@@ -148,8 +149,46 @@ public class SettingsController {
     }
 
     /**
+     * GET /api/v1/settings/planes?id=X
+     * Devuelve el catálogo de planes visible para el usuario autenticado junto con
+     * la suscripción actual para que el frontend renderice la comparación completa.
+     */
+    public static HttpHandler getPlanesDisponibles() {
+        return exchange -> {
+            System.out.println("Peticion de tipo: " + exchange.getRequestMethod() + " recibido\n");
+
+            String parametros = exchange.getRequestURI().getQuery();
+
+            if (parametros == null || parametros.isEmpty()) {
+                ApiResponse.error(exchange, 400, "Se requiere el ID del usuario");
+                return;
+            }
+
+            JsonObject idJson = QueryParams.parseId(parametros);
+            int code = idJson.get("status").getAsInt();
+
+            if (code != 200) {
+                ApiResponse.error(exchange, code, idJson.get("Mensaje").getAsString());
+                return;
+            }
+
+            int id = idJson.get("id").getAsInt();
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
+
+            JsonObject response = SettingsService.getPlanesDisponibles(id);
+
+            int statusCode = response.get("status").getAsInt();
+            response.remove("status");
+            ApiResponse.send(exchange, response.toString(), statusCode);
+        };
+    }
+
+    /**
      * PUT /api/v1/settings/suscripcion/simular?id=X
-     * Body esperado: { "plan": "Premium" | "Gratuito" }
+     * Body esperado: { "planId": 3 } o { "plan": "PREMIUM" }
      * Simula el cambio de plan sin pasarela de pago real.
      */
     public static HttpHandler simulateSuscripcion() {
@@ -192,8 +231,13 @@ public class SettingsController {
                 return;
             }
 
-            String plan = json != null && json.has("plan") ? json.get("plan").getAsString() : "";
-            JsonObject response = SettingsService.simulateSuscripcion(plan, id);
+            String plan = json != null && json.has("plan") && !json.get("plan").isJsonNull()
+                    ? json.get("plan").getAsString()
+                    : "";
+            Integer planId = json != null && json.has("planId") && !json.get("planId").isJsonNull()
+                    ? json.get("planId").getAsInt()
+                    : null;
+            JsonObject response = SettingsService.simulateSuscripcion(planId, plan, id);
 
             int statusCode = response.get("status").getAsInt();
             response.remove("status");

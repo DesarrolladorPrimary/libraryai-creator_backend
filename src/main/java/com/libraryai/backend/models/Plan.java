@@ -3,9 +3,9 @@ package com.libraryai.backend.models;
 import java.math.BigDecimal;
 
 /**
- * Representa un plan de suscripción disponible para los usuarios.
+ * Representa un plan disponible dentro del catálogo del sistema.
  */
-public class SubscriptionPlan {
+public class Plan {
     private int plan_id;
     private String nombrePlan;
     private int almacenamientoMaxMB;
@@ -13,9 +13,9 @@ public class SubscriptionPlan {
     private boolean activo;
 
     /**
-     * Construye la proyección completa de una fila de {@code PlanSuscripcion}.
+     * Construye la proyección completa de una fila de {@code Plan}.
      */
-    public SubscriptionPlan(int plan_id, String nombrePlan, int almacenamientoMaxMB,
+    public Plan(int plan_id, String nombrePlan, int almacenamientoMaxMB,
             BigDecimal precio, boolean activo) {
         this.plan_id = plan_id;
         this.nombrePlan = nombrePlan;
