@@ -1,18 +1,19 @@
--- Seed demo completo para LibraryAI_DB
--- Objetivo:
--- dejar la base con usuarios, roles, planes, historial y relatos
--- como si la aplicación ya hubiera sido usada manualmente.
+-- Seed demo determinista para LibraryAI_DB
+-- Uso recomendado:
+-- 1. Ejecuta primero LC_reset_datos_demo.sql si quieres reiniciar IDs desde 1.
+-- 2. Luego ejecuta este seed para cargar datos base de prueba.
 --
--- Qué crea:
--- - roles y planes si no existen
--- - 5 usuarios demo
--- - suscripciones y pagos simulados
+-- Qué deja cargado:
+-- - roles y planes demo
+-- - relación plan/rol para los planes de usuario
+-- - 2 modelos IA (gratuito y premium)
+-- - blacklist base de moderación
+-- - 1 admin demo y 4 usuarios demo
+-- - correos transaccionales demo
+-- - roles, suscripciones y pagos simulados para usuarios finales
 -- - estanterías
--- - relatos artificiales y creativos
--- - versiones de relatos
--- - configuraciones IA
--- - historiales de chat con Poly
--- - actividad adicional para usuarios actuales si ya existen
+-- - relatos, versiones, configuración IA y chats
+-- - un log de moderación y una auditoría de rol para probar vistas admin
 --
 -- Credenciales demo:
 -- - demo.admin@example.com / Demo123!
@@ -20,10 +21,6 @@
 -- - demo.bruno@example.com / Demo123!
 -- - demo.carla@example.com / Demo123!
 -- - demo.diego@example.com / Demo123!
---
--- Nota:
--- este script no crea archivos físicos en uploads ni inserta registros
--- en ArchivoUsuario/Relato_ArchivoFuente.
 
 USE LibraryAI_DB;
 
@@ -46,6 +43,43 @@ WHERE NOT EXISTS (
     SELECT 1 FROM PlanSuscripcion WHERE CodigoPlan = 'PREMIUM'
 );
 
+INSERT INTO ModeloIA (
+    NombreModelo, Version, Descripcion, NotasVersion, FechaLanzamiento, EsGratuito, Estado
+)
+SELECT 'gemini-2.5-flash', '2.5-flash',
+       'Modelo base disponible para todos los usuarios.',
+       'Modelo recomendado para el plan Gratuito.',
+       CURRENT_TIMESTAMP, TRUE, 'Activo'
+WHERE NOT EXISTS (
+    SELECT 1 FROM ModeloIA WHERE LOWER(NombreModelo) = LOWER('gemini-2.5-flash')
+);
+
+INSERT INTO ModeloIA (
+    NombreModelo, Version, Descripcion, NotasVersion, FechaLanzamiento, EsGratuito, Estado
+)
+SELECT 'gemini-2.5-pro', '2.5-pro',
+       'Modelo avanzado habilitado para usuarios Premium.',
+       'Modelo preferente para el plan Premium.',
+       CURRENT_TIMESTAMP, FALSE, 'Activo'
+WHERE NOT EXISTS (
+    SELECT 1 FROM ModeloIA WHERE LOWER(NombreModelo) = LOWER('gemini-2.5-pro')
+);
+
+INSERT IGNORE INTO PalabraProhibida (Palabra)
+VALUES
+    ('pornografia'),
+    ('porno'),
+    ('contenido adulto'),
+    ('xxx'),
+    ('sexo'),
+    ('sexo explicito'),
+    ('erotico'),
+    ('erotica'),
+    ('violacion'),
+    ('incesto'),
+    ('zoofilia'),
+    ('pedofilia');
+
 INSERT INTO Usuario (
     Nombre,
     Correo,
@@ -67,7 +101,7 @@ SELECT
     seed.fecha_registro
 FROM (
     SELECT 'Admin Demo' AS nombre, 'demo.admin@example.com' AS correo,
-           'Responde como administrador demo y resume con claridad.' AS instruccion,
+           NULL AS instruccion,
            NOW() - INTERVAL 30 DAY AS fecha_registro
     UNION ALL
     SELECT 'Ana Demo', 'demo.ana@example.com',
@@ -98,14 +132,12 @@ SET @premium_plan_id = (
 );
 SET @flash_model_id = (
     SELECT PK_ModeloID FROM ModeloIA
-    WHERE Estado = 'Activo' AND EsGratuito = TRUE
-    ORDER BY PK_ModeloID
+    WHERE LOWER(NombreModelo) = LOWER('gemini-2.5-flash')
     LIMIT 1
 );
 SET @pro_model_id = (
     SELECT PK_ModeloID FROM ModeloIA
-    WHERE Estado = 'Activo' AND EsGratuito = FALSE
-    ORDER BY PK_ModeloID
+    WHERE LOWER(NombreModelo) = LOWER('gemini-2.5-pro')
     LIMIT 1
 );
 
@@ -114,14 +146,98 @@ SET @demo_ana_id = (SELECT PK_UsuarioID FROM Usuario WHERE Correo = 'demo.ana@ex
 SET @demo_bruno_id = (SELECT PK_UsuarioID FROM Usuario WHERE Correo = 'demo.bruno@example.com' LIMIT 1);
 SET @demo_carla_id = (SELECT PK_UsuarioID FROM Usuario WHERE Correo = 'demo.carla@example.com' LIMIT 1);
 SET @demo_diego_id = (SELECT PK_UsuarioID FROM Usuario WHERE Correo = 'demo.diego@example.com' LIMIT 1);
-SET @current_admin_id = (SELECT PK_UsuarioID FROM Usuario WHERE Correo = 'keinerf588@gmail.com' LIMIT 1);
-SET @current_demo_id = (SELECT PK_UsuarioID FROM Usuario WHERE Correo = 'demo2@example.com' LIMIT 1);
+
+INSERT INTO Correo (
+    FK_UsuarioID, TipoCorreo, Destinatario, Asunto, Cuerpo, Estado, ErrorDetalle, FechaEnvio
+)
+SELECT
+    data.user_id,
+    data.tipo_correo,
+    data.destinatario,
+    data.asunto,
+    data.cuerpo,
+    data.estado,
+    data.error_detalle,
+    data.fecha_envio
+FROM (
+    SELECT
+        @demo_ana_id AS user_id,
+        'Verificacion' AS tipo_correo,
+        'demo.ana@example.com' AS destinatario,
+        'Verifica tu cuenta en LibraryAI' AS asunto,
+        'Tu cuenta fue verificada correctamente en el entorno demo.' AS cuerpo,
+        'Enviado' AS estado,
+        NULL AS error_detalle,
+        NOW() - INTERVAL 20 DAY AS fecha_envio
+    UNION ALL
+    SELECT
+        @demo_bruno_id,
+        'Recuperacion',
+        'demo.bruno@example.com',
+        'Recupera tu contraseña',
+        'Se generó una solicitud de recuperación en el entorno demo.',
+        'Fallido',
+        'Entrega simulada fallida por sandbox de correo.',
+        NOW() - INTERVAL 14 DAY
+    UNION ALL
+    SELECT
+        @demo_carla_id,
+        'Notificacion',
+        'demo.carla@example.com',
+        'Tu plan Premium fue activado',
+        'La suscripción Premium quedó activa para la cuenta demo.',
+        'Enviado',
+        NULL,
+        NOW() - INTERVAL 11 DAY
+    UNION ALL
+    SELECT
+        @demo_diego_id,
+        'Notificacion',
+        'demo.diego@example.com',
+        'Tu biblioteca recibió una exportación',
+        'Se registró una exportación demo en la biblioteca del usuario.',
+        'Enviado',
+        NULL,
+        NOW() - INTERVAL 7 DAY
+) data
+WHERE data.user_id IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1
+      FROM Correo c
+      WHERE c.FK_UsuarioID = data.user_id
+        AND c.TipoCorreo = data.tipo_correo
+        AND c.Asunto = data.asunto
+  );
+
+INSERT INTO PlanRol (FK_PlanID, FK_RolID)
+SELECT p.PK_PlanID, r.PK_RolID
+FROM PlanSuscripcion p
+JOIN Rol r ON r.NombreRol = 'Gratuito'
+WHERE p.CodigoPlan = 'GRATUITO'
+AND NOT EXISTS (
+    SELECT 1
+    FROM PlanRol pr
+    WHERE pr.FK_PlanID = p.PK_PlanID
+      AND pr.FK_RolID = r.PK_RolID
+);
+
+INSERT INTO PlanRol (FK_PlanID, FK_RolID)
+SELECT p.PK_PlanID, r.PK_RolID
+FROM PlanSuscripcion p
+JOIN Rol r ON r.NombreRol = 'Premium'
+WHERE p.CodigoPlan = 'PREMIUM'
+AND NOT EXISTS (
+    SELECT 1
+    FROM PlanRol pr
+    WHERE pr.FK_PlanID = p.PK_PlanID
+      AND pr.FK_RolID = r.PK_RolID
+);
 
 INSERT INTO UsuarioRol (FK_UsuarioID, FK_RolID)
 SELECT u.PK_UsuarioID, r.PK_RolID
 FROM Usuario u
 JOIN Rol r ON r.NombreRol = 'Admin'
-WHERE u.Correo IN ('demo.admin@example.com')
+WHERE u.Correo = 'demo.admin@example.com'
 AND NOT EXISTS (
     SELECT 1 FROM UsuarioRol ur
     WHERE ur.FK_UsuarioID = u.PK_UsuarioID
@@ -155,19 +271,13 @@ INSERT INTO Suscripcion (
 )
 SELECT user_id, plan_id, fecha_inicio, NULL, 'Activa', renovacion
 FROM (
-    SELECT @demo_admin_id AS user_id, @premium_plan_id AS plan_id, NOW() - INTERVAL 30 DAY AS fecha_inicio, TRUE AS renovacion
-    UNION ALL
-    SELECT @demo_ana_id, @free_plan_id, NOW() - INTERVAL 20 DAY, FALSE
+    SELECT @demo_ana_id AS user_id, @free_plan_id AS plan_id, NOW() - INTERVAL 20 DAY AS fecha_inicio, FALSE AS renovacion
     UNION ALL
     SELECT @demo_bruno_id, @free_plan_id, NOW() - INTERVAL 18 DAY, FALSE
     UNION ALL
     SELECT @demo_carla_id, @premium_plan_id, NOW() - INTERVAL 12 DAY, TRUE
     UNION ALL
     SELECT @demo_diego_id, @premium_plan_id, NOW() - INTERVAL 10 DAY, TRUE
-    UNION ALL
-    SELECT @current_admin_id, @premium_plan_id, NOW() - INTERVAL 45 DAY, TRUE
-    UNION ALL
-    SELECT @current_demo_id, @free_plan_id, NOW() - INTERVAL 20 DAY, FALSE
 ) seed
 WHERE user_id IS NOT NULL
   AND plan_id IS NOT NULL
@@ -182,13 +292,9 @@ INSERT INTO Pago (
 )
 SELECT s.PK_SuscripcionID, 'Simulada', 'Completado', ref.referencia, 9.99, ref.fecha_pago
 FROM (
-    SELECT 'demo.admin@example.com' AS correo, 'DEMO-ADMIN-001' AS referencia, NOW() - INTERVAL 29 DAY AS fecha_pago
-    UNION ALL
-    SELECT 'demo.carla@example.com', 'DEMO-CARLA-001', NOW() - INTERVAL 11 DAY
+    SELECT 'demo.carla@example.com' AS correo, 'DEMO-CARLA-001' AS referencia, NOW() - INTERVAL 11 DAY AS fecha_pago
     UNION ALL
     SELECT 'demo.diego@example.com', 'DEMO-DIEGO-001', NOW() - INTERVAL 9 DAY
-    UNION ALL
-    SELECT 'keinerf588@gmail.com', 'HIST-KEYNER-001', NOW() - INTERVAL 44 DAY
 ) ref
 JOIN Usuario u ON u.Correo = ref.correo
 JOIN Suscripcion s ON s.FK_UsuarioID = u.PK_UsuarioID AND s.Estado = 'Activa'
@@ -210,14 +316,6 @@ FROM (
     SELECT @demo_carla_id, 'Publicados'
     UNION ALL
     SELECT @demo_diego_id, 'Sci-Fi'
-    UNION ALL
-    SELECT @current_demo_id, 'Borradores personales'
-    UNION ALL
-    SELECT @current_demo_id, 'Ciencia ficción'
-    UNION ALL
-    SELECT @current_admin_id, 'Beta interna'
-    UNION ALL
-    SELECT @current_admin_id, 'Historias revisadas'
 ) seed
 WHERE seed.user_id IS NOT NULL
   AND NOT EXISTS (
@@ -266,30 +364,15 @@ FROM (
            'Una archivista investiga ciudades hundidas que reaparecen durante unas pocas horas al año.',
            NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 9 DAY
     UNION ALL
+    SELECT @demo_carla_id, 'Publicados', @pro_model_id,
+           'Bitácora del tren nocturno', 'Seccion_Artificial',
+           'Un convoy cruza un país dormido mientras su tripulación descubre estaciones borradas de todos los mapas.',
+           NOW() - INTERVAL 9 DAY, NOW() - INTERVAL 8 DAY
+    UNION ALL
     SELECT @demo_diego_id, 'Sci-Fi', @pro_model_id,
            'Niebla sobre Europa IX', 'Seccion_Artificial',
            'Una estación minera detecta señales imposibles bajo el hielo de Europa IX.',
            NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 7 DAY
-    UNION ALL
-    SELECT @current_demo_id, 'Borradores personales', NULL,
-           'La casa que encendía la lluvia', 'Seccion_Creativa',
-           'Una restauradora hereda una casa donde cada tormenta activa recuerdos ajenos atrapados en las paredes.',
-           NOW() - INTERVAL 19 DAY, NOW() - INTERVAL 18 DAY
-    UNION ALL
-    SELECT @current_demo_id, 'Ciencia ficción', @flash_model_id,
-           'La órbita de cristal', 'Seccion_Artificial',
-           'Una nave de prospección detecta una estructura transparente orbitando un planeta sin nombre.',
-           NOW() - INTERVAL 11 DAY, NOW() - INTERVAL 10 DAY
-    UNION ALL
-    SELECT @current_admin_id, 'Historias revisadas', @pro_model_id,
-           'Archivo de mareas sumergidas', 'Seccion_Artificial',
-           'Un archivista encuentra mapas oceánicos que señalan ciudades borradas de la historia oficial.',
-           NOW() - INTERVAL 9 DAY, NOW() - INTERVAL 8 DAY
-    UNION ALL
-    SELECT @current_admin_id, 'Beta interna', NULL,
-           'Notas del quinto ascensor', 'Seccion_Creativa',
-           'Borrador de thriller urbano sobre un ascensor que abre a pisos inexistentes cuando alguien miente dentro de él.',
-           NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 6 DAY
 ) data
 WHERE data.user_id IS NOT NULL
   AND NOT EXISTS (
@@ -306,11 +389,8 @@ WHERE r.Titulo IN (
     'Cuaderno del bosque gris',
     'La brújula sin norte',
     'Atlas de ciudades sumergidas',
-    'Niebla sobre Europa IX',
-    'La casa que encendía la lluvia',
-    'La órbita de cristal',
-    'Archivo de mareas sumergidas',
-    'Notas del quinto ascensor'
+    'Bitácora del tren nocturno',
+    'Niebla sobre Europa IX'
 )
 AND NOT EXISTS (
     SELECT 1 FROM RelatoVersion rv
@@ -322,12 +402,12 @@ INSERT INTO RelatoVersion (FK_RelatoID, NumeroVersion, Contenido, Notas, EsPubli
 SELECT
     r.PK_RelatoID,
     2,
-    CONCAT(r.Descripcion, '\n\nLa protagonista sospecha que la casa no guarda fantasmas, sino decisiones que nunca tomó.'),
-    'Ajuste manual del segundo día',
+    CONCAT(r.Descripcion, '\n\nLa protagonista descubre una pista adicional que complica la investigación.'),
+    'Segunda versión de demo',
     FALSE,
-    NOW() - INTERVAL 17 DAY
+    NOW() - INTERVAL 7 DAY
 FROM Relato r
-WHERE r.Titulo = 'La casa que encendía la lluvia'
+WHERE r.Titulo IN ('El faro de sal', 'Atlas de ciudades sumergidas')
 AND NOT EXISTS (
     SELECT 1 FROM RelatoVersion rv
     WHERE rv.FK_RelatoID = r.PK_RelatoID
@@ -349,17 +429,7 @@ INSERT INTO ConfiguracionIA (
 )
 SELECT r.PK_RelatoID, 'Descriptivo', 'Alto', 'Larga', 'Tenso'
 FROM Relato r
-WHERE r.Titulo IN ('La órbita de cristal', 'Atlas de ciudades sumergidas')
-AND NOT EXISTS (
-    SELECT 1 FROM ConfiguracionIA c WHERE c.FK_RelatoID = r.PK_RelatoID
-);
-
-INSERT INTO ConfiguracionIA (
-    FK_RelatoID, EstiloEscritura, NivelCreatividad, LongitudRespuesta, TonoEmocional
-)
-SELECT r.PK_RelatoID, 'Narrativo', 'Alto', 'Larga', 'Melancólico'
-FROM Relato r
-WHERE r.Titulo = 'Archivo de mareas sumergidas'
+WHERE r.Titulo IN ('Niebla sobre Europa IX', 'Atlas de ciudades sumergidas')
 AND NOT EXISTS (
     SELECT 1 FROM ConfiguracionIA c WHERE c.FK_RelatoID = r.PK_RelatoID
 );
@@ -398,22 +468,6 @@ FROM (
     SELECT 'Niebla sobre Europa IX', 'Poly',
            'Los sensores marcaron un latido térmico imposible a tres kilómetros bajo la capa azul del glaciar.',
            2, NOW() - INTERVAL 8 DAY + INTERVAL 6 MINUTE
-    UNION ALL
-    SELECT 'La órbita de cristal', 'Usuario',
-           'Necesito una apertura con mucha imagen visual y algo imposible en el radar.',
-           1, NOW() - INTERVAL 11 DAY
-    UNION ALL
-    SELECT 'La órbita de cristal', 'Poly',
-           'La esfera reflejaba las estrellas con un retraso de varios segundos, como si las recordara en lugar de mirarlas.',
-           2, NOW() - INTERVAL 11 DAY + INTERVAL 5 MINUTE
-    UNION ALL
-    SELECT 'Archivo de mareas sumergidas', 'Usuario',
-           'Quiero un tono elegante, casi de archivo histórico, pero con un misterio oceánico.',
-           1, NOW() - INTERVAL 9 DAY
-    UNION ALL
-    SELECT 'Archivo de mareas sumergidas', 'Poly',
-           'Los mapas no describían costas: describían ausencias, ciudades retiradas con violencia del recuerdo humano.',
-           2, NOW() - INTERVAL 9 DAY + INTERVAL 6 MINUTE
 ) seed
 JOIN Relato r ON r.Titulo = seed.titulo
 WHERE NOT EXISTS (
@@ -421,5 +475,59 @@ WHERE NOT EXISTS (
     WHERE m.FK_RelatoID = r.PK_RelatoID
       AND m.Orden = seed.orden
 );
+
+INSERT INTO LogModeracion (FK_UsuarioID, FK_PalabraID, Motivo, ContenidoBloqueadoHash, Fecha)
+SELECT @demo_bruno_id,
+       (SELECT PK_PalabraID FROM PalabraProhibida WHERE Palabra = 'contenido adulto' LIMIT 1),
+       'Mensaje bloqueado por contenido no permitido',
+       SHA2('contenido adulto de prueba', 256),
+       NOW() - INTERVAL 6 DAY
+WHERE @demo_bruno_id IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1
+      FROM LogModeracion lm
+      WHERE lm.FK_UsuarioID = @demo_bruno_id
+        AND lm.Motivo = 'Mensaje bloqueado por contenido no permitido'
+  );
+
+UPDATE LogModeracion lm
+JOIN Usuario u ON u.PK_UsuarioID = lm.FK_UsuarioID
+LEFT JOIN PalabraProhibida pp ON pp.PK_PalabraID = lm.FK_PalabraID
+SET lm.FK_PalabraID = (
+        SELECT p.PK_PalabraID
+        FROM PalabraProhibida p
+        WHERE p.Palabra = 'contenido adulto'
+        LIMIT 1
+    )
+WHERE u.Correo = 'demo.bruno@example.com'
+  AND lm.Motivo = 'Mensaje bloqueado por contenido no permitido'
+  AND pp.PK_PalabraID IS NULL;
+
+INSERT INTO AuditoriaRolUsuario (
+    FK_UsuarioAfectadoID,
+    FK_AdminID,
+    FK_RolAnteriorID,
+    FK_RolNuevoID,
+    RolAnterior,
+    RolNuevo,
+    FechaCambio
+)
+SELECT
+    @demo_carla_id,
+    @demo_admin_id,
+    (SELECT PK_RolID FROM Rol WHERE NombreRol = 'Gratuito' LIMIT 1),
+    (SELECT PK_RolID FROM Rol WHERE NombreRol = 'Premium' LIMIT 1),
+    'Gratuito',
+    'Premium',
+    NOW() - INTERVAL 11 DAY
+WHERE @demo_carla_id IS NOT NULL
+  AND @demo_admin_id IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1
+      FROM AuditoriaRolUsuario aru
+      WHERE aru.FK_UsuarioAfectadoID = @demo_carla_id
+        AND aru.FK_AdminID = @demo_admin_id
+        AND aru.RolNuevo = 'Premium'
+  );
 
 COMMIT;

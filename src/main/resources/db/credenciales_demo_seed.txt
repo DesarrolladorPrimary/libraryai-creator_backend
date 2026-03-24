@@ -18,6 +18,7 @@ demo.diego@example.com
 Demo123!
 
 Notas:
+- Si quieres IDs reiniciados desde 1, ejecuta primero LC_reset_datos_demo.sql.
 - Estas credenciales corresponden al seed demo oficial.
 - El hash usado por el seed ya está preparado para esa contraseña.
-- Si vuelves a cargar el seed, las cuentas se conservan por correo.
+- El seed demo ya no depende de usuarios preexistentes del entorno.
