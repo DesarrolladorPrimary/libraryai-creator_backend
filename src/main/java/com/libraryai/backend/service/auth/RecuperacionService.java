@@ -8,8 +8,9 @@ import org.mindrot.jbcrypt.BCrypt;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.dao.auth.RecuperacionDao;
 import com.libraryai.backend.dao.auth.LoginDao;
-import com.libraryai.backend.service.EmailService;
-import com.libraryai.backend.service.UserService;
+import com.libraryai.backend.dao.user.UserDao;
+import com.libraryai.backend.service.email.EmailService;
+import com.libraryai.backend.service.user.UserService;
 
 /**
  * Servicio de recuperación de contraseña.
@@ -143,7 +144,7 @@ public class RecuperacionService {
         int tokenId = validacion.get("tokenId").getAsInt();
         
         // Actualizar el campo CorreoVerificado en Usuario
-        boolean actualizado = com.libraryai.backend.dao.UserDao.verificarCorreo(usuarioId);
+        boolean actualizado = UserDao.verificarCorreo(usuarioId);
         
         if (actualizado) {
             // Marcar token como usado

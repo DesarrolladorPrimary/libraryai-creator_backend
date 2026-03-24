@@ -1,7 +1,7 @@
 package com.libraryai.backend;
 
 import com.libraryai.backend.config.AIConfig;
-import com.libraryai.backend.dao.SettingsDao;
+import com.libraryai.backend.dao.settings.SettingsDao;
 import com.libraryai.backend.seeders.SeedAIModels;
 import com.libraryai.backend.seeders.SeedForbiddenWords;
 import com.libraryai.backend.seeders.SeedRoles;

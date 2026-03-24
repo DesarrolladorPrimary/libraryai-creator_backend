@@ -6,20 +6,25 @@ import com.google.gson.JsonObject;
 import com.libraryai.backend.config.DatabaseConnection;
 
 /**
- * DAO para crear, listar, actualizar y eliminar estanterías del usuario.
+ * DAO para crear, listar, actualizar y eliminar estanterías globales.
  */
 public class ShelfDao {
 
-        private static final String DUPLICATE_SHELF_MESSAGE = "Ya tienes una estantería con ese nombre";
+        private static final String DUPLICATE_SHELF_MESSAGE = "Ya existe una estantería con ese nombre";
 
         // language=sql
         private static String SQL_INSERT = """
-                        INSERT INTO Estanteria(FK_UsuarioID, NombreCategoria) VALUES(?,?);
+                        INSERT INTO Estanteria(NombreCategoria) VALUES(?);
                         """;
 
         // language=sql
         private static String SQL_SELECT = """
-                        SELECT * FROM Estanteria WHERE FK_UsuarioID = ?;
+                        SELECT * FROM Estanteria ORDER BY NombreCategoria, PK_EstanteriaID;
+                        """;
+
+        // language=sql
+        private static String SQL_EXISTS = """
+                        SELECT 1 FROM Estanteria WHERE PK_EstanteriaID = ?;
                         """;
 
         // language=sql
@@ -46,15 +51,14 @@ public class ShelfDao {
                         """;
 
         /**
-         * Crea una estantería nueva para el usuario autenticado.
+         * Crea una estantería global.
          */
-        public static JsonObject createShelf(int idUser, String nombreEstanteria) {
+        public static JsonObject createShelf(String nombreEstanteria) {
                 JsonObject responseJson = new JsonObject();
                 try (
                                 Connection conn = DatabaseConnection.getConnection();
                                 PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT, Statement.RETURN_GENERATED_KEYS);) {
-                        pstmt.setInt(1, idUser);
-                        pstmt.setString(2, nombreEstanteria);
+                        pstmt.setString(1, nombreEstanteria);
 
                         int filasAfect = pstmt.executeUpdate();
 
@@ -84,15 +88,14 @@ public class ShelfDao {
         }
 
         /**
-         * Lista todas las estanterías registradas para un usuario.
+         * Lista todas las estanterías globales registradas.
          */
-        public static JsonArray getShelvesByUserId(int idUser) {
+        public static JsonArray getAllShelves() {
                 JsonArray estanteriasArray = new JsonArray();
                 
                 try (Connection conn = DatabaseConnection.getConnection();
                      PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT)) {
                     
-                    pstmt.setInt(1, idUser);
                     ResultSet rs = pstmt.executeQuery();
                     
                     while (rs.next()) {
@@ -111,6 +114,20 @@ public class ShelfDao {
                 
                 return estanteriasArray;
 
+        }
+
+        /**
+         * Comprueba si una estantería existe por su identificador.
+         */
+        public static boolean existsById(int shelfId) {
+                try (Connection conn = DatabaseConnection.getConnection();
+                     PreparedStatement pstmt = conn.prepareStatement(SQL_EXISTS)) {
+                        pstmt.setInt(1, shelfId);
+                        ResultSet rs = pstmt.executeQuery();
+                        return rs.next();
+                } catch (SQLException e) {
+                        return false;
+                }
         }
 
 

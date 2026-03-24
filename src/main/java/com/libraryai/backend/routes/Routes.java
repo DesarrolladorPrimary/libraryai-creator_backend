@@ -1,16 +1,16 @@
 package com.libraryai.backend.routes;
 
 // Importamos los controladores
-import com.libraryai.backend.controller.UserController;
-import com.libraryai.backend.controller.AdminController;
-import com.libraryai.backend.controller.LibraryController;
-import com.libraryai.backend.controller.SettingsController;
+import com.libraryai.backend.controller.user.UserController;
+import com.libraryai.backend.controller.admin.AdminController;
+import com.libraryai.backend.controller.library.LibraryController;
+import com.libraryai.backend.controller.settings.SettingsController;
 import com.libraryai.backend.controller.ai.AiController;
 import com.libraryai.backend.controller.auth.LoginController;
 import com.libraryai.backend.controller.auth.RecuperacionController;
-import com.libraryai.backend.controller.UploadController;
-import com.libraryai.backend.controller.ShelfController;
-import com.libraryai.backend.controller.StoryController;
+import com.libraryai.backend.controller.upload.UploadController;
+import com.libraryai.backend.controller.shelf.ShelfController;
+import com.libraryai.backend.controller.story.StoryController;
 import com.libraryai.backend.controller.chats.ChatController;
 import com.libraryai.backend.middleware.AuthMiddleware;
 // Importamos nuestro Router personalizado
@@ -77,6 +77,15 @@ public class Routes {
 
         router.get("/api/v1/admin/plans",
                 auth.proteger(AdminController.getPlans(), "Admin"));
+
+        router.post("/api/v1/admin/plans",
+                auth.proteger(AdminController.createPlan(), "Admin"));
+
+        router.put("/api/v1/admin/plans",
+                auth.proteger(AdminController.updatePlan(), "Admin"));
+
+        router.put("/api/v1/admin/users/subscription",
+                auth.proteger(AdminController.updateUserSubscription(), "Admin"));
 
         router.get("/api/v1/admin/payments",
                 auth.proteger(AdminController.getPayments(), "Admin"));

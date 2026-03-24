@@ -10,4 +10,5 @@ tmp-genai-src/
 .settings/
 .project
 *.classpath
+*.class
 uploads/

@@ -1,0 +1,471 @@
+package com.libraryai.backend.controller.user;
+
+// URI para manejar rutas dinámicas con parámetros
+import java.net.URI;
+// Gson es la librería de Google para manejar JSON
+import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
+// JsonArray para listas de objetos JSON (ej: lista de usuarios)
+import com.google.gson.JsonArray;
+// JsonObject para objetos JSON individuales
+import com.google.gson.JsonObject;
+// DAO (Data Access Object) para operaciones con la base de datos
+import com.libraryai.backend.dao.user.UserDao;
+import com.libraryai.backend.server.http.ApiRequest;
+import com.libraryai.backend.server.http.ApiResponse;
+// Servicio para lógica de negocio de usuarios
+import com.libraryai.backend.service.user.UserService;
+import com.libraryai.backend.util.JwtUtil;
+import com.libraryai.backend.util.QueryParams;
+// HttpHandler es la interfaz que retornamos para el Router
+import com.sun.net.httpserver.HttpHandler;
+
+/**
+ * USERCONTROLLER - Controlador de la entidad Usuario
+ *
+ * Este controlador maneja todas las operaciones HTTP relacionadas con usuarios:
+ * - GET: Listar usuarios, obtener usuario por ID
+ * - POST: Crear nuevo usuario
+ * - DELETE: Eliminar usuario
+ *
+ * Cada método público retorna un HttpHandler que el Router usa para procesar
+ * peticiones.
+ *
+ * PATRÓN USADO: Cada método retorna un lambda (exchange -> { ... })
+ * Este lambda es el código que se ejecuta cuando llega una petición a esa ruta.
+ */
+public class UserController {
+
+    /**
+     * HANDLER: Obtener usuario por ID
+     *
+     * Ruta: GET /api/v1/usuarios/id?id=X
+     * Ejemplo: GET /api/v1/usuarios/id?id=5
+     *
+     * @return HttpHandler que busca un usuario por su ID y retorna sus datos
+     */
+    public static HttpHandler getUserById() {
+
+        // Retornamos un lambda que procesa la petición
+        return exchange -> {
+            // Objeto para construir la respuesta JSON
+            JsonObject response = new JsonObject();
+
+            // Log en consola del servidor
+            System.out.println("Peticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
+
+            // Obtenemos los parámetros de la URL (lo que viene después del ?)
+            // Ejemplo: "id=5" de "/api/v1/usuarios/id?id=5"
+            String parametrosId = exchange.getRequestURI().getQuery();
+
+            if (parametrosId == null || parametrosId.isEmpty()) {
+                ApiResponse.error(exchange, 404, "no existe el id");
+                return;
+            }
+
+            JsonObject idJson = QueryParams.parseId(parametrosId);
+
+            int id = 0;
+
+            int code = idJson.get("status").getAsInt();
+
+            if (code != 200) {
+                String mensaje = idJson.get("Mensaje").getAsString();
+                ApiResponse.error(exchange, code, mensaje );
+                return;
+            }
+
+            idJson.remove("status");
+            id = idJson.get("id").getAsInt();
+
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
+            // Llamamos al DAO para buscar el usuario en la base de datos
+            response = UserDao.findById(id);
+
+            // Código HTTP por defecto: 200 OK
+            int statusCode = 200;
+
+            // Si el DAO devuelve un status específico (ej: 404 si no existe), lo usamos
+            if (response.has("status")) {
+                statusCode = response.get("status").getAsInt();
+                // Removemos el status del JSON para no mostrarlo al cliente
+                response.remove("status");
+            }
+
+            response.remove("contraseña");
+
+            String responsString = response.toString();
+            ApiResponse.send(exchange, responsString, statusCode);
+        };
+    }
+
+    /**
+     * HANDLER: Listar todos los usuarios
+     *
+     * Ruta: GET /api/v1/usuarios
+     *
+     * @return HttpHandler que obtiene la lista completa de usuarios de la BD
+     */
+    public static HttpHandler listUsers() {
+        return exchange -> {
+            // Imprime en consola el método HTTP recibido para logging
+            System.out.println("Peticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
+
+            // Llama al DAO para obtener todos los usuarios de la base de datos
+            // Retorna un JsonArray con la lista de objetos JSON de usuarios
+            JsonArray response = UserDao.findAll();
+
+            // Código HTTP por defecto: 200 OK (éxito)
+            int statusCode = 200;
+
+            // Verifica si la respuesta contiene elementos
+            if (response.size() > 0) {
+                // Obtiene el primer elemento para verificar si es un mensaje de error
+                JsonObject primObject = response.get(0).getAsJsonObject();
+
+                // Si el primer objeto tiene "status", indica que es un mensaje de error
+                if (primObject.has("status")) {
+                    // Extrae el código de estado del mensaje de error
+                    statusCode = primObject.get("status").getAsInt();
+                }
+            }
+
+            // Convierte el JsonArray a String para enviar como respuesta JSON
+            String responseJson = response.toString();
+
+            // Envía la respuesta al cliente con el código HTTP determinado
+            ApiResponse.send(exchange, responseJson, statusCode);
+
+        };
+
+    }
+
+    /**
+     * HANDLER: Crear nuevo usuario
+     *
+     * Ruta: POST /api/v1/usuarios
+     * Body esperado: { "nombre": "...", "correo": "...", "contraseña": ... }
+     *
+     * @return HttpHandler que crea un nuevo usuario con los datos del body
+     */
+    public static HttpHandler createUser() {
+
+        return exchange -> {
+            // Objeto para construir respuestas
+            JsonObject response = new JsonObject();
+            ApiRequest request = new ApiRequest(exchange);
+
+            System.out.println("Peticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
+
+            
+
+            String body = request.readBody();
+
+            // Si el body está vacío, respondemos error 400 Bad Request
+            if (body.isEmpty()) {
+
+                ApiResponse.error(exchange, 400, "Los datos están vacíos");
+                return; // Importante: salimos del handler aquí
+            }
+
+            // ========== PARSEO DEL JSON ==========
+
+            // Gson convierte String JSON a objetos Java
+            Gson gson = new Gson();
+
+            JsonObject json;
+            try {
+                // Parseamos el body a un JsonObject
+                json = gson.fromJson(body, JsonObject.class);
+            } catch (JsonParseException | IllegalStateException e) {
+                ApiResponse.error(exchange, 400, "El cuerpo JSON es inválido");
+                return;
+            }
+
+            if (!hasNonBlankString(json, "nombre")
+                    || !hasNonBlankString(json, "correo")
+                    || !hasNonBlankString(json, "contraseña")) {
+                ApiResponse.error(exchange, 400, "Debes enviar nombre, correo y contraseña");
+                return;
+            }
+
+            // Extraemos cada campo del JSON recibido
+            String nombre = json.get("nombre").getAsString().trim();
+            String correo = json.get("correo").getAsString().trim();
+            String contraseña = json.get("contraseña").getAsString();
+
+            System.out.println("Intento de registro recibido para el correo: " + correo);
+
+            // ========== LÓGICA DE NEGOCIO ==========
+
+            // Llamamos al servicio para validar y guardar el usuario
+            response = UserService.validateUserData(nombre, correo, contraseña);
+
+            // Código HTTP por defecto: 201 Created (recurso creado)
+            int statusCode = 201;
+
+            // Si el servicio devuelve un status específico, lo usamos
+            if (response.has("status")) {
+                statusCode = response.get("status").getAsInt();
+                response.remove("status");
+            }
+
+            // ========== ENVÍO DE RESPUESTA ==========
+
+            String responseJson = response.toString();
+            ApiResponse.send(exchange, responseJson, statusCode);
+        };
+    }
+
+    /**
+     * Handler para actualizar un usuario por id.
+     * Lee id desde query y campos opcionales desde el body.
+     */
+    public static HttpHandler updateUser() {
+        return exchange -> {
+            System.out.println("\n\nPeticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
+
+            ApiRequest request = new ApiRequest(exchange);
+
+            // Lee el body con los campos a actualizar.
+            String body = request.readBody();
+
+            if (body.isEmpty()) {
+                ApiResponse.error(exchange, 400, "No hay cuerpo en la peticion");
+                return;
+            }
+
+            // Obtiene el id desde la query.
+            URI path = exchange.getRequestURI();
+            String parametroId = path.getQuery();
+
+            if (parametroId == null || parametroId.isEmpty()) {
+                ApiResponse.error(exchange, 404, "No existe el ID");
+                return;
+            }
+
+            // Valida y parsea el id.
+            JsonObject idJson = QueryParams.parseId(parametroId);
+
+            int id = 0;
+
+            int codeQuery = idJson.get("status").getAsInt();
+
+            if (codeQuery != 200) {
+                String mensaje = idJson.get("Mensaje").getAsString();
+                ApiResponse.error(exchange, codeQuery, mensaje );
+                return;
+            }
+
+            idJson.remove("status");
+            id = idJson.get("id").getAsInt();
+
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
+
+
+            // Parseo del JSON con los campos a actualizar.
+            Gson gson = new Gson();
+            JsonObject json = gson.fromJson(body, JsonObject.class);
+
+            String nombre = "";
+            String correo = "";
+            String contraseña = "";
+
+            
+            if (json.has("nombre")) {
+                nombre = json.get("nombre").getAsString();
+            }
+            
+            if (json.has("correo")) {
+                correo = json.get("correo").getAsString();
+            }
+            
+            if (json.has("contraseña")) {
+                contraseña = json.get("contraseña").getAsString();
+            }
+            
+            JsonObject response = UserService.validateUpdateData(nombre, correo, contraseña, id);
+
+            int code = response.get("status").getAsInt();
+
+            response.remove("status");
+
+            String responseJson = response.toString();
+            ApiResponse.send(exchange, responseJson, code);
+
+        };
+    }
+
+    /**
+     * Handler para actualizar un solo campo del usuario.
+     * Ruta: PUT /api/v1/usuarios/campo?id=X
+     * Body esperado: { "campo": "nombre", "valor": "Juan" }
+     */
+    public static HttpHandler updateCampo() {
+        return exchange -> {
+            System.out.println("\n\nPeticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
+
+            ApiRequest request = new ApiRequest(exchange);
+            String body = request.readBody();
+
+            if (body.isEmpty()) {
+                ApiResponse.error(exchange, 400, "No hay cuerpo en la peticion");
+                return;
+            }
+
+            // Obtiene el id desde la query.
+            URI path = exchange.getRequestURI();
+            String parametroId = path.getQuery();
+
+            if (parametroId == null || parametroId.isEmpty()) {
+                ApiResponse.error(exchange, 404, "No existe el ID");
+                return;
+            }
+
+            // Valida y parsea el id.
+            JsonObject idJson = QueryParams.parseId(parametroId);
+            int codeQuery = idJson.get("status").getAsInt();
+
+            if (codeQuery != 200) {
+                String mensaje = idJson.get("Mensaje").getAsString();
+                ApiResponse.error(exchange, codeQuery, mensaje);
+                return;
+            }
+
+            int id = idJson.get("id").getAsInt();
+
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
+
+            // Parsea el JSON con campo y valor.
+            Gson gson = new Gson();
+            JsonObject json = gson.fromJson(body, JsonObject.class);
+
+            String campo = "";
+            String valor = "";
+
+            if (json.has("campo")) {
+                campo = json.get("campo").getAsString();
+            }
+            if (json.has("valor")) {
+                valor = json.get("valor").getAsString();
+            }
+
+            if (campo.isEmpty() || valor.isEmpty()) {
+                ApiResponse.error(exchange, 400, "Debe enviar campo y valor");
+                return;
+            }
+
+            JsonObject response = UserService.updateCampo(campo, valor, id);
+
+            int code = response.get("status").getAsInt();
+            response.remove("status");
+
+            String responseJson = response.toString();
+            ApiResponse.send(exchange, responseJson, code);
+        };
+    }
+
+    /**
+     * HANDLER: Eliminar usuario por ID
+     *
+     * Ruta: DELETE /api/v1/usuarios?id=X
+     * Ejemplo: DELETE /api/v1/usuarios?id=5
+     *
+     * @return HttpHandler que elimina un usuario de la base de datos
+     */
+    public static HttpHandler deleteUser() {
+
+        return exchange -> {
+            System.out.println("\n\nPeticion de tipo: " + exchange.getRequestMethod() + " recibido del cliente\n");
+
+            // Obtenemos la URI completa de la petición
+            URI rutaDinamica = exchange.getRequestURI();
+
+            // Convertimos la URI a String para procesarla
+            String rutaParametros = rutaDinamica.toString();
+            System.out.println("Ruta recibida:" + rutaParametros);
+
+            String parametrosId = rutaDinamica.getQuery();
+
+            if (parametrosId == null || parametrosId.isEmpty()) {
+                ApiResponse.error(exchange, 404, "No existe el ID");
+                return;
+            }
+
+
+            JsonObject idJson = QueryParams.parseId(parametrosId);
+
+            int id = 0;
+
+            int code = idJson.get("status").getAsInt();
+
+            if (code != 200) {
+                String mensaje = idJson.get("Mensaje").getAsString();
+                ApiResponse.error(exchange, code, mensaje );
+                return;
+            }
+
+            idJson.remove("status");
+            id = idJson.get("id").getAsInt();
+
+            if (!hasUserAccess(exchange.getRequestHeaders().getFirst("Authorization"), id)) {
+                ApiResponse.error(exchange, 403, "No tiene permiso para esta accion");
+                return;
+            }
+
+            // ========== ELIMINACIÓN EN BD ==========
+
+            // Llamamos al DAO para eliminar el usuario
+            JsonObject responseJson = UserDao.deleteById(id);
+
+            // Código HTTP por defecto: 200 OK
+            int statusCode = 200;
+
+            // Si el DAO devuelve un status específico, lo usamos
+            if (responseJson.has("status")) {
+                statusCode = responseJson.get("status").getAsInt();
+                responseJson.remove("status");
+            }
+
+            // ========== ENVÍO DE RESPUESTA ==========
+
+            String responseString = responseJson.toString();
+            ApiResponse.send(exchange, responseString, statusCode);
+        };
+    }
+
+    private static boolean hasUserAccess(String authorizationHeader, int requestedUserId) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return false;
+        }
+
+        String token = authorizationHeader.substring("Bearer ".length()).trim();
+        JsonObject tokenInfo = JwtUtil.validateToken(token);
+
+        if (tokenInfo.has("Mensaje")) {
+            return false;
+        }
+
+        int tokenUserId = tokenInfo.get("Id").getAsInt();
+        String role = tokenInfo.get("Rol").getAsString();
+
+        return tokenUserId == requestedUserId || role.equalsIgnoreCase("Admin");
+    }
+
+    private static boolean hasNonBlankString(JsonObject json, String key) {
+        return json != null
+                && json.has(key)
+                && !json.get(key).isJsonNull()
+                && !json.get(key).getAsString().isBlank();
+    }
+
+}

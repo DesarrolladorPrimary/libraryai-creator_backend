@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.server.http.ApiRequest;
 import com.libraryai.backend.server.http.ApiResponse;
-import com.libraryai.backend.service.ChatService;
+import com.libraryai.backend.service.chat.ChatService;
 import com.libraryai.backend.util.JwtUtil;
 import com.sun.net.httpserver.HttpHandler;
 
