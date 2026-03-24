@@ -64,6 +64,8 @@ SELECT
     NombrePlan,
     AlmacenamientoMaxMB,
     Precio,
+    ColorHex,
+    FK_ModeloPreferidoID,
     Activo
 FROM PlanSuscripcion
 ORDER BY PK_PlanID;

@@ -58,9 +58,14 @@ CREATE TABLE PlanSuscripcion (
     NombrePlan VARCHAR(100) NOT NULL UNIQUE,
     AlmacenamientoMaxMB BIGINT,
     Precio DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    ColorHex VARCHAR(7),
+    FK_ModeloPreferidoID INT NULL,
     Activo BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT CHK_PlanSuscripcion_Precio CHECK (Precio >= 0),
-    CONSTRAINT CHK_PlanSuscripcion_Almacenamiento CHECK (AlmacenamientoMaxMB IS NULL OR AlmacenamientoMaxMB >= 0)
+    CONSTRAINT CHK_PlanSuscripcion_Almacenamiento CHECK (AlmacenamientoMaxMB IS NULL OR AlmacenamientoMaxMB >= 0),
+    CONSTRAINT CHK_PlanSuscripcion_ColorHex CHECK (ColorHex IS NULL OR ColorHex REGEXP '^#[0-9A-Fa-f]{6}$'),
+    CONSTRAINT FK_PlanSuscripcion_ModeloPreferido
+        FOREIGN KEY (FK_ModeloPreferidoID) REFERENCES ModeloIA(PK_ModeloID) ON DELETE SET NULL
 );
 
 CREATE TABLE TokenAcceso (

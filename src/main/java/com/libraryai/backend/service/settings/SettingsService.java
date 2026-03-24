@@ -119,7 +119,7 @@ public class SettingsService {
             return subscription;
         }
 
-        return SettingsDao.getVersionActual(readPlanName(subscription));
+        return SettingsDao.getVersionActual(readPlanId(subscription), readPlanName(subscription));
     }
 
     /**
@@ -131,7 +131,7 @@ public class SettingsService {
             return subscription;
         }
 
-        return SettingsDao.getModelosPorPlan(readPlanName(subscription));
+        return SettingsDao.getModelosPorPlan(readPlanId(subscription), readPlanName(subscription));
     }
 
     /**
@@ -153,7 +153,7 @@ public class SettingsService {
 
         JsonArray models = extractModelsArray(availableModels);
         if (models.size() == 0) {
-            return buildFallbackModelResponse(plan, models);
+            return buildFallbackModelResponse(readPlanId(subscription), plan, models);
         }
 
         // Si el cliente pide un modelo concreto, primero intentamos respetarlo
@@ -167,7 +167,7 @@ public class SettingsService {
         }
 
         if (selectedModel == null) {
-            selectedModel = findCurrentPlanModel(plan, models);
+            selectedModel = findCurrentPlanModel(readPlanId(subscription), plan, models);
         }
 
         if (selectedModel == null) {
@@ -215,10 +215,10 @@ public class SettingsService {
                 : new JsonArray();
     }
 
-    private static JsonObject buildFallbackModelResponse(String plan, JsonArray models) {
+    private static JsonObject buildFallbackModelResponse(int planId, String plan, JsonArray models) {
         // Este fallback evita dejar a Poly sin modelo si el catálogo filtrado
         // por plan viene vacío por seed incompleto o inconsistencia temporal.
-        JsonObject currentModel = SettingsDao.getVersionActual(plan);
+        JsonObject currentModel = SettingsDao.getVersionActual(planId, plan);
         if (isOkResponse(currentModel)) {
             return buildSelectedModelResponse(currentModel, models);
         }
@@ -226,8 +226,8 @@ public class SettingsService {
         return buildErrorResponse(404, "No hay modelos disponibles para tu plan");
     }
 
-    private static JsonObject findCurrentPlanModel(String plan, JsonArray models) {
-        JsonObject currentModel = SettingsDao.getVersionActual(plan);
+    private static JsonObject findCurrentPlanModel(int planId, String plan, JsonArray models) {
+        JsonObject currentModel = SettingsDao.getVersionActual(planId, plan);
         if (!isOkResponse(currentModel)) {
             return null;
         }
@@ -265,6 +265,14 @@ public class SettingsService {
     private static String readPlanName(JsonObject subscription) {
         String plan = subscription.has("plan") ? subscription.get("plan").getAsString() : DEFAULT_PLAN;
         return plan == null || plan.isBlank() ? DEFAULT_PLAN : plan.trim();
+    }
+
+    private static int readPlanId(JsonObject subscription) {
+        if (subscription == null || !subscription.has("planId")) {
+            return 0;
+        }
+
+        return subscription.get("planId").getAsInt();
     }
 
     private static boolean isOkResponse(JsonObject json) {

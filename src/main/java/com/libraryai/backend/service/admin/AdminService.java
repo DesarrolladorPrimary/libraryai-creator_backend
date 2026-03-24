@@ -94,6 +94,20 @@ public class AdminService {
     }
 
     /**
+     * Elimina un plan administrable cuando cumple las reglas de seguridad.
+     */
+    public static JsonObject deletePlan(int planId) {
+        if (planId <= 0) {
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", "ID de plan inválido");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        return AdminDao.deletePlan(planId);
+    }
+
+    /**
      * Crea o reemplaza la suscripción activa de un usuario desde admin.
      */
     public static JsonObject updateUserSubscription(int userId, JsonObject payload) {
@@ -175,10 +189,17 @@ public class AdminService {
         String code = payload.has("codigo") ? payload.get("codigo").getAsString().trim().toUpperCase() : "";
         String name = payload.has("nombre") ? payload.get("nombre").getAsString().trim() : "";
         String roleBase = payload.has("rolBase") ? payload.get("rolBase").getAsString().trim() : "";
+        String colorHex = payload.has("colorHex") && !payload.get("colorHex").isJsonNull()
+                ? payload.get("colorHex").getAsString().trim().toUpperCase()
+                : "";
         boolean active = !payload.has("activo") || payload.get("activo").getAsBoolean();
+        Integer preferredModelId = null;
         Long storageMb = null;
         if (payload.has("almacenamientoMaxMB") && !payload.get("almacenamientoMaxMB").isJsonNull()) {
             storageMb = payload.get("almacenamientoMaxMB").getAsLong();
+        }
+        if (payload.has("modeloPreferidoId") && !payload.get("modeloPreferidoId").isJsonNull()) {
+            preferredModelId = payload.get("modeloPreferidoId").getAsInt();
         }
         double price = payload.has("precio") ? payload.get("precio").getAsDouble() : 0;
 
@@ -190,6 +211,12 @@ public class AdminService {
 
         if (name.length() < 3 || name.length() > 100) {
             response.addProperty("Mensaje", "El nombre del plan debe tener entre 3 y 100 caracteres");
+            response.addProperty("status", 400);
+            return response;
+        }
+
+        if (!colorHex.isBlank() && !colorHex.matches("^#[0-9A-F]{6}$")) {
+            response.addProperty("Mensaje", "El color del plan debe usar formato hexadecimal, por ejemplo #FFD700");
             response.addProperty("status", 400);
             return response;
         }
@@ -212,11 +239,33 @@ public class AdminService {
             return response;
         }
 
-        if (creating) {
-            return AdminDao.createPlan(code, name, storageMb, java.math.BigDecimal.valueOf(price), active, roleBase);
+        if (preferredModelId != null && preferredModelId <= 0) {
+            response.addProperty("Mensaje", "Selecciona un modelo IA válido para el plan");
+            response.addProperty("status", 400);
+            return response;
         }
 
-        return AdminDao.updatePlan(planId, code, name, storageMb, java.math.BigDecimal.valueOf(price), active,
+        if (creating) {
+            return AdminDao.createPlan(
+                    code,
+                    name,
+                    storageMb,
+                    java.math.BigDecimal.valueOf(price),
+                    colorHex.isBlank() ? null : colorHex,
+                    preferredModelId,
+                    active,
+                    roleBase);
+        }
+
+        return AdminDao.updatePlan(
+                planId,
+                code,
+                name,
+                storageMb,
+                java.math.BigDecimal.valueOf(price),
+                colorHex.isBlank() ? null : colorHex,
+                preferredModelId,
+                active,
                 roleBase);
     }
 }

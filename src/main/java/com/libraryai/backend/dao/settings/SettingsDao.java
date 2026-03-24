@@ -29,6 +29,8 @@ public class SettingsDao {
     private static final long PLAN_PREMIUM_STORAGE_MB = 2048L;
     private static final BigDecimal PLAN_FREE_PRICE = BigDecimal.ZERO;
     private static final BigDecimal PLAN_PREMIUM_PRICE = new BigDecimal("9.99");
+    private static final String PLAN_FREE_COLOR = "#4ECDC4";
+    private static final String PLAN_PREMIUM_COLOR = "#FFD700";
 
     /**
      * Garantiza que el catálogo mínimo de planes exista antes de operar con
@@ -121,7 +123,8 @@ public class SettingsDao {
         JsonObject response = new JsonObject();
         String sql = """
             SELECT s.FechaInicio, s.FechaFin, s.Estado, s.RenovacionAutomatica,
-                   p.CodigoPlan, p.NombrePlan, p.AlmacenamientoMaxMB, p.Precio,
+                   p.PK_PlanID, p.CodigoPlan, p.NombrePlan, p.AlmacenamientoMaxMB, p.Precio,
+                   p.ColorHex, p.FK_ModeloPreferidoID,
                    COALESCE((
                        SELECT r.NombreRol
                        FROM PlanRol pr
@@ -163,9 +166,16 @@ public class SettingsDao {
                 boolean almacenamientoIlimitado = almacenamientoMax == null || almacenamientoMax <= 0;
                 double usedStorageMb = bytesToMb(UploadedFileDao.sumBytesByUser(userId));
                 response.addProperty("status", 200);
+                response.addProperty("planId", rs.getInt("PK_PlanID"));
                 response.addProperty("codigoPlan", planCode);
                 response.addProperty("plan", normalizedPlan);
                 response.addProperty("nombrePlan", planName);
+                response.addProperty(
+                        "colorHex",
+                        rs.getString("ColorHex") != null ? rs.getString("ColorHex") : getDefaultPlanColor(planCode));
+                if (rs.getObject("FK_ModeloPreferidoID") != null) {
+                    response.addProperty("modeloPreferidoId", rs.getInt("FK_ModeloPreferidoID"));
+                }
                 response.addProperty("limiteAlmacenamientoMb", almacenamientoIlimitado ? 0 : almacenamientoMax);
                 response.addProperty("almacenamientoUsadoMb", usedStorageMb);
                 response.addProperty("almacenamiento", almacenamientoIlimitado ? 0 : almacenamientoMax);
@@ -180,9 +190,11 @@ public class SettingsDao {
                 // Sin suscripción activa: valores por defecto
                 double usedStorageMb = bytesToMb(UploadedFileDao.sumBytesByUser(userId));
                 response.addProperty("status", 200);
+                response.addProperty("planId", 0);
                 response.addProperty("codigoPlan", PLAN_FREE_CODE);
                 response.addProperty("plan", "Gratuito");
                 response.addProperty("nombrePlan", PLAN_FREE_NAME);
+                response.addProperty("colorHex", PLAN_FREE_COLOR);
                 response.addProperty("limiteAlmacenamientoMb", 500);
                 response.addProperty("almacenamientoUsadoMb", usedStorageMb);
                 response.addProperty("almacenamiento", 500);
@@ -323,13 +335,45 @@ public class SettingsDao {
      * Resuelve el modelo preferente según el plan solicitado.
      */
     public static JsonObject getVersionActual(String plan) {
+        return getVersionActual(null, plan);
+    }
+
+    /**
+     * Resuelve el modelo preferente según el plan solicitado y el modelo principal
+     * configurado en el plan, si existe.
+     */
+    public static JsonObject getVersionActual(Integer planId, String plan) {
+        JsonObject configuredModel = getPlanPreferredModel(planId);
+        if (configuredModel != null) {
+            configuredModel.addProperty("status", 200);
+            return configuredModel;
+        }
+
+        return getVersionActualByRoleFallback(plan);
+    }
+
+    /**
+     * Obtiene modelos disponibles según el plan del usuario (RF_23).
+     */
+    public static JsonObject getModelosPorPlan(String plan) {
+        return getModelosPorPlan(null, plan);
+    }
+
+    /**
+     * Obtiene modelos disponibles según plan y prioriza el modelo principal del plan
+     * cuando existe.
+     */
+    public static JsonObject getModelosPorPlan(Integer planId, String plan) {
         JsonObject response = new JsonObject();
+        Integer preferredModelId = findPreferredModelIdByPlan(planId);
+
         String sql = isPremiumPlan(plan)
                 ? """
             SELECT PK_ModeloID, NombreModelo, Version, Descripcion, NotasVersion, Estado, EsGratuito
             FROM ModeloIA
             WHERE Estado = 'Activo'
             ORDER BY CASE
+                WHEN PK_ModeloID = ? THEN 0
                 WHEN LOWER(NombreModelo) = LOWER(?) THEN 0
                 WHEN EsGratuito = FALSE THEN 1
                 ELSE 2
@@ -341,6 +385,7 @@ public class SettingsDao {
             FROM ModeloIA
             WHERE Estado = 'Activo' AND EsGratuito = TRUE
             ORDER BY CASE
+                WHEN PK_ModeloID = ? THEN 0
                 WHEN LOWER(NombreModelo) = LOWER(?) THEN 0
                 ELSE 1
             END, PK_ModeloID ASC
@@ -350,7 +395,8 @@ public class SettingsDao {
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, getPreferredModelNameForPlan(plan));
+            stmt.setInt(1, preferredModelId == null ? -1 : preferredModelId);
+            stmt.setString(2, getPreferredModelNameForPlan(plan));
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
@@ -363,64 +409,6 @@ public class SettingsDao {
         } catch (Exception e) {
             System.out.println("Error en getVersionActual: " + e.getMessage());
             return buildConfiguredModelFallback(plan);
-        }
-
-        return response;
-    }
-
-    /**
-     * Obtiene modelos disponibles según el plan del usuario (RF_23).
-     */
-    public static JsonObject getModelosPorPlan(String plan) {
-        JsonObject response = new JsonObject();
-        
-        // Según el RF, los modelos disponibles dependen del plan
-        String sql;
-        if (isPremiumPlan(plan)) {
-            // Premium tiene acceso a todos los modelos
-            sql = """
-                SELECT PK_ModeloID, NombreModelo, Version, Descripcion, NotasVersion, EsGratuito
-                FROM ModeloIA
-                WHERE Estado = 'Activo'
-                ORDER BY CASE
-                    WHEN LOWER(NombreModelo) = LOWER(?) THEN 0
-                    WHEN EsGratuito = FALSE THEN 1
-                    ELSE 2
-                END, PK_ModeloID ASC
-            """;
-        } else {
-            // Gratuito solo tiene acceso a modelos gratuitos
-            sql = """
-                SELECT PK_ModeloID, NombreModelo, Version, Descripcion, NotasVersion, EsGratuito
-                FROM ModeloIA
-                WHERE Estado = 'Activo' AND EsGratuito = TRUE
-                ORDER BY CASE
-                    WHEN LOWER(NombreModelo) = LOWER(?) THEN 0
-                    ELSE 1
-                END, PK_ModeloID ASC
-            """;
-        }
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, getPreferredModelNameForPlan(plan));
-            ResultSet rs = stmt.executeQuery();
-            
-            JsonArray modelos = new JsonArray();
-            
-            while (rs.next()) {
-                modelos.add(buildModelJson(rs));
-            }
-
-            response.addProperty("status", 200);
-            response.add("modelos", modelos);
-            response.addProperty("total", modelos.size());
-
-        } catch (Exception e) {
-            System.out.println("Error en getModelosPorPlan: " + e.getMessage());
-            response.addProperty("status", 500);
-            response.addProperty("Mensaje", "Error interno al obtener modelos");
         }
 
         return response;
@@ -486,8 +474,8 @@ public class SettingsDao {
 
     private static int createDefaultPlan(Connection conn, String planCode, String planName) throws SQLException {
         String sql = """
-            INSERT INTO PlanSuscripcion(CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, Activo)
-            VALUES (?, ?, ?, ?, TRUE)
+            INSERT INTO PlanSuscripcion(CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, ColorHex, Activo)
+            VALUES (?, ?, ?, ?, ?, TRUE)
         """;
 
         try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -501,6 +489,7 @@ public class SettingsDao {
                 stmt.setLong(3, PLAN_FREE_STORAGE_MB);
                 stmt.setBigDecimal(4, PLAN_FREE_PRICE);
             }
+            stmt.setString(5, getDefaultPlanColor(planCode));
 
             stmt.executeUpdate();
             ResultSet keys = stmt.getGeneratedKeys();
@@ -725,6 +714,103 @@ public class SettingsDao {
         modelo.addProperty("activo", nombre);
         modelo.addProperty("gratuito", rs.getBoolean("EsGratuito"));
         return modelo;
+    }
+
+    private static JsonObject getPlanPreferredModel(Integer planId) {
+        if (planId == null || planId <= 0) {
+            return null;
+        }
+
+        String sql = """
+            SELECT m.PK_ModeloID, m.NombreModelo, m.Version, m.Descripcion, m.NotasVersion, m.EsGratuito
+            FROM PlanSuscripcion p
+            INNER JOIN ModeloIA m ON m.PK_ModeloID = p.FK_ModeloPreferidoID
+            WHERE p.PK_PlanID = ? AND m.Estado = 'Activo'
+            LIMIT 1
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, planId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return buildModelJson(rs);
+            }
+        } catch (Exception e) {
+            System.out.println("Error en getPlanPreferredModel: " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    private static Integer findPreferredModelIdByPlan(Integer planId) {
+        if (planId == null || planId <= 0) {
+            return null;
+        }
+
+        String sql = "SELECT FK_ModeloPreferidoID FROM PlanSuscripcion WHERE PK_PlanID = ? LIMIT 1";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, planId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next() && rs.getObject("FK_ModeloPreferidoID") != null) {
+                return rs.getInt("FK_ModeloPreferidoID");
+            }
+        } catch (Exception e) {
+            System.out.println("Error en findPreferredModelIdByPlan: " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    private static JsonObject getVersionActualByRoleFallback(String plan) {
+        JsonObject response = new JsonObject();
+        String sql = isPremiumPlan(plan)
+                ? """
+            SELECT PK_ModeloID, NombreModelo, Version, Descripcion, NotasVersion, Estado, EsGratuito
+            FROM ModeloIA
+            WHERE Estado = 'Activo'
+            ORDER BY CASE
+                WHEN LOWER(NombreModelo) = LOWER(?) THEN 0
+                WHEN EsGratuito = FALSE THEN 1
+                ELSE 2
+            END, PK_ModeloID ASC
+            LIMIT 1
+        """
+                : """
+            SELECT PK_ModeloID, NombreModelo, Version, Descripcion, NotasVersion, Estado, EsGratuito
+            FROM ModeloIA
+            WHERE Estado = 'Activo' AND EsGratuito = TRUE
+            ORDER BY CASE
+                WHEN LOWER(NombreModelo) = LOWER(?) THEN 0
+                ELSE 1
+            END, PK_ModeloID ASC
+            LIMIT 1
+        """;
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, getPreferredModelNameForPlan(plan));
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                response = buildModelJson(rs);
+                response.addProperty("status", 200);
+            } else {
+                return buildConfiguredModelFallback(plan);
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error en getVersionActualByRoleFallback: " + e.getMessage());
+            return buildConfiguredModelFallback(plan);
+        }
+
+        return response;
+    }
+
+    private static String getDefaultPlanColor(String planCode) {
+        return PLAN_PREMIUM_CODE.equals(resolvePlanCode(planCode, null)) ? PLAN_PREMIUM_COLOR : PLAN_FREE_COLOR;
     }
 
     private static String getPreferredModelNameForPlan(String plan) {

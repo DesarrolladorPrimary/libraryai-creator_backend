@@ -204,6 +204,33 @@ public class AdminController {
     }
 
     /**
+     * Elimina un plan cuando el catálogo lo permite.
+     */
+    public static HttpHandler deletePlan() {
+        return exchange -> {
+            String query = exchange.getRequestURI().getQuery();
+
+            if (query == null || query.isBlank()) {
+                ApiResponse.error(exchange, 400, "Se requiere el ID del plan");
+                return;
+            }
+
+            JsonObject idJson = QueryParams.parseId(query);
+            int code = idJson.get("status").getAsInt();
+
+            if (code != 200) {
+                ApiResponse.error(exchange, code, idJson.get("Mensaje").getAsString());
+                return;
+            }
+
+            JsonObject response = AdminService.deletePlan(idJson.get("id").getAsInt());
+            int statusCode = response.get("status").getAsInt();
+            response.remove("status");
+            ApiResponse.send(exchange, response.toString(), statusCode);
+        };
+    }
+
+    /**
      * Crea, reemplaza o cancela la suscripción de un usuario desde admin.
      */
     public static HttpHandler updateUserSubscription() {

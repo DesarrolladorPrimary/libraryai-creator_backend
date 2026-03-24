@@ -17,6 +17,8 @@ import com.libraryai.backend.dao.settings.SettingsDao;
  */
 public class AdminDao {
 
+    private static final String PLAN_FREE_CODE = "GRATUITO";
+    private static final String PLAN_PREMIUM_CODE = "PREMIUM";
     private static final String ROLE_FREE = "Gratuito";
     private static final String ROLE_PREMIUM = "Premium";
 
@@ -126,7 +128,11 @@ public class AdminDao {
                 p.NombrePlan,
                 p.AlmacenamientoMaxMB,
                 p.Precio,
+                p.ColorHex,
+                p.FK_ModeloPreferidoID,
                 p.Activo,
+                m.NombreModelo AS ModeloPreferidoNombre,
+                m.Version AS ModeloPreferidoVersion,
                 COALESCE((
                     SELECT r.NombreRol
                     FROM PlanRol pr
@@ -147,9 +153,11 @@ public class AdminDao {
                     THEN s.FK_UsuarioID
                 END) AS UsuariosActivos
             FROM PlanSuscripcion p
+            LEFT JOIN ModeloIA m ON m.PK_ModeloID = p.FK_ModeloPreferidoID
             LEFT JOIN Suscripcion s ON s.FK_PlanID = p.PK_PlanID AND s.Estado = 'Activa'
             LEFT JOIN Usuario u ON u.PK_UsuarioID = s.FK_UsuarioID
-            GROUP BY p.PK_PlanID, p.CodigoPlan, p.NombrePlan, p.AlmacenamientoMaxMB, p.Precio, p.Activo
+            GROUP BY p.PK_PlanID, p.CodigoPlan, p.NombrePlan, p.AlmacenamientoMaxMB, p.Precio, p.ColorHex,
+                     p.FK_ModeloPreferidoID, p.Activo, m.NombreModelo, m.Version
             ORDER BY p.Precio ASC, p.PK_PlanID ASC;
             """;
 
@@ -437,6 +445,18 @@ public class AdminDao {
                 plan.addProperty("NombrePlan", nombrePlan);
                 plan.addProperty("AlmacenamientoMaxMB", almacenamientoMaxMb);
                 plan.addProperty("Precio", rs.getBigDecimal("Precio"));
+                plan.addProperty("ColorHex", rs.getString("ColorHex") == null ? "" : rs.getString("ColorHex"));
+                if (rs.getObject("FK_ModeloPreferidoID") != null) {
+                    plan.addProperty("FK_ModeloPreferidoID", rs.getInt("FK_ModeloPreferidoID"));
+                } else {
+                    plan.addProperty("FK_ModeloPreferidoID", 0);
+                }
+                plan.addProperty(
+                        "ModeloPreferidoNombre",
+                        rs.getString("ModeloPreferidoNombre") == null ? "" : rs.getString("ModeloPreferidoNombre"));
+                plan.addProperty(
+                        "ModeloPreferidoVersion",
+                        rs.getString("ModeloPreferidoVersion") == null ? "" : rs.getString("ModeloPreferidoVersion"));
                 plan.addProperty("Activo", rs.getBoolean("Activo"));
                 plan.addProperty("RolBase", rs.getString("RolBase"));
                 plan.addProperty("UsuariosActivos", rs.getInt("UsuariosActivos"));
@@ -455,8 +475,8 @@ public class AdminDao {
     /**
      * Crea un plan administrable y deja su rol base asociado en PlanRol.
      */
-    public static JsonObject createPlan(String code, String name, Long storageMb, BigDecimal price, boolean active,
-            String roleBase) {
+    public static JsonObject createPlan(String code, String name, Long storageMb, BigDecimal price, String colorHex,
+            Integer preferredModelId, boolean active, String roleBase) {
         JsonObject response = new JsonObject();
         Connection conn = null;
 
@@ -464,11 +484,19 @@ public class AdminDao {
             conn = DatabaseConnection.getConnection();
             conn.setAutoCommit(false);
 
+            JsonObject preferredModelValidation = validatePreferredModel(conn, preferredModelId, roleBase);
+            if (preferredModelValidation != null) {
+                conn.rollback();
+                return preferredModelValidation;
+            }
+
             int planId;
             try (PreparedStatement stmt = conn.prepareStatement(
                     """
-                        INSERT INTO PlanSuscripcion(CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, Activo)
-                        VALUES (?, ?, ?, ?, ?)
+                        INSERT INTO PlanSuscripcion(
+                            CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, ColorHex, FK_ModeloPreferidoID, Activo
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
                     Statement.RETURN_GENERATED_KEYS)) {
                 stmt.setString(1, code);
@@ -479,7 +507,17 @@ public class AdminDao {
                     stmt.setLong(3, storageMb);
                 }
                 stmt.setBigDecimal(4, price);
-                stmt.setBoolean(5, active);
+                if (colorHex == null || colorHex.isBlank()) {
+                    stmt.setNull(5, java.sql.Types.VARCHAR);
+                } else {
+                    stmt.setString(5, colorHex);
+                }
+                if (preferredModelId == null) {
+                    stmt.setNull(6, java.sql.Types.INTEGER);
+                } else {
+                    stmt.setInt(6, preferredModelId);
+                }
+                stmt.setBoolean(7, active);
                 stmt.executeUpdate();
 
                 try (ResultSet keys = stmt.getGeneratedKeys()) {
@@ -515,7 +553,7 @@ public class AdminDao {
      * Actualiza el catálogo base de un plan existente.
      */
     public static JsonObject updatePlan(int planId, String code, String name, Long storageMb, BigDecimal price,
-            boolean active, String roleBase) {
+            String colorHex, Integer preferredModelId, boolean active, String roleBase) {
         JsonObject response = new JsonObject();
         Connection conn = null;
 
@@ -530,10 +568,17 @@ public class AdminDao {
                 return response;
             }
 
+            JsonObject preferredModelValidation = validatePreferredModel(conn, preferredModelId, roleBase);
+            if (preferredModelValidation != null) {
+                conn.rollback();
+                return preferredModelValidation;
+            }
+
             try (PreparedStatement stmt = conn.prepareStatement(
                     """
                         UPDATE PlanSuscripcion
-                        SET CodigoPlan = ?, NombrePlan = ?, AlmacenamientoMaxMB = ?, Precio = ?, Activo = ?
+                        SET CodigoPlan = ?, NombrePlan = ?, AlmacenamientoMaxMB = ?, Precio = ?,
+                            ColorHex = ?, FK_ModeloPreferidoID = ?, Activo = ?
                         WHERE PK_PlanID = ?
                     """)) {
                 stmt.setString(1, code);
@@ -544,8 +589,18 @@ public class AdminDao {
                     stmt.setLong(3, storageMb);
                 }
                 stmt.setBigDecimal(4, price);
-                stmt.setBoolean(5, active);
-                stmt.setInt(6, planId);
+                if (colorHex == null || colorHex.isBlank()) {
+                    stmt.setNull(5, java.sql.Types.VARCHAR);
+                } else {
+                    stmt.setString(5, colorHex);
+                }
+                if (preferredModelId == null) {
+                    stmt.setNull(6, java.sql.Types.INTEGER);
+                } else {
+                    stmt.setInt(6, preferredModelId);
+                }
+                stmt.setBoolean(7, active);
+                stmt.setInt(8, planId);
                 stmt.executeUpdate();
             }
 
@@ -564,6 +619,68 @@ public class AdminDao {
                             ? "Ya existe otro plan con ese código o nombre"
                             : "Error al actualizar el plan");
             response.addProperty("status", isIntegrityViolation(e) ? 409 : 500);
+            return response;
+        } finally {
+            closeTransactionalConnection(conn);
+        }
+    }
+
+    /**
+     * Elimina un plan administrable cuando no tiene historial asociado y no es base.
+     */
+    public static JsonObject deletePlan(int planId) {
+        JsonObject response = new JsonObject();
+        Connection conn = null;
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false);
+
+            PlanRecord plan = findPlanById(conn, planId);
+            if (plan == null) {
+                conn.rollback();
+                response.addProperty("Mensaje", "Plan no encontrado");
+                response.addProperty("status", 404);
+                return response;
+            }
+
+            if (PLAN_FREE_CODE.equalsIgnoreCase(plan.code) || PLAN_PREMIUM_CODE.equalsIgnoreCase(plan.code)) {
+                conn.rollback();
+                response.addProperty("Mensaje", "Los planes base del sistema no se eliminan. Puedes dejarlos inactivos.");
+                response.addProperty("status", 400);
+                return response;
+            }
+
+            if (planHasSubscriptions(conn, planId)) {
+                conn.rollback();
+                response.addProperty("Mensaje", "No puedes eliminar un plan que ya tiene suscripciones asociadas.");
+                response.addProperty("status", 409);
+                return response;
+            }
+
+            try (PreparedStatement deletePlanRole = conn.prepareStatement("DELETE FROM PlanRol WHERE FK_PlanID = ?");
+                 PreparedStatement deletePlan = conn.prepareStatement("DELETE FROM PlanSuscripcion WHERE PK_PlanID = ?")) {
+                deletePlanRole.setInt(1, planId);
+                deletePlanRole.executeUpdate();
+
+                deletePlan.setInt(1, planId);
+                int affectedRows = deletePlan.executeUpdate();
+                if (affectedRows <= 0) {
+                    conn.rollback();
+                    response.addProperty("Mensaje", "Plan no encontrado");
+                    response.addProperty("status", 404);
+                    return response;
+                }
+            }
+
+            conn.commit();
+            response.addProperty("Mensaje", "Plan eliminado correctamente");
+            response.addProperty("status", 200);
+            return response;
+        } catch (SQLException e) {
+            rollbackQuietly(conn);
+            response.addProperty("Mensaje", "Error al eliminar el plan");
+            response.addProperty("status", 500);
             return response;
         } finally {
             closeTransactionalConnection(conn);
@@ -733,7 +850,11 @@ public class AdminDao {
                 p.NombrePlan,
                 p.AlmacenamientoMaxMB,
                 p.Precio,
+                p.ColorHex,
+                p.FK_ModeloPreferidoID,
                 p.Activo,
+                m.NombreModelo AS ModeloPreferidoNombre,
+                m.Version AS ModeloPreferidoVersion,
                 COALESCE((
                     SELECT r.NombreRol
                     FROM PlanRol pr
@@ -754,10 +875,12 @@ public class AdminDao {
                     THEN s.FK_UsuarioID
                 END) AS UsuariosActivos
             FROM PlanSuscripcion p
+            LEFT JOIN ModeloIA m ON m.PK_ModeloID = p.FK_ModeloPreferidoID
             LEFT JOIN Suscripcion s ON s.FK_PlanID = p.PK_PlanID AND s.Estado = 'Activa'
             LEFT JOIN Usuario u ON u.PK_UsuarioID = s.FK_UsuarioID
             WHERE p.PK_PlanID = ?
-            GROUP BY p.PK_PlanID, p.CodigoPlan, p.NombrePlan, p.AlmacenamientoMaxMB, p.Precio, p.Activo
+            GROUP BY p.PK_PlanID, p.CodigoPlan, p.NombrePlan, p.AlmacenamientoMaxMB, p.Precio, p.ColorHex,
+                     p.FK_ModeloPreferidoID, p.Activo, m.NombreModelo, m.Version
             LIMIT 1
         """;
 
@@ -782,6 +905,18 @@ public class AdminDao {
                 response.addProperty("NombrePlan", nombrePlan);
                 response.addProperty("AlmacenamientoMaxMB", almacenamientoMaxMb);
                 response.addProperty("Precio", rs.getBigDecimal("Precio"));
+                response.addProperty("ColorHex", rs.getString("ColorHex") == null ? "" : rs.getString("ColorHex"));
+                if (rs.getObject("FK_ModeloPreferidoID") != null) {
+                    response.addProperty("FK_ModeloPreferidoID", rs.getInt("FK_ModeloPreferidoID"));
+                } else {
+                    response.addProperty("FK_ModeloPreferidoID", 0);
+                }
+                response.addProperty(
+                        "ModeloPreferidoNombre",
+                        rs.getString("ModeloPreferidoNombre") == null ? "" : rs.getString("ModeloPreferidoNombre"));
+                response.addProperty(
+                        "ModeloPreferidoVersion",
+                        rs.getString("ModeloPreferidoVersion") == null ? "" : rs.getString("ModeloPreferidoVersion"));
                 response.addProperty("Activo", rs.getBoolean("Activo"));
                 response.addProperty("RolBase", rs.getString("RolBase"));
                 response.addProperty("UsuariosActivos", rs.getInt("UsuariosActivos"));
@@ -821,6 +956,58 @@ public class AdminDao {
                         rs.getString("NombrePlan"),
                         rs.getBigDecimal("Precio"),
                         rs.getBoolean("Activo"));
+            }
+        }
+
+        return null;
+    }
+
+    private static boolean planHasSubscriptions(Connection conn, int planId) throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "SELECT 1 FROM Suscripcion WHERE FK_PlanID = ? LIMIT 1")) {
+            stmt.setInt(1, planId);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next();
+        }
+    }
+
+    private static JsonObject validatePreferredModel(Connection conn, Integer preferredModelId, String roleBase)
+            throws SQLException {
+        if (preferredModelId == null) {
+            return null;
+        }
+
+        try (PreparedStatement stmt = conn.prepareStatement(
+                """
+                    SELECT PK_ModeloID, Estado, EsGratuito
+                    FROM ModeloIA
+                    WHERE PK_ModeloID = ?
+                    LIMIT 1
+                """)) {
+            stmt.setInt(1, preferredModelId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) {
+                    JsonObject response = new JsonObject();
+                    response.addProperty("Mensaje", "El modelo IA seleccionado no existe");
+                    response.addProperty("status", 404);
+                    return response;
+                }
+
+                if (!"Activo".equalsIgnoreCase(rs.getString("Estado"))) {
+                    JsonObject response = new JsonObject();
+                    response.addProperty("Mensaje", "El modelo IA seleccionado no está activo");
+                    response.addProperty("status", 400);
+                    return response;
+                }
+
+                boolean freeModel = rs.getBoolean("EsGratuito");
+                if ("Gratuito".equalsIgnoreCase(roleBase) && !freeModel) {
+                    JsonObject response = new JsonObject();
+                    response.addProperty("Mensaje", "Un plan con rol base Gratuito solo puede usar modelos gratuitos");
+                    response.addProperty("status", 400);
+                    return response;
+                }
             }
         }
 

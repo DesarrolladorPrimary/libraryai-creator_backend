@@ -31,14 +31,14 @@ SET @demo_hash = '$2a$10$Ka5IDG6s7g2jGVsnMkXzJ.Mf57hx5CjabKB7uXNaj9LnF7/QyXR2W';
 INSERT IGNORE INTO Rol (NombreRol)
 VALUES ('Admin'), ('Gratuito'), ('Premium');
 
-INSERT INTO PlanSuscripcion (CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, Activo)
-SELECT 'GRATUITO', 'Plan Gratuito', 500, 0.00, TRUE
+INSERT INTO PlanSuscripcion (CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, ColorHex, Activo)
+SELECT 'GRATUITO', 'Plan Gratuito', 500, 0.00, '#4ECDC4', TRUE
 WHERE NOT EXISTS (
     SELECT 1 FROM PlanSuscripcion WHERE CodigoPlan = 'GRATUITO'
 );
 
-INSERT INTO PlanSuscripcion (CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, Activo)
-SELECT 'PREMIUM', 'Plan Premium', 2048, 9.99, TRUE
+INSERT INTO PlanSuscripcion (CodigoPlan, NombrePlan, AlmacenamientoMaxMB, Precio, ColorHex, Activo)
+SELECT 'PREMIUM', 'Plan Premium', 2048, 9.99, '#FFD700', TRUE
 WHERE NOT EXISTS (
     SELECT 1 FROM PlanSuscripcion WHERE CodigoPlan = 'PREMIUM'
 );
@@ -140,6 +140,16 @@ SET @pro_model_id = (
     WHERE LOWER(NombreModelo) = LOWER('gemini-2.5-pro')
     LIMIT 1
 );
+
+UPDATE PlanSuscripcion
+SET ColorHex = '#4ECDC4',
+    FK_ModeloPreferidoID = @flash_model_id
+WHERE CodigoPlan = 'GRATUITO';
+
+UPDATE PlanSuscripcion
+SET ColorHex = '#FFD700',
+    FK_ModeloPreferidoID = @pro_model_id
+WHERE CodigoPlan = 'PREMIUM';
 
 SET @demo_admin_id = (SELECT PK_UsuarioID FROM Usuario WHERE Correo = 'demo.admin@example.com' LIMIT 1);
 SET @demo_ana_id = (SELECT PK_UsuarioID FROM Usuario WHERE Correo = 'demo.ana@example.com' LIMIT 1);

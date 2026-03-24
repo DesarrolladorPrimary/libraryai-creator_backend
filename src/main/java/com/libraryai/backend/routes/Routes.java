@@ -84,6 +84,9 @@ public class Routes {
         router.put("/api/v1/admin/plans",
                 auth.proteger(AdminController.updatePlan(), "Admin"));
 
+        router.delete("/api/v1/admin/plans",
+                auth.proteger(AdminController.deletePlan(), "Admin"));
+
         router.put("/api/v1/admin/users/subscription",
                 auth.proteger(AdminController.updateUserSubscription(), "Admin"));
 
