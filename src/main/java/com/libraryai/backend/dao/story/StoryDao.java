@@ -17,6 +17,10 @@ import com.libraryai.backend.models.Story;
 
 /**
  * DAO para operaciones de relatos y su relación con estanterías.
+ *
+ * El relato se persiste como entidad principal y la asignación a estanterías
+ * se resuelve mediante la tabla puente `Relato_Estanteria`, de modo que un
+ * mismo borrador pueda vivir en varias categorías sin duplicarse.
  */
 public class StoryDao {
 
@@ -371,6 +375,10 @@ public class StoryDao {
         return relato;
     }
 
+    /**
+     * Adjunta al JSON del relato la colección completa de estanterías y deja
+     * además los campos heredados de compatibilidad usados por pantallas viejas.
+     */
     private static void attachShelves(Connection conn, int storyId, JsonObject relato) throws SQLException {
         JsonArray shelfIds = new JsonArray();
         JsonArray shelves = new JsonArray();
@@ -420,6 +428,12 @@ public class StoryDao {
         }
     }
 
+    /**
+     * Reemplaza el set completo de estanterías del relato.
+     *
+     * Se borra primero el estado anterior y luego se inserta el nuevo conjunto
+     * ya normalizado para mantener sincronizadas edición, biblioteca y exportación.
+     */
     private static void replaceShelves(Connection conn, int storyId, List<Integer> shelfIds) throws SQLException {
         try (PreparedStatement deleteStmt = conn.prepareStatement(SQL_DELETE_SHELF_LINKS)) {
             deleteStmt.setInt(1, storyId);

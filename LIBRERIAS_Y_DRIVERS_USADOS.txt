@@ -1,0 +1,93 @@
+LIBRERIAS Y DRIVERS USADOS
+==========================
+
+Este archivo resume las librerías, drivers y apoyos externos usados por el proyecto.
+Se tomó como referencia:
+- Backend: pom.xml
+- Frontend: package.json
+- Librerías por CDN: archivos HTML públicos y utilidades JS
+
+BACKEND (Java + Maven)
+----------------------
+Base técnica
+- Java 25
+- Maven como gestor de dependencias y build
+- JDBC directo para acceso a datos
+- com.sun.net.httpserver (servidor HTTP embebido del JDK)
+
+Driver de base de datos
+- MySQL Connector/J 8.3.0
+  Uso: conexión JDBC contra MySQL/MariaDB.
+  Declarado en: pom.xml
+
+Librerías backend
+- google-genai 1.34.0
+  Uso: integración con Gemini para generación y tareas de IA.
+  Declarado en: pom.xml
+
+- Gson 2.10.1
+  Uso: serialización y manejo de JSON en controladores, servicios y DAO.
+  Declarado en: pom.xml
+
+- JJWT API / Impl / Gson 0.12.6
+  Uso: creación y validación de tokens JWT para autenticación.
+  Declarado en: pom.xml
+
+- dotenv-java 3.0.0
+  Uso: carga de variables de entorno desde .env.
+  Declarado en: pom.xml
+
+- jBCrypt 0.4
+  Uso: hash de contraseñas.
+  Declarado en: pom.xml
+
+- javax.mail 1.6.2
+  Uso: envío de correos transaccionales y de verificación.
+  Declarado en: pom.xml
+
+- Apache PDFBox 3.0.3
+  Uso: lectura y exportación de PDF.
+  Declarado en: pom.xml
+
+- Apache POI OOXML 5.2.5
+  Uso: lectura y escritura de DOCX.
+  Declarado en: pom.xml
+
+- Apache POI Scratchpad 5.2.5
+  Uso: soporte adicional para formatos/documentos de Office.
+  Declarado en: pom.xml
+
+FRONTEND (HTML + CSS + JavaScript + Vite)
+-----------------------------------------
+Base técnica
+- JavaScript modular nativo (sin framework SPA)
+- Vite 8.0.0
+  Uso: desarrollo local, bundling y distribución.
+  Declarado en: package.json
+
+Librerías frontend por CDN
+- Toastify JS
+  Uso: notificaciones tipo toast en auth, Poly, biblioteca, creativo y admin.
+  Declarado por CDN en múltiples HTML públicos.
+
+- SweetAlert2
+  Uso: confirmaciones y prompts estilizados en flujos como biblioteca, Poly,
+  creativo y administración.
+  Declarado por CDN en múltiples HTML públicos.
+
+SERVICIOS Y PROVEEDORES EXTERNOS
+--------------------------------
+- Gemini API
+  Uso: proveedor actual de IA del proyecto.
+  Integración principal: backend por medio de google-genai.
+
+- SMTP / correo transaccional
+  Uso: verificación de cuenta, recuperación y notificaciones.
+  Integración principal: JavaMail.
+
+OBSERVACIONES
+-------------
+- El frontend no usa React, Vue ni Angular; la interfaz está hecha con HTML,
+  CSS y módulos ES.
+- El backend no usa ORM como Hibernate/JPA; el acceso a datos se hace con JDBC y DAO.
+- El driver de base de datos propiamente dicho es MySQL Connector/J.

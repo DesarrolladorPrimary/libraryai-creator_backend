@@ -12,6 +12,9 @@ import com.libraryai.backend.config.DatabaseConnection;
 
 /**
  * DAO para archivos del usuario y su relación con relatos.
+ *
+ * Centraliza tanto documentos fuente subidos como exportaciones finales para
+ * que la cuota de almacenamiento se calcule desde una sola tabla.
  */
 public class UploadedFileDao {
 
@@ -61,6 +64,9 @@ public class UploadedFileDao {
             WHERE FK_UsuarioID = ?
             """;
 
+    // La biblioteca necesita listar el documento exportado y, al mismo tiempo,
+    // reconstruir todas las estanterías del relato asociado sin disparar otra
+    // consulta por cada fila. Por eso agregamos ids y nombres con GROUP_CONCAT.
     private static final String SQL_SELECT_EXPORTED_BY_USER = """
             SELECT a.PK_ArchivoID, a.FK_UsuarioID, a.NombreArchivo, a.TipoArchivo,
                    a.Origen, a.RutaAlmacenamiento, a.TamanoBytes, a.FechaSubida,
@@ -532,6 +538,10 @@ public class UploadedFileDao {
         return file;
     }
 
+    /**
+     * Reconstruye en JSON la información de estanterías a partir del agregado
+     * devuelto por la consulta principal de biblioteca.
+     */
     private static void applyShelfMetadata(JsonObject target, String shelfIdsRaw, String shelfNamesRaw) {
         if (target == null) {
             return;

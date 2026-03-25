@@ -27,6 +27,9 @@ import com.libraryai.backend.util.DocumentExportBuilder;
 
 /**
  * Servicio para la lógica de negocio de relatos.
+ *
+ * Orquesta el ciclo completo del borrador: creación, edición, moderación,
+ * versionado y exportación a biblioteca.
  */
 public class StoryService {
 
@@ -525,6 +528,8 @@ public class StoryService {
             return shelfValidation;
         }
 
+        // Antes de exportar, el borrador se sincroniza con el contenido final
+        // para que canvas, biblioteca y versionado apunten al mismo estado.
         Story story = new Story(
                 relatoId,
                 usuarioId,
@@ -554,6 +559,8 @@ public class StoryService {
             response.addProperty("version", createVersion.get("version").getAsInt());
         }
 
+        // Si el relato ya tenía un documento exportado, el nuevo archivo toma
+        // su lugar y luego se limpian las exportaciones anteriores para evitar duplicados.
         int previousExportCount = countExportedFiles(relatoId);
 
         JsonObject exportFileResult = persistExportedFile(relatoId, usuarioId, normalizedTitle, normalizedContent,
