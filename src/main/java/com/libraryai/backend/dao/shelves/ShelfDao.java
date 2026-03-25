@@ -40,8 +40,7 @@ public class ShelfDao {
 
         // language=sql
         private static String SQL_UNLINK_STORIES = """
-                        UPDATE Relato
-                           SET FK_EstanteriaID = NULL
+                        DELETE FROM Relato_Estanteria
                          WHERE FK_EstanteriaID = ?;
                         """;
 

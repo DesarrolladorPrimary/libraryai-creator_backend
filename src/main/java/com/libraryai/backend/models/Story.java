@@ -1,6 +1,8 @@
 package com.libraryai.backend.models;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Representa el estado actual de un relato dentro del sistema.
@@ -8,7 +10,7 @@ import java.time.LocalDateTime;
 public class Story {
     private int relato_id;
     private int usuario_id;
-    private Integer estanteria_id;
+    private List<Integer> estanteria_ids;
     private Integer modeloUsado_id;
     private String titulo;
     private String modoOrigen;
@@ -19,12 +21,12 @@ public class Story {
     /**
      * Construye la proyección completa de una fila de {@code Relato}.
      */
-    public Story(int relato_id, int usuario_id, Integer estanteria_id, Integer modeloUsado_id,
+    public Story(int relato_id, int usuario_id, List<Integer> estanteria_ids, Integer modeloUsado_id,
             String titulo, String modoOrigen, String descripcion,
             LocalDateTime fechaCreacion, LocalDateTime fechaModificacion) {
         this.relato_id = relato_id;
         this.usuario_id = usuario_id;
-        this.estanteria_id = estanteria_id;
+        this.estanteria_ids = estanteria_ids != null ? new ArrayList<>(estanteria_ids) : new ArrayList<>();
         this.modeloUsado_id = modeloUsado_id;
         this.titulo = titulo;
         this.modoOrigen = modoOrigen;
@@ -49,12 +51,12 @@ public class Story {
         this.usuario_id = usuario_id;
     }
 
-    public Integer getShelfId() {
-        return estanteria_id;
+    public List<Integer> getShelfIds() {
+        return new ArrayList<>(estanteria_ids);
     }
 
-    public void setShelfId(Integer estanteria_id) {
-        this.estanteria_id = estanteria_id;
+    public void setShelfIds(List<Integer> estanteria_ids) {
+        this.estanteria_ids = estanteria_ids != null ? new ArrayList<>(estanteria_ids) : new ArrayList<>();
     }
 
     public Integer getUsedModelId() {

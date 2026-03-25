@@ -333,17 +333,11 @@ WHERE NOT EXISTS (
   );
 
 INSERT INTO Relato (
-    FK_UsuarioID, FK_EstanteriaID, FK_ModeloUsadoID,
+    FK_UsuarioID, FK_ModeloUsadoID,
     Titulo, ModoOrigen, Descripcion, FechaCreacion, FechaModificacion
 )
 SELECT
     data.user_id,
-    (
-        SELECT e.PK_EstanteriaID
-        FROM Estanteria e
-        WHERE e.NombreCategoria = data.estanteria
-        LIMIT 1
-    ),
     data.model_id,
     data.titulo,
     data.modo_origen,
@@ -387,6 +381,41 @@ WHERE data.user_id IS NOT NULL
       WHERE r.FK_UsuarioID = data.user_id
         AND r.Titulo = data.titulo
   );
+
+INSERT INTO Relato_Estanteria (
+    FK_RelatoID, FK_EstanteriaID
+)
+SELECT
+    r.PK_RelatoID,
+    e.PK_EstanteriaID
+FROM (
+    SELECT @demo_ana_id AS user_id, 'El faro de sal' AS titulo, 'Fantasía' AS estanteria
+    UNION ALL
+    SELECT @demo_ana_id, 'Cuaderno del bosque gris', 'Borradores'
+    UNION ALL
+    SELECT @demo_bruno_id, 'La brújula sin norte', 'Aventura'
+    UNION ALL
+    SELECT @demo_carla_id, 'Atlas de ciudades sumergidas', 'Premium Drafts'
+    UNION ALL
+    SELECT @demo_carla_id, 'Atlas de ciudades sumergidas', 'Publicados'
+    UNION ALL
+    SELECT @demo_carla_id, 'Bitácora del tren nocturno', 'Publicados'
+    UNION ALL
+    SELECT @demo_diego_id, 'Niebla sobre Europa IX', 'Sci-Fi'
+    UNION ALL
+    SELECT @demo_diego_id, 'Niebla sobre Europa IX', 'Premium Drafts'
+) data
+JOIN Relato r
+  ON r.FK_UsuarioID = data.user_id
+ AND r.Titulo = data.titulo
+JOIN Estanteria e
+  ON e.NombreCategoria = data.estanteria
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM Relato_Estanteria re
+    WHERE re.FK_RelatoID = r.PK_RelatoID
+      AND re.FK_EstanteriaID = e.PK_EstanteriaID
+);
 
 INSERT INTO RelatoVersion (FK_RelatoID, NumeroVersion, Contenido, Notas, EsPublicada, FechaVersion)
 SELECT r.PK_RelatoID, 1, r.Descripcion, 'Versión inicial de demo', FALSE, r.FechaCreacion

@@ -141,15 +141,18 @@ SELECT
     r.Titulo,
     r.ModoOrigen,
     u.Correo AS Autor,
-    e.NombreCategoria AS Estanteria,
+    GROUP_CONCAT(DISTINCT e.NombreCategoria ORDER BY e.NombreCategoria SEPARATOR ', ') AS Estanterias,
     m.NombreModelo AS Modelo,
     r.FechaCreacion,
     r.FechaModificacion
 FROM Relato r
 JOIN Usuario u ON u.PK_UsuarioID = r.FK_UsuarioID
+LEFT JOIN Relato_Estanteria re
+       ON re.FK_RelatoID = r.PK_RelatoID
 LEFT JOIN Estanteria e
-       ON e.PK_EstanteriaID = r.FK_EstanteriaID
+       ON e.PK_EstanteriaID = re.FK_EstanteriaID
 LEFT JOIN ModeloIA m ON m.PK_ModeloID = r.FK_ModeloUsadoID
+GROUP BY r.PK_RelatoID, r.Titulo, r.ModoOrigen, u.Correo, m.NombreModelo, r.FechaCreacion, r.FechaModificacion
 ORDER BY r.PK_RelatoID;
 
 -- Relatos sin estantería asignada.
@@ -159,7 +162,8 @@ SELECT
     u.Correo AS Autor
 FROM Relato r
 JOIN Usuario u ON u.PK_UsuarioID = r.FK_UsuarioID
-WHERE r.FK_EstanteriaID IS NULL
+LEFT JOIN Relato_Estanteria re ON re.FK_RelatoID = r.PK_RelatoID
+WHERE re.FK_RelatoID IS NULL
 ORDER BY r.PK_RelatoID;
 
 -- Validación de integridad: relatos apuntando a una estantería inexistente.
@@ -168,9 +172,9 @@ SELECT
     r.PK_RelatoID,
     r.Titulo
 FROM Relato r
-LEFT JOIN Estanteria e ON e.PK_EstanteriaID = r.FK_EstanteriaID
-WHERE r.FK_EstanteriaID IS NOT NULL
-  AND e.PK_EstanteriaID IS NULL;
+JOIN Relato_Estanteria re ON re.FK_RelatoID = r.PK_RelatoID
+LEFT JOIN Estanteria e ON e.PK_EstanteriaID = re.FK_EstanteriaID
+WHERE e.PK_EstanteriaID IS NULL;
 
 -- =========================================================
 -- 4. VERSIONES DE RELATO

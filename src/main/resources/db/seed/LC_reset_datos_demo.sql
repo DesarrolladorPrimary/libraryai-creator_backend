@@ -21,6 +21,7 @@ TRUNCATE TABLE MensajeChat;
 TRUNCATE TABLE ConfiguracionIA;
 TRUNCATE TABLE RelatoVersion;
 TRUNCATE TABLE Relato_ArchivoFuente;
+TRUNCATE TABLE Relato_Estanteria;
 TRUNCATE TABLE ArchivoUsuario;
 TRUNCATE TABLE Relato;
 TRUNCATE TABLE Estanteria;

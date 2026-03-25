@@ -64,11 +64,14 @@ public class UploadedFileDao {
     private static final String SQL_SELECT_EXPORTED_BY_USER = """
             SELECT a.PK_ArchivoID, a.FK_UsuarioID, a.NombreArchivo, a.TipoArchivo,
                    a.Origen, a.RutaAlmacenamiento, a.TamanoBytes, a.FechaSubida,
-                   r.PK_RelatoID, r.Titulo, r.FK_EstanteriaID, e.NombreCategoria
+                   r.PK_RelatoID, r.Titulo,
+                   GROUP_CONCAT(DISTINCT re.FK_EstanteriaID ORDER BY re.FK_EstanteriaID SEPARATOR ',') AS EstanteriaIds,
+                   GROUP_CONCAT(DISTINCT e.NombreCategoria ORDER BY e.NombreCategoria SEPARATOR '||') AS NombresEstanteria
             FROM ArchivoUsuario a
             JOIN Relato_ArchivoFuente raf ON a.PK_ArchivoID = raf.FK_ArchivoID
             JOIN Relato r ON raf.FK_RelatoID = r.PK_RelatoID
-            LEFT JOIN Estanteria e ON r.FK_EstanteriaID = e.PK_EstanteriaID
+            LEFT JOIN Relato_Estanteria re ON re.FK_RelatoID = r.PK_RelatoID
+            LEFT JOIN Estanteria e ON e.PK_EstanteriaID = re.FK_EstanteriaID
             WHERE a.FK_UsuarioID = ? AND a.Origen = 'Exportado'
             """;
 
@@ -290,9 +293,21 @@ public class UploadedFileDao {
 
         StringBuilder sqlBuilder = new StringBuilder(SQL_SELECT_EXPORTED_BY_USER);
         if (shelfId != null && shelfId > 0) {
-            sqlBuilder.append(" AND r.FK_EstanteriaID = ?");
+            sqlBuilder.append("""
+                     AND EXISTS (
+                         SELECT 1
+                         FROM Relato_Estanteria re_filter
+                         WHERE re_filter.FK_RelatoID = r.PK_RelatoID
+                           AND re_filter.FK_EstanteriaID = ?
+                     )
+                    """);
         }
-        sqlBuilder.append(" ORDER BY a.FechaSubida DESC, a.PK_ArchivoID DESC");
+        sqlBuilder.append("""
+                GROUP BY a.PK_ArchivoID, a.FK_UsuarioID, a.NombreArchivo, a.TipoArchivo,
+                         a.Origen, a.RutaAlmacenamiento, a.TamanoBytes, a.FechaSubida,
+                         r.PK_RelatoID, r.Titulo
+                ORDER BY a.FechaSubida DESC, a.PK_ArchivoID DESC
+                """);
 
         try (Connection conn = DatabaseConnection.getConnection();
                 PreparedStatement pstmt = conn.prepareStatement(sqlBuilder.toString())) {
@@ -307,16 +322,7 @@ public class UploadedFileDao {
                 JsonObject document = mapUploadedFile(rs);
                 document.addProperty("relatoId", rs.getInt("PK_RelatoID"));
                 document.addProperty("tituloRelato", rs.getString("Titulo"));
-
-                int shelfValue = rs.getInt("FK_EstanteriaID");
-                if (!rs.wasNull()) {
-                    document.addProperty("estanteriaId", shelfValue);
-                }
-
-                String shelfName = rs.getString("NombreCategoria");
-                if (shelfName != null && !shelfName.isBlank()) {
-                    document.addProperty("nombreEstanteria", shelfName);
-                }
+                applyShelfMetadata(document, rs.getString("EstanteriaIds"), rs.getString("NombresEstanteria"));
 
                 documents.add(document);
             }
@@ -524,5 +530,57 @@ public class UploadedFileDao {
         file.addProperty("tamanoBytes", rs.getLong("TamanoBytes"));
         file.addProperty("fechaSubida", rs.getTimestamp("FechaSubida").toString());
         return file;
+    }
+
+    private static void applyShelfMetadata(JsonObject target, String shelfIdsRaw, String shelfNamesRaw) {
+        if (target == null) {
+            return;
+        }
+
+        com.google.gson.JsonArray shelfIds = new com.google.gson.JsonArray();
+        com.google.gson.JsonArray shelves = new com.google.gson.JsonArray();
+        Integer firstShelfId = null;
+        String firstShelfName = null;
+
+        String[] ids = shelfIdsRaw == null || shelfIdsRaw.isBlank() ? new String[0] : shelfIdsRaw.split(",");
+        String[] names = shelfNamesRaw == null || shelfNamesRaw.isBlank() ? new String[0] : shelfNamesRaw.split("\\|\\|");
+        int items = Math.max(ids.length, names.length);
+
+        for (int index = 0; index < items; index += 1) {
+            String rawId = index < ids.length ? ids[index].trim() : "";
+            String rawName = index < names.length ? names[index].trim() : "";
+            if (rawId.isBlank()) {
+                continue;
+            }
+
+            try {
+                int shelfId = Integer.parseInt(rawId);
+                shelfIds.add(shelfId);
+
+                JsonObject shelf = new JsonObject();
+                shelf.addProperty("id", shelfId);
+                shelf.addProperty("nombre", rawName);
+                shelves.add(shelf);
+
+                if (firstShelfId == null) {
+                    firstShelfId = shelfId;
+                    firstShelfName = rawName;
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        target.add("estanteriaIds", shelfIds);
+        target.add("estanterias", shelves);
+
+        if (firstShelfId != null) {
+            target.addProperty("estanteriaId", firstShelfId);
+        }
+        if (firstShelfName != null && !firstShelfName.isBlank()) {
+            target.addProperty("nombreEstanteria", firstShelfName);
+        }
+        if (shelfNamesRaw != null && !shelfNamesRaw.isBlank()) {
+            target.addProperty("nombresEstanterias", shelfNamesRaw.replace("||", ", "));
+        }
     }
 }

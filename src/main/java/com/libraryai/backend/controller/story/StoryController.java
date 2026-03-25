@@ -1,12 +1,17 @@
 package com.libraryai.backend.controller.story;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.libraryai.backend.server.http.ApiRequest;
 import com.libraryai.backend.server.http.ApiResponse;
 import com.libraryai.backend.service.story.StoryService;
 import com.libraryai.backend.util.JwtUtil;
 import com.sun.net.httpserver.HttpHandler;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Controlador para operaciones de relatos.
@@ -33,8 +38,7 @@ public class StoryController {
                 String titulo = storyData.has("titulo") ? storyData.get("titulo").getAsString() : null;
                 String modoOrigen = storyData.has("modoOrigen") ? storyData.get("modoOrigen").getAsString() : null;
                 String descripcion = storyData.has("descripcion") ? storyData.get("descripcion").getAsString() : null;
-                Integer estanteriaId = storyData.has("estanteriaId") && !storyData.get("estanteriaId").isJsonNull()
-                    ? storyData.get("estanteriaId").getAsInt() : null;
+                List<Integer> estanteriaIds = extractShelfIds(storyData);
                 Integer modeloUsadoId = storyData.has("modeloUsadoId") && !storyData.get("modeloUsadoId").isJsonNull()
                     ? storyData.get("modeloUsadoId").getAsInt() : null;
                 
@@ -50,7 +54,7 @@ public class StoryController {
                 }
                 
                 // Crear el relato
-                JsonObject response = StoryService.createStory(usuarioId, titulo, modoOrigen, descripcion, estanteriaId, modeloUsadoId);
+                JsonObject response = StoryService.createStory(usuarioId, titulo, modoOrigen, descripcion, estanteriaIds, modeloUsadoId);
                 int statusCode = response.get("status").getAsInt();
                 
                 ApiResponse.send(exchange, response.toString(), statusCode);
@@ -198,9 +202,8 @@ public class StoryController {
                 String titulo = storyData.has("titulo") ? storyData.get("titulo").getAsString() : null;
                 String modoOrigen = storyData.has("modoOrigen") ? storyData.get("modoOrigen").getAsString() : null;
                 String descripcion = storyData.has("descripcion") ? storyData.get("descripcion").getAsString() : null;
-                boolean hasShelfField = storyData.has("estanteriaId");
-                Integer estanteriaId = hasShelfField && !storyData.get("estanteriaId").isJsonNull() ? 
-                    storyData.get("estanteriaId").getAsInt() : null;
+                boolean hasShelfField = storyData.has("estanteriaIds") || storyData.has("estanteriaId");
+                List<Integer> estanteriaIds = extractShelfIds(storyData);
                 Integer modeloUsadoId = storyData.has("modeloUsadoId") && !storyData.get("modeloUsadoId").isJsonNull() ? 
                     storyData.get("modeloUsadoId").getAsInt() : null;
                 
@@ -217,7 +220,7 @@ public class StoryController {
                 
                 // Actualizar relato
                 JsonObject response = StoryService.updateStory(relatoId, usuarioId, titulo, modoOrigen, 
-                    descripcion, estanteriaId, modeloUsadoId, hasShelfField);
+                    descripcion, estanteriaIds, modeloUsadoId, hasShelfField);
                 int statusCode = response.get("status").getAsInt();
                 
                 ApiResponse.send(exchange, response.toString(), statusCode);
@@ -425,10 +428,8 @@ public class StoryController {
                 String format = payload != null && payload.has("formato")
                         ? payload.get("formato").getAsString()
                         : null;
-                boolean hasShelfField = payload != null && payload.has("estanteriaId");
-                Integer shelfId = hasShelfField && !payload.get("estanteriaId").isJsonNull()
-                        ? payload.get("estanteriaId").getAsInt()
-                        : null;
+                boolean hasShelfField = payload != null && (payload.has("estanteriaIds") || payload.has("estanteriaId"));
+                List<Integer> shelfIds = extractShelfIds(payload);
                 String fileName = payload != null && payload.has("nombreArchivo") && !payload.get("nombreArchivo").isJsonNull()
                         ? payload.get("nombreArchivo").getAsString()
                         : null;
@@ -440,7 +441,7 @@ public class StoryController {
                         : null;
 
                 JsonObject response = StoryService.exportStory(relatoId, usuarioId, title, content, format,
-                        shelfId, hasShelfField, fileName, fileType, fileBase64);
+                        shelfIds, hasShelfField, fileName, fileType, fileBase64);
                 ApiResponse.send(exchange, response.toString(), response.get("status").getAsInt());
 
             } catch (Exception e) {
@@ -512,5 +513,34 @@ public class StoryController {
         }
 
         return tokenInfo.get("Id").getAsInt();
+    }
+
+    private static List<Integer> extractShelfIds(JsonObject payload) {
+        List<Integer> shelfIds = new ArrayList<>();
+        if (payload == null) {
+            return shelfIds;
+        }
+
+        if (payload.has("estanteriaIds") && payload.get("estanteriaIds").isJsonArray()) {
+            JsonArray array = payload.getAsJsonArray("estanteriaIds");
+            for (JsonElement element : array) {
+                if (element != null && element.isJsonPrimitive() && element.getAsJsonPrimitive().isNumber()) {
+                    int shelfId = element.getAsInt();
+                    if (shelfId > 0 && !shelfIds.contains(shelfId)) {
+                        shelfIds.add(shelfId);
+                    }
+                }
+            }
+            return shelfIds;
+        }
+
+        if (payload.has("estanteriaId") && !payload.get("estanteriaId").isJsonNull()) {
+            int shelfId = payload.get("estanteriaId").getAsInt();
+            if (shelfId > 0) {
+                shelfIds.add(shelfId);
+            }
+        }
+
+        return shelfIds;
     }
 }

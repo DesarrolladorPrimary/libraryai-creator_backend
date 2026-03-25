@@ -166,7 +166,6 @@ CREATE TABLE Pago (
 CREATE TABLE Relato (
     PK_RelatoID INT AUTO_INCREMENT PRIMARY KEY,
     FK_UsuarioID INT NOT NULL,
-    FK_EstanteriaID INT NULL,
     FK_ModeloUsadoID INT NULL,
     Titulo VARCHAR(255) NOT NULL,
     ModoOrigen ENUM('Seccion_Artificial', 'Seccion_Creativa') NOT NULL,
@@ -175,11 +174,19 @@ CREATE TABLE Relato (
     FechaModificacion DATETIME,
     CONSTRAINT FK_Relato_Usuario
         FOREIGN KEY (FK_UsuarioID) REFERENCES Usuario(PK_UsuarioID) ON DELETE RESTRICT,
-    CONSTRAINT FK_Relato_Estanteria
-        FOREIGN KEY (FK_EstanteriaID) REFERENCES Estanteria(PK_EstanteriaID),
     CONSTRAINT FK_Relato_ModeloIA
         FOREIGN KEY (FK_ModeloUsadoID) REFERENCES ModeloIA(PK_ModeloID) ON DELETE SET NULL,
     CONSTRAINT CHK_Relato_Fechas CHECK (FechaModificacion IS NULL OR FechaModificacion >= FechaCreacion)
+);
+
+CREATE TABLE Relato_Estanteria (
+    FK_RelatoID INT NOT NULL,
+    FK_EstanteriaID INT NOT NULL,
+    PRIMARY KEY (FK_RelatoID, FK_EstanteriaID),
+    CONSTRAINT FK_RelatoEstanteria_Relato
+        FOREIGN KEY (FK_RelatoID) REFERENCES Relato(PK_RelatoID) ON DELETE RESTRICT,
+    CONSTRAINT FK_RelatoEstanteria_Estanteria
+        FOREIGN KEY (FK_EstanteriaID) REFERENCES Estanteria(PK_EstanteriaID) ON DELETE RESTRICT
 );
 
 CREATE TABLE RelatoVersion (
@@ -272,8 +279,8 @@ CREATE INDEX idx_archivo_nombre ON ArchivoUsuario(NombreArchivo);
 CREATE INDEX idx_modelo_estado ON ModeloIA(Estado);
 CREATE INDEX idx_fk_suscripcion_usuario ON Suscripcion(FK_UsuarioID);
 CREATE INDEX idx_fk_relato_usuario ON Relato(FK_UsuarioID);
-CREATE INDEX idx_fk_relato_estanteria ON Relato(FK_EstanteriaID);
 CREATE INDEX idx_fk_relato_modelo ON Relato(FK_ModeloUsadoID);
+CREATE INDEX idx_fk_relatoestanteria_estanteria ON Relato_Estanteria(FK_EstanteriaID);
 CREATE INDEX idx_fk_mensaje_relato ON MensajeChat(FK_RelatoID);
 CREATE INDEX idx_fk_version_relato ON RelatoVersion(FK_RelatoID);
 CREATE INDEX idx_mensaje_fecha ON MensajeChat(FechaEnvio);
@@ -294,8 +301,10 @@ JOIN Plan p ON s.FK_PlanID = p.PK_PlanID;
 CREATE VIEW V_RelatosEnEstanteria AS
 SELECT r.Titulo, r.ModoOrigen, e.NombreCategoria, u.Nombre AS Autor
 FROM Relato r
+JOIN Relato_Estanteria re
+  ON re.FK_RelatoID = r.PK_RelatoID
 JOIN Estanteria e
-  ON r.FK_EstanteriaID = e.PK_EstanteriaID
+  ON re.FK_EstanteriaID = e.PK_EstanteriaID
 JOIN Usuario u ON r.FK_UsuarioID = u.PK_UsuarioID;
 
 CREATE VIEW V_RolesDeUsuario AS
@@ -333,13 +342,16 @@ SELECT
     r.Titulo, 
     r.ModoOrigen, 
     u.Nombre AS Autor, 
-    e.NombreCategoria,
+    GROUP_CONCAT(DISTINCT e.NombreCategoria ORDER BY e.NombreCategoria SEPARATOR ', ') AS NombreCategoria,
     m.NombreModelo AS ModeloUtilizado,
     m.Version AS VersionModelo,
     r.FechaCreacion,
     r.FechaModificacion
 FROM Relato r
 JOIN Usuario u ON r.FK_UsuarioID = u.PK_UsuarioID
+LEFT JOIN Relato_Estanteria re
+  ON re.FK_RelatoID = r.PK_RelatoID
 LEFT JOIN Estanteria e 
-  ON r.FK_EstanteriaID = e.PK_EstanteriaID
-LEFT JOIN ModeloIA m ON r.FK_ModeloUsadoID = m.PK_ModeloID;
+  ON re.FK_EstanteriaID = e.PK_EstanteriaID
+LEFT JOIN ModeloIA m ON r.FK_ModeloUsadoID = m.PK_ModeloID
+GROUP BY r.PK_RelatoID, r.Titulo, r.ModoOrigen, u.Nombre, m.NombreModelo, m.Version, r.FechaCreacion, r.FechaModificacion;

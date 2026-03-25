@@ -4,7 +4,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.UUID;
 
 import com.google.gson.JsonArray;
@@ -44,12 +47,12 @@ public class StoryService {
      * @param titulo Título del relato
      * @param modoOrigen Modo de origen ('Seccion_Artificial', 'Seccion_Creativa')
      * @param descripcion Descripción del relato
-     * @param estanteriaId ID de la estantería (opcional)
+     * @param estanteriaIds IDs de las estanterías asociadas (opcional)
      * @param modeloUsadoId ID del modelo de IA usado (opcional)
      * @return JsonObject con el resultado de la operación
      */
     public static JsonObject createStory(int usuarioId, String titulo, String modoOrigen, 
-                                        String descripcion, Integer estanteriaId, Integer modeloUsadoId) {
+                                        String descripcion, List<Integer> estanteriaIds, Integer modeloUsadoId) {
         JsonObject basicValidation = validateStoryCreationInput(titulo, modoOrigen);
         if (basicValidation != null) {
             return basicValidation;
@@ -57,6 +60,7 @@ public class StoryService {
 
         String normalizedTitle = titulo.trim();
         String normalizedDescription = descripcion != null ? descripcion.trim() : "";
+        List<Integer> normalizedShelfIds = normalizeShelfIds(estanteriaIds);
 
         JsonObject moderationResult = validateCreativeDraftModeration(
                 usuarioId,
@@ -68,11 +72,11 @@ public class StoryService {
             return moderationResult;
         }
 
-        JsonObject shelfValidation = validateShelfSelection(
-                estanteriaId,
+        JsonObject shelfValidation = validateShelfSelections(
+                normalizedShelfIds,
                 false,
-                "Debes asignar una estantería existente antes de guardar el relato en biblioteca",
-                "La estantería seleccionada no existe");
+                "Debes asignar al menos una estantería existente antes de guardar el relato en biblioteca",
+                "Una de las estanterías seleccionadas no existe");
         if (shelfValidation != null) {
             return shelfValidation;
         }
@@ -90,7 +94,7 @@ public class StoryService {
         Story story = new Story(
             0, // ID se genera en la base de datos
             usuarioId,
-            estanteriaId,
+            normalizedShelfIds,
             resolvedModelId,
             normalizedTitle,
             modoOrigen,
@@ -174,13 +178,13 @@ public class StoryService {
      * @param titulo Nuevo título (opcional)
      * @param modoOrigen Nuevo modo de origen (opcional)
      * @param descripcion Nueva descripción (opcional)
-     * @param estanteriaId Nueva estantería (opcional)
+     * @param estanteriaIds Nuevas estanterías (opcional)
      * @param modeloUsadoId Nuevo modelo usado (opcional)
      * @return JsonObject con el resultado de la operación
      */
     public static JsonObject updateStory(int relatoId, int usuarioId, String titulo, 
                                         String modoOrigen, String descripcion, 
-                                        Integer estanteriaId, Integer modeloUsadoId,
+                                        List<Integer> estanteriaIds, Integer modeloUsadoId,
                                         boolean updateShelfAssignment) {
         JsonObject invalidIds = validatePositiveIds(relatoId, usuarioId);
         if (invalidIds != null) {
@@ -208,9 +212,9 @@ public class StoryService {
         String currentTitle = relatoData.get("titulo").getAsString();
         String currentDescription = relatoData.get("descripcion").getAsString();
         String nextOriginMode = modoOrigen != null ? modoOrigen.trim() : relatoData.get("modoOrigen").getAsString();
-        Integer currentShelfId = getOptionalInt(relatoData, "estanteriaId");
+        List<Integer> currentShelfIds = getShelfIds(relatoData);
         Integer currentModelId = getOptionalInt(relatoData, "modeloUsadoId");
-        Integer nextShelfId = updateShelfAssignment ? estanteriaId : currentShelfId;
+        List<Integer> nextShelfIds = updateShelfAssignment ? normalizeShelfIds(estanteriaIds) : currentShelfIds;
         Integer nextModelId = modeloUsadoId != null ? modeloUsadoId : currentModelId;
 
         // Reutiliza la misma resolución de modelo del create para no divergir
@@ -235,11 +239,11 @@ public class StoryService {
             return moderationResult;
         }
 
-        JsonObject shelfValidation = validateShelfSelection(
-                nextShelfId,
+        JsonObject shelfValidation = validateShelfSelections(
+                nextShelfIds,
                 false,
-                "Debes asignar una estantería existente antes de guardar el relato en biblioteca",
-                "La estantería seleccionada no existe");
+                "Debes asignar al menos una estantería existente antes de guardar el relato en biblioteca",
+                "Una de las estanterías seleccionadas no existe");
         if (shelfValidation != null) {
             return shelfValidation;
         }
@@ -248,7 +252,7 @@ public class StoryService {
         Story story = new Story(
             relatoId,
             usuarioId,
-            nextShelfId,
+            nextShelfIds,
             nextModelId,
             nextTitle,
             nextOriginMode,
@@ -314,12 +318,13 @@ public class StoryService {
                 logReason);
     }
 
-    private static JsonObject validateShelfSelection(
-            Integer shelfId,
+    private static JsonObject validateShelfSelections(
+            List<Integer> shelfIds,
             boolean required,
             String requiredMessage,
             String invalidMessage) {
-        if (shelfId == null || shelfId <= 0) {
+        List<Integer> normalizedShelfIds = normalizeShelfIds(shelfIds);
+        if (normalizedShelfIds.isEmpty()) {
             if (!required) {
                 return null;
             }
@@ -330,14 +335,18 @@ public class StoryService {
             return response;
         }
 
-        if (ShelfService.existeEstanteria(shelfId)) {
-            return null;
+        for (Integer shelfId : normalizedShelfIds) {
+            if (shelfId != null && shelfId > 0 && ShelfService.existeEstanteria(shelfId)) {
+                continue;
+            }
+
+            JsonObject response = new JsonObject();
+            response.addProperty("Mensaje", invalidMessage);
+            response.addProperty("status", 400);
+            return response;
         }
 
-        JsonObject response = new JsonObject();
-        response.addProperty("Mensaje", invalidMessage);
-        response.addProperty("status", 400);
-        return response;
+        return null;
     }
 
     /**
@@ -441,7 +450,7 @@ public class StoryService {
     }
 
     public static JsonObject exportStory(int relatoId, int usuarioId, String titulo, String contenido, String formato,
-            Integer estanteriaId, boolean updateShelfAssignment, String exportFileName, String exportFileType,
+            List<Integer> estanteriaIds, boolean updateShelfAssignment, String exportFileName, String exportFileType,
             String exportFileBase64) {
         JsonObject accessValidation = validateStoryOwnership(relatoId, usuarioId);
         if (accessValidation != null) {
@@ -504,14 +513,14 @@ public class StoryService {
         JsonObject storyData = currentStory.getAsJsonObject("relato");
         String originMode = storyData.get("modoOrigen").getAsString();
 
-        Integer currentShelfId = getOptionalInt(storyData, "estanteriaId");
-        Integer nextShelfId = updateShelfAssignment ? estanteriaId : currentShelfId;
+        List<Integer> currentShelfIds = getShelfIds(storyData);
+        List<Integer> nextShelfIds = updateShelfAssignment ? normalizeShelfIds(estanteriaIds) : currentShelfIds;
 
-        JsonObject shelfValidation = validateShelfSelection(
-                nextShelfId,
+        JsonObject shelfValidation = validateShelfSelections(
+                nextShelfIds,
                 true,
-                "Debes asignar una estantería antes de convertir el relato en libro",
-                "La estantería seleccionada no existe");
+                "Debes asignar al menos una estantería antes de convertir el relato en libro",
+                "Una de las estanterías seleccionadas no existe");
         if (shelfValidation != null) {
             return shelfValidation;
         }
@@ -519,7 +528,7 @@ public class StoryService {
         Story story = new Story(
                 relatoId,
                 usuarioId,
-                nextShelfId,
+                nextShelfIds,
                 getOptionalInt(storyData, "modeloUsadoId"),
                 normalizedTitle,
                 originMode,
@@ -1057,6 +1066,46 @@ public class StoryService {
 
     private static Integer getOptionalInt(JsonObject source, String field) {
         return source.has(field) ? source.get(field).getAsInt() : null;
+    }
+
+    private static List<Integer> getShelfIds(JsonObject source) {
+        if (source == null) {
+            return new ArrayList<>();
+        }
+
+        if (source.has("estanteriaIds") && source.get("estanteriaIds").isJsonArray()) {
+            List<Integer> shelfIds = new ArrayList<>();
+            for (JsonElement element : source.getAsJsonArray("estanteriaIds")) {
+                if (element != null && element.isJsonPrimitive() && element.getAsJsonPrimitive().isNumber()) {
+                    shelfIds.add(element.getAsInt());
+                }
+            }
+            return normalizeShelfIds(shelfIds);
+        }
+
+        Integer legacyShelfId = getOptionalInt(source, "estanteriaId");
+        if (legacyShelfId == null || legacyShelfId <= 0) {
+            return new ArrayList<>();
+        }
+
+        List<Integer> shelfIds = new ArrayList<>();
+        shelfIds.add(legacyShelfId);
+        return shelfIds;
+    }
+
+    private static List<Integer> normalizeShelfIds(List<Integer> shelfIds) {
+        if (shelfIds == null || shelfIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<Integer> normalized = new ArrayList<>();
+        for (Integer shelfId : new LinkedHashSet<>(shelfIds)) {
+            if (shelfId != null && shelfId > 0) {
+                normalized.add(shelfId);
+            }
+        }
+
+        return normalized;
     }
 
     private static LocalDateTime parseStoryCreatedAt(JsonObject storyData) {
