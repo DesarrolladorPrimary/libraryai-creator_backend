@@ -1,366 +1,232 @@
-# Library Creator - Backend
+# Library Creator Backend
 
-**Library Creator** es una plataforma integral de creación literaria diseñada para potenciar la imaginación del autor mediante un entorno híbrido que fusiona la escritura tradicional con la asistencia de Inteligencia Artificial avanzada.
+Backend principal de **Library Creator**, una plataforma de escritura asistida que combina creación manual, asistencia con IA, biblioteca de relatos y administración de planes y usuarios.
 
----
+Este repositorio contiene el servidor HTTP, la lógica de negocio, el acceso a datos y los scripts SQL base. El frontend vive en el repositorio hermano `../Proyecto_Personal-frontend`.
 
-## Características principales
+## Estado actual del proyecto
 
-- 🤖 **Sección Artificial (Poly):** Chat inteligente parametrizable para generar y reinventar narrativas guiadas con IA.
-- ✍️ **Sección Creativa:** Espacio de redacción manual con herramientas de edición especializadas.
-- 📚 **Gestor Editorial:** Catalogar obras en estanterías virtuales.
-- 📝 **Versionamiento:** Gestión de versiones de los textos.
-- 📄 **Exportación:** Conversión de proyectos a PDF/Word.
-- 💳 **Suscripciones:** Modelo escalable que adapta almacenamiento y potencia de IA.
-- 🔐 **Autenticación Segura:** Sistema de login con verificación de correo y recuperación de contraseña.
+El sistema ya cubre estos flujos principales:
+- Registro, login, verificación de correo y recuperación de contraseña.
+- Chat con Poly usando Gemini.
+- Canvas creativo para escritura manual.
+- Biblioteca con borradores y documentos exportados.
+- Relatos asociados a varias estanterías mediante tabla relacional.
+- Gestión dinámica de planes desde admin.
+- Moderación de contenido y auditoría básica.
+- Exportación a Word/PDF y control de cuota de almacenamiento.
 
----
+## Arquitectura general
 
-## Estructura del Proyecto
+El backend sigue una estructura clásica por capas:
 
-```
-com.libraryai.backend/
-|-- App.java                          # Punto de entrada principal
-|-- server/                           # Servidor HTTP (Sockets puros)
-|   |-- ServerMain.java               # Acepta conexiones y maneja peticiones
-|   |-- http/                         # Utilidades HTTP
-|       |-- ApiRequest.java           # Manejo de peticiones
-|       |-- ApiResponse.java          # Manejo de respuestas
-|       `-- StaticFileHandler.java   # Servir archivos estáticos
-|-- controller/                       # Controladores (endpoints HTTP)
-|   |-- auth/                         # Autenticación y autorización
-|   |   |-- LoginController.java      # Login de usuarios
-|   |   `-- RecuperacionController.java # Recuperación de contraseña
-|   |-- UserController.java           # CRUD de usuarios
-|   |-- SettingsController.java       # Configuración de usuario
-|   |-- UploadController.java         # Subida de archivos
-|   `-- ai/                          # Controladores de IA
-|       `-- AiController.java         # Integración con Gemini API
-|-- service/                          # Lógica de negocio
-|   |-- auth/                         # Servicios de autenticación
-|   |   |-- LoginService.java         # Validación de login
-|   |   `-- RecuperacionService.java  # Recuperación de contraseña
-|   |-- UserService.java              # Gestión de usuarios
-|   |-- EmailService.java             # Envío de correos
-|   `-- ai/                          # Servicios de IA
-|       `-- GeminiAI.java            # Cliente de Gemini API
-|-- dao/                             # Acceso a base de datos
-|   |-- auth/                         # DAOs de autenticación
-|   |   |-- LoginDao.java             # Consultas de login
-|   |   `-- RecuperacionDao.java     # Tokens de acceso
-|   |-- UserDao.java                  # CRUD de usuarios
-|   |-- UserRoleDao.java              # Asignación de roles
-|   |-- chats/                        # DAOs de chat
-|   |   `-- ChatDao.java              # Gestión de mensajes
-|   `-- [otros DAOs...]               # Acceso a otras entidades
-|-- models/                          # Entidades/POJOs
-|   |-- User.java                     # Modelo de usuario
-|   |-- AccessToken.java              # Modelo de tokens
-|   `-- [otros modelos...]            # Otras entidades
-|-- ai/                              # Integración con IA (Gemini)
-|   |-- GeminiAI.java                # Cliente de Gemini API
-|   `-- [otros servicios IA...]       # Componentes de IA
-|-- config/                          # Configuración
-|   |-- DatabaseConnection.java       # Conexión a base de datos
-|   `-- [otras configuraciones...]    # Variables de entorno
-|-- util/                            # Utilidades compartidas
-|   |-- JwtUtil.java                  # Manejo de tokens JWT
-|   `-- [otras utilidades...]         # Funciones helper
-|-- middleware/                      # Middleware de servidor
-|   `-- AuthMiddleware.java           # Autenticación de rutas
-|-- routes/                          # Definición de rutas
-|   `-- Routes.java                   # Configuración de endpoints
-`-- db/                              # Scripts SQL
-    `-- LC_v3-SQL.sql                 # Esquema completo de base de datos
+1. `Routes` recibe y registra endpoints.
+2. `Controller` traduce la request HTTP al caso de uso.
+3. `Service` aplica reglas de negocio.
+4. `Dao` consulta o persiste en MySQL por JDBC.
+5. `Models` representan entidades y payloads internos.
+
+También hay una capa de utilidades para JWT, exportación de documentos, extracción de texto y parsing HTTP simple.
+
+## Estructura relevante
+
+```text
+src/main/java/com/libraryai/backend/
+├── App.java
+├── ai/
+├── config/
+├── controller/
+├── dao/
+├── middleware/
+├── models/
+├── routes/
+├── seeders/
+├── server/
+├── service/
+└── util/
+
+src/main/resources/db/
+├── schema/
+│   └── LC_v3_SQL_final.sql
+├── seed/
+│   ├── LC_reset_datos_demo.sql
+│   ├── LC_demo_seed_completo.sql
+│   └── credenciales_demo_seed.txt
+└── queries/
+    └── pruebas.sql
 ```
 
----
+## Documentación interna
 
-## Tecnologías
+Para entender el proyecto más rápido, revisa primero:
+- [GUIA_CODIGO_BACKEND.md](./GUIA_CODIGO_BACKEND.md)
+- [LIBRERIAS_Y_DRIVERS_USADOS.txt](./LIBRERIAS_Y_DRIVERS_USADOS.txt)
+- `../Proyecto_Personal-frontend/GUIA_CODIGO_FRONTEND.md`
 
-| Tecnología        | Uso                          |
-| ----------------- | ---------------------------- |
-| Java 25           | Lenguaje principal           |
-| Servidor HTTP     | Servidor HTTP sin frameworks |
-| MySQL             | Base de datos                |
-| Gson              | Serialización JSON           |
-| JWT               | Autenticación y tokens       |
-| BCrypt            | Hashing de contraseñas       |
-| JavaMail          | Envío de correos             |
-| Google Gemini API | Asistente de IA "Poly"       |
-| Maven             | Gestión de dependencias      |
+## Tecnologías usadas
 
----
+### Backend
+- Java 25
+- Maven
+- MySQL
+- JDBC directo
+- Gson
+- JWT (`jjwt`)
+- jBCrypt
+- JavaMail
+- Google GenAI SDK
+- Apache PDFBox
+- Apache POI
+- `com.sun.net.httpserver`
 
-## Configuración
+### Frontend relacionado
+- HTML + CSS + JavaScript modular
+- Vite
+- Toastify JS
+- SweetAlert2
 
-### Variables de entorno requeridas
+## Variables de entorno
 
-Configura las siguientes variables en un archivo `.env` en la raíz del proyecto.
+Configura un archivo `.env` en la raíz del backend con valores como estos:
 
 ```ini
-# Configuración de Base de Datos
 DB_URL="jdbc:mysql://localhost:3306/LibraryAI_DB"
 DB_USER="root"
-DB_PASSWD="tu_contraseña_segura"
+DB_PASSWD="tu_password"
 
-# Seguridad (JWT)
-# ¡IMPORTANTE! Debe tener al menos 32 caracteres (256 bits) para HS256.
-JWT_KEY="clave_muy_segura_y_larga_para_firmar_tokens_jwt_min_32_chars"
+JWT_KEY="clave_larga_y_segura_de_al_menos_32_caracteres"
 
-# Configuración de Correo (para verificación y recuperación)
-EMAIL_USER="tu_correo@gmail.com"
-EMAIL_PASS="tu_contraseña_de_app_gmail"
+EMAIL_USER="tu_correo"
+EMAIL_PASS="tu_clave_de_app"
 
-# Inteligencia Artificial (Google Gemini)
-GEMINI_API_KEY="tu_api_key_de_gemini"
+GEMINI_API_KEY="tu_api_key"
 GEMINI_MODEL="gemini-2.5-flash"
 GEMINI_FREE_MODEL="gemini-2.5-flash"
 GEMINI_PREMIUM_MODEL="gemini-2.5-pro"
 
-# Frontend público usado en correos de verificación y recuperación
 FRONTEND_BASE_URL="http://localhost:5500/public"
 ```
 
----
+## Base de datos
 
-## API Endpoints
+### Esquema actual
+- `src/main/resources/db/schema/LC_v3_SQL_final.sql`
 
-### Autenticación
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `POST` | `/api/v1/login` | Login de usuarios |
-| `POST` | `/api/v1/usuarios` | Registro de nuevos usuarios |
-| `GET` | `/api/v1/verificar` | Verificar correo por token |
-| `POST` | `/api/v1/recuperar` | Solicitar recuperación de contraseña |
-| `GET` | `/api/v1/recuperar/validar` | Validar token de recuperación |
-| `PUT` | `/api/v1/recuperar/nueva` | Establecer nueva contraseña |
+### Scripts útiles
+- `src/main/resources/db/seed/LC_reset_datos_demo.sql`: limpia datos demo y reinicia IDs.
+- `src/main/resources/db/seed/LC_demo_seed_completo.sql`: carga datos demo consistentes con el esquema actual.
+- `src/main/resources/db/seed/credenciales_demo_seed.txt`: credenciales de usuarios demo.
+- `src/main/resources/db/queries/pruebas.sql`: consultas de apoyo para revisar estado de datos.
 
-### Usuarios
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `GET` | `/api/v1/usuarios` | Listar usuarios (Admin) |
-| `GET` | `/api/v1/usuarios/id?id={id}` | Obtener usuario por ID |
-| `PUT` | `/api/v1/usuarios/id?id={id}` | Actualizar usuario |
-| `PUT` | `/api/v1/usuarios/campo?id={id}` | Actualizar un campo específico |
-| `DELETE` | `/api/v1/usuarios/id?id={id}` | Eliminar usuario |
+### Flujo recomendado para entorno demo
 
-### IA y Chat
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `POST` | `/api/v1/generar-historias` | Generar contenido con Poly |
-| `POST` | `/api/v1/chat/message` | Enviar mensaje a un chat de relato |
-| `GET` | `/api/v1/chat/{relatoId}` | Obtener historial del chat |
-| `GET` | `/api/v1/chat/{relatoId}/stats` | Obtener estadísticas del chat |
-| `DELETE` | `/api/v1/chat/{relatoId}/clear` | Limpiar historial del chat |
-
-### Archivos
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `POST` | `/api/v1/upload/perfil?id={id}` | Subir foto de perfil |
-
-### Configuraciones
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `GET` | `/api/v1/settings/instruccion-ia?id={id}` | Leer instrucción permanente de Poly |
-| `PUT` | `/api/v1/settings/instruccion-ia?id={id}` | Actualizar instrucción permanente de Poly |
-| `GET` | `/api/v1/settings/suscripcion?id={id}` | Consultar plan y límites del usuario |
-| `GET` | `/api/v1/settings/version-ia?id={id}` | Consultar versión de IA asignada |
-| `GET` | `/api/v1/settings/modelo-disponible?id={id}` | Consultar modelos disponibles |
-| `GET` | `/api/v1/settings/sistema?id={id}` | Consultar información del sistema |
-
-### Estanterías
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `GET` | `/api/v1/estanterias?id={usuarioId}` | Listar estanterías del usuario |
-| `POST` | `/api/v1/estanterias` | Crear estantería |
-| `PUT` | `/api/v1/estanterias?id={estanteriaId}` | Renombrar estantería |
-| `DELETE` | `/api/v1/estanterias?id={estanteriaId}` | Eliminar estantería |
-
-### Relatos
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `POST` | `/api/v1/stories` | Crear relato |
-| `GET` | `/api/v1/stories` | Listar relatos del usuario |
-| `GET` | `/api/v1/stories/stats` | Obtener estadísticas de relatos |
-| `GET` | `/api/v1/stories/{id}` | Obtener relato por ID |
-| `PUT` | `/api/v1/stories/{id}` | Actualizar relato |
-| `DELETE` | `/api/v1/stories/{id}` | Eliminar relato |
-
----
-
-## Flujo de Autenticación
-
-### 1. Registro de Usuario
 ```bash
-POST /api/v1/usuarios
-{
-  "nombre": "Usuario Test",
-  "correo": "usuario@correo.com", 
-  "contraseña": "password123"
-}
-```
-- ✅ Crea usuario con rol "Gratuito" por defecto
-- ✅ Envía correo de verificación (opcional)
-- ✅ Retorna mensaje de confirmación
-
-### 2. Login con Verificación
-```bash
-POST /api/v1/login
-{
-  "correo": "usuario@correo.com",
-  "contraseña": "password123"
-}
-```
-- ✅ Valida credenciales
-- ✅ Si correo no verificado, envía código de verificación
-- ✅ Si correo verificado, genera token JWT
-
-### 3. Verificación de Correo
-```bash
-GET /api/v1/verificar?token=UUID-GENERADO
-```
-- ✅ Valida token único
-- ✅ Marca correo como verificado
-- ✅ Permite login completo
-
----
-
-## Instalación
-
-### Prerrequisitos
-- Java 25 o superior
-- MySQL 8.0 o superior
-- Maven 3.6 o superior
-
-### Pasos de instalación
-
-1. **Clonar el repositorio:**
-   ```bash
-   git clone https://github.com/tu-usuario/libraryai-creator_backend.git
-   cd libraryai-creator_backend
-   ```
-
-2. **Configurar base de datos:**
-   ```bash
-   # Crear base de datos
-   mysql -u root -p < src/main/resources/db/LC_v3-SQL.sql
-   ```
-
-3. **Configurar variables de entorno:**
-   ```bash
-   # Copiar y editar archivo .env
-   cp .env.example .env
-   # Editar .env con tus credenciales
-   ```
-
-4. **Instalar dependencias:**
-   ```bash
-   mvn clean install
-   ```
-
-5. **Ejecutar servidor:**
-   ```bash
-   mvn exec:java -Dexec.mainClass="com.libraryai.backend.App"
-   ```
-
-6. **Verificar funcionamiento:**
-   ```bash
-   # El servidor iniciará en http://localhost:8080
-   curl http://localhost:8080/api/v1/health
-   ```
-
----
-
-## Arquitectura
-
-### Patrones Implementados
-- **DAO Pattern:** Separación de acceso a datos
-- **Service Layer:** Lógica de negocio centralizada
-- **Controller Pattern:** Manejo de peticiones HTTP
-- **Middleware Pattern:** Autenticación y autorización
-- **JWT Authentication:** Tokens seguros para sesiones
-
-### Seguridad
-- **Contraseñas:** Hash con BCrypt
-- **Tokens:** JWT con firma HS256
-- **Correos:** Verificación opcional
-- **Roles:** Sistema de permisos por roles
-
-### Base de Datos
-- **Motor:** MySQL 8.0
-- **Índices:** Optimizados para rendimiento
-- **Relaciones:** Integridad referencial completa
-- **Vistas:** Consultas complejas predefinidas
-
----
-
-## Desarrollo
-
-### Estructura de Paquetes
-- `controller/`: Endpoints HTTP y manejo de peticiones
-- `service/`: Lógica de negocio y reglas de negocio
-- `dao/`: Acceso a datos y consultas SQL
-- `models/`: Entidades y POJOs
-- `util/`: Utilidades compartidas y helpers
-- `config/`: Configuración y variables de entorno
-- `middleware/`: Filtros y middleware de servidor
-
-### Convenciones
-- **Nomenclatura:** CamelCase para clases, snake_case para DB
-- **JSON:** Gson para serialización/deserialización
-- **Errores:** Respuestas consistentes con status codes HTTP
-- **Logs:** Salida estándar para debugging
-
----
-
-## Testing
-
-### Pruebas Manuales
-```bash
-# Test de registro
-curl -X POST http://localhost:8080/api/v1/usuarios \
-  -H "Content-Type: application/json" \
-  -d '{"nombre":"Test","correo":"test@example.com","contraseña":"password123"}'
-
-# Test de login
-curl -X POST http://localhost:8080/api/v1/login \
-  -H "Content-Type: application/json" \
-  -d '{"correo":"test@example.com","contraseña":"password123"}'
+mysql -uroot -p LibraryAI_DB < src/main/resources/db/schema/LC_v3_SQL_final.sql
+mysql -uroot -p LibraryAI_DB < src/main/resources/db/seed/LC_reset_datos_demo.sql
+mysql -uroot -p LibraryAI_DB < src/main/resources/db/seed/LC_demo_seed_completo.sql
 ```
 
-### Archivos de Test
-- `test_verificacion_login.html`: Test completo de flujo de autenticación
-- Scripts de prueba en carpeta `/tests/`
+## Cómo ejecutar el backend
 
----
+### Requisitos
+- Java 25
+- Maven 3.6+
+- MySQL 8+
 
-## Planificación
+### Compilar
 
-Ver [ROADMAP.md](./ROADMAP.md) para conocer las tareas pendientes y el plan de desarrollo.
+```bash
+mvn -q -DskipTests compile
+```
 
----
+### Ejecutar
 
-## Contribución
+```bash
+mvn -q exec:java
+```
 
-1. Fork del proyecto
-2. Crear feature branch: `git checkout -b feature/nueva-funcionalidad`
-3. Commit changes: `git commit -am 'Agregar nueva funcionalidad'`
-4. Push branch: `git push origin feature/nueva-funcionalidad`
-5. Submit Pull Request
+Punto de entrada:
+- `src/main/java/com/libraryai/backend/App.java`
 
----
+## Frontend relacionado
 
-## Autor
+El frontend se encuentra en:
+- `/home/karys/Desktop/Library-Creator/Proyecto_Personal-frontend`
 
-**Library Creator Team**
-- Backend: Java puro con servidor HTTP propio
-- Frontend: HTML/CSS/JavaScript
-- IA: Google Gemini API
-- Base de datos: MySQL
+Comandos típicos:
 
----
+```bash
+cd ../Proyecto_Personal-frontend
+npm install
+npm run dev
+```
 
-## Licencia
+Build de distribución:
 
-Este proyecto está bajo desarrollo privado.
+```bash
+npm run build
+```
+
+## Módulos principales
+
+### Usuario y autenticación
+- Registro, login y validación de sesión por JWT.
+- Verificación de correo.
+- Recuperación y cambio de contraseña.
+
+### Poly / IA
+- Chat con persistencia por relato.
+- Parámetros de estilo y tono.
+- Moderación de entradas.
+- Manejo explícito de errores de cuota de Gemini.
+
+### Creativo
+- Borradores manuales.
+- Historial local de edición.
+- Exportación a biblioteca.
+
+### Biblioteca
+- Lectura de documentos exportados.
+- Reapertura de borradores editables.
+- Filtro por estanterías.
+- Control de cuota de almacenamiento.
+
+### Administración
+- Dashboard con estadísticas.
+- Gestión de usuarios.
+- Gestión de planes.
+- Historial de moderación.
+
+## Notas de diseño
+
+- El backend no usa framework web como Spring; trabaja con `HttpServer` y utilidades propias.
+- El acceso a datos no usa ORM; toda la persistencia pasa por JDBC y DAO.
+- Las estanterías ya no pertenecen al usuario; los relatos se relacionan a ellas por tabla puente.
+- Los planes ya no están fijos a solo dos tarjetas en UI; el sistema soporta catálogo dinámico.
+
+## Siguiente lectura recomendada
+
+Si vas a entrar al código, este orden ayuda bastante:
+1. `src/main/java/com/libraryai/backend/App.java`
+2. `src/main/java/com/libraryai/backend/routes/Routes.java`
+3. `src/main/java/com/libraryai/backend/controller/story/StoryController.java`
+4. `src/main/java/com/libraryai/backend/service/story/StoryService.java`
+5. `src/main/java/com/libraryai/backend/dao/story/StoryDao.java`
+6. `src/main/java/com/libraryai/backend/service/chat/ChatService.java`
+7. `src/main/java/com/libraryai/backend/dao/settings/SettingsDao.java`
+8. `src/main/java/com/libraryai/backend/dao/admin/AdminDao.java`
+
+## Verificación rápida
+
+Comandos útiles para validar que el repo está sano:
+
+```bash
+mvn -q -DskipTests compile
+```
+
+Y del lado del frontend:
+
+```bash
+cd ../Proyecto_Personal-frontend
+npm run build
+```
